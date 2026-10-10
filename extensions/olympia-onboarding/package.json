@@ -153,6 +153,18 @@
 						]
 					},
 					{
+						"id": "olympia.step.askCoach",
+						"title": "让 AI 教练看一遍代码",
+						"description": "先给它配一个模型（本地 Ollama，或你自己的 API 密钥），然后在聊天里用 @coach 提问：`/wa` 找错因、`/hint` 只要思路、`/check` 提交前检查。\n\n[选择模型](command:olympia.coach.selectModel)",
+						"media": {
+							"altText": "在聊天里向 @coach 提问",
+							"markdown": "media/askCoach.svg"
+						},
+						"completionEvents": [
+							"onCommand:olympia.coach.selectModel"
+						]
+					},
+					{
 						"id": "olympia.step.website",
 						"title": "了解更多",
 						"description": "文档、下载与更新日志都在官网。\n\n[打开官网](https://olympia.dpdns.org)",

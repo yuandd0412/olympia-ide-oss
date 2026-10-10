@@ -41,7 +41,7 @@
 	"defaultChatAgent": {
 		"extensionId": "olympia.olympia-coach",
 		"chatExtensionId": "olympia.olympia-coach",
-		"chatExtensionOutputId": "olympia.olympia-coach.Olympia AI Coach.log",
+		"chatExtensionOutputId": "olympia.coach.Olympia AI Coach.log",
 		"chatExtensionOutputExtensionStateCommand": "olympia.coach.debug.extensionState",
 		"documentationUrl": "https://olympia.dpdns.org/docs/ai",
 		"termsStatementUrl": "https://olympia.dpdns.org/terms",

@@ -3,12 +3,16 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 /*---------------------------------------------------------------------------------------------
- *  Olympia AI Coach — the chat agent product.json already points at.
+ *  Olympia AI Coach — a chat participant for competitive-programming students.
  *
- *  product.json's defaultChatAgent names this extension id, its output channel and one debug
- *  command. Those three are honoured here so the workbench's chat management page shows a real
- *  state instead of dangling references; the answers themselves come from whatever language model
- *  the user configured, never from a hosted Olympia account, which does not exist.
+ *  product.json's defaultChatAgent deliberately does NOT name this extension: core's
+ *  ensureChatExtensionInitialDisabledState (extensionEnablementService.ts:155-190) force-disables
+ *  any built-in whose id equals defaultChatAgent.chatExtensionId until chat setup is completed, so
+ *  claiming that slot would leave the coach switched off on every fresh profile. It ships as an
+ *  ordinary built-in that registers a participant instead.
+ *
+ *  Answers come from whatever language model the user configured — a local runtime or their own
+ *  key. There is no hosted Olympia account, so nothing here pretends there is one.
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
 import { registerCoachParticipant } from './coach';

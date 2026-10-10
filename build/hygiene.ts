@@ -92,9 +92,20 @@ export function hygiene(some: NodeJS.ReadWriteStream | string[] | undefined, run
 	const productJson = es.through(function (file: VinylFile) {
 		const product = JSON.parse(file.contents!.toString('utf8'));
 
-		if (product.extensionsGallery) {
-			console.error(`product.json: Contains 'extensionsGallery'`);
-			errorCount++;
+		// Upstream rejects any extensionsGallery so an OSS build cannot ship Microsoft's private
+		// marketplace. Olympia's gallery is open-vsx, which is the legitimate case the rule was
+		// never written for, so the check follows the actual hazard - the endpoint's owner -
+		// rather than the mere presence of the field.
+		const gallery = product.extensionsGallery;
+		if (gallery) {
+			const serviceUrl: string | undefined = gallery.serviceUrl;
+			if (!serviceUrl) {
+				console.error(`product.json: 'extensionsGallery' has no serviceUrl; cannot verify it is not a proprietary marketplace`);
+				errorCount++;
+			} else if (/(?:microsoft\.com|visualstudio\.com)/i.test(serviceUrl)) {
+				console.error(`product.json: 'extensionsGallery.serviceUrl' points at a Microsoft marketplace (${serviceUrl})`);
+				errorCount++;
+			}
 		}
 
 		this.emit('data', file);

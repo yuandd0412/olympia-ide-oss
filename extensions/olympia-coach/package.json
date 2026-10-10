@@ -1,5 +1,5 @@
 {
-	"name": "olympia-coach",
+	"name": "coach",
 	"displayName": "Olympia AI 教练",
 	"description": "面向信息学奥赛的聊天教练：错因分析、思路提示、提交前检查。使用你在“管理语言模型”里配置的本地或自有密钥模型。",
 	"version": "0.1.0",
