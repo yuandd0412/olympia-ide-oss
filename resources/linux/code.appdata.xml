@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop">
+	<id>@@NAME@@.desktop</id>
+	<metadata_license>@@LICENSE@@</metadata_license>
+	<project_license>@@LICENSE@@</project_license>
+	<name>@@NAME_LONG@@</name>
+	<url type="homepage">https://olympia.dpdns.org</url>
+	<summary>Olympia IDE. 面向算法竞赛的代码编辑与训练环境。</summary>
+	<description>
+		<p>Olympia IDE 把题目导入、样例测试、对拍、比赛计时与 AI 教练装进一个编辑器，覆盖 OI 日常训练与赛时的完整流程。安装说明与文档见 https://olympia.dpdns.org</p>
+	</description>
+</component>

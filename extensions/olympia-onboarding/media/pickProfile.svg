@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 300" width="480" height="300" role="img" aria-label="选择评测机编译配置">
+	<rect width="480" height="300" fill="#16161a"/>
+	<rect x="64" y="44" width="352" height="212" rx="14" fill="#1f1f26" stroke="#3a3a46" stroke-width="2"/>
+	<rect x="88" y="72" width="180" height="11" rx="5" fill="#4a4a58"/>
+	<rect x="88" y="112" width="304" height="44" rx="9" fill="#243040" stroke="#6ec8f5" stroke-width="2"/>
+	<circle cx="112" cy="134" r="9" fill="none" stroke="#6ec8f5" stroke-width="3"/>
+	<circle cx="112" cy="134" r="4" fill="#6ec8f5"/>
+	<rect x="134" y="128" width="104" height="12" rx="6" fill="#9fd8f5"/>
+	<rect x="252" y="129" width="120" height="10" rx="5" fill="#4a6070"/>
+	<circle cx="112" cy="186" r="9" fill="none" stroke="#4a4a58" stroke-width="3"/>
+	<rect x="134" y="180" width="124" height="12" rx="6" fill="#5a5a68"/>
+	<rect x="272" y="181" width="100" height="10" rx="5" fill="#3a3a46"/>
+	<circle cx="112" cy="226" r="9" fill="none" stroke="#4a4a58" stroke-width="3"/>
+	<rect x="134" y="220" width="88" height="12" rx="6" fill="#5a5a68"/>
+	<rect x="236" y="221" width="116" height="10" rx="5" fill="#3a3a46"/>
+</svg>

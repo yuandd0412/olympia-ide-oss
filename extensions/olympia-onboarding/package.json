@@ -1,0 +1,295 @@
+{
+	"name": "onboarding",
+	"displayName": "Olympia 引导与竞赛工具",
+	"description": "Olympia IDE 内置引导：竞赛编译模式、环境自检、提交前体检、官网入口。",
+	"version": "0.1.0",
+	"publisher": "olympia",
+	"license": "GPL-3.0-or-later",
+	"engines": {
+		"vscode": "^1.140.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"capabilities": {
+		"virtualWorkspaces": true,
+		"untrustedWorkspaces": {
+			"supported": true
+		}
+	},
+	"activationEvents": [
+		"onStartupFinished"
+	],
+	"main": "./out/extension",
+	"scripts": {
+		"compile": "gulp compile-extension:olympia-onboarding"
+	},
+	"contributes": {
+		"commands": [
+			{
+				"command": "olympia.checkEnvironment",
+				"title": "环境自检：检测内置编译器",
+				"category": "Olympia"
+			},
+			{
+				"command": "olympia.openWebsite",
+				"title": "打开 Olympia 官网",
+				"category": "Olympia"
+			},
+			{
+				"command": "olympia.pickCompileProfile",
+				"title": "选择评测机编译配置",
+				"category": "Olympia"
+			},
+			{
+				"command": "olympia.preSubmitCheck",
+				"title": "提交前体检",
+				"category": "Olympia"
+			},
+			{
+				"command": "olympia.compile",
+				"title": "编译当前文件（按评测机参数）",
+				"category": "Olympia"
+			},
+			{
+				"command": "olympia.compileJudgeAccurate",
+				"title": "按评测机编译（强制 -O2）",
+				"category": "Olympia"
+			},
+			{
+				"command": "olympia.compileAndRun",
+				"title": "编译并运行（本地样例测试）",
+				"category": "Olympia"
+			}
+		],
+		"keybindings": [
+			{
+				"command": "olympia.compileAndRun",
+				"key": "f9",
+				"mac": "f9",
+				"when": "editorTextFocus"
+			},
+			{
+				"command": "olympia.compile",
+				"key": "shift+f9",
+				"mac": "shift+f9",
+				"when": "editorTextFocus"
+			},
+			{
+				"command": "olympia.compileJudgeAccurate",
+				"key": "ctrl+shift+f9",
+				"mac": "cmd+shift+f9",
+				"when": "editorTextFocus"
+			},
+			{
+				"command": "olympia.preSubmitCheck",
+				"key": "ctrl+alt+enter",
+				"mac": "cmd+alt+enter",
+				"when": "editorTextFocus"
+			},
+			{
+				"command": "olympia.checkEnvironment",
+				"key": "ctrl+alt+d",
+				"mac": "cmd+alt+d"
+			}
+		],
+		"startEntries": [
+			{
+				"id": "olympia.newContestProject",
+				"title": "新建竞赛工程...",
+				"description": "用内置模板创建标准 C++ 竞赛工程",
+				"command": "olympia.template.insert",
+				"category": "file"
+			},
+			{
+				"id": "olympia.checkEnvironmentEntry",
+				"title": "环境自检...",
+				"description": "检测编译器是否就绪，并对比评测机版本",
+				"command": "olympia.checkEnvironment",
+				"category": "file"
+			}
+		],
+		"walkthroughs": [
+			{
+				"id": "olympia.gettingStarted",
+				"title": "三分钟上手 Olympia IDE",
+				"description": "装完就能编译 C++、运行程序，不用手写 tasks.json。\n\n[访问 Olympia 官网](https://olympia.dpdns.org)",
+				"when": "!isWeb",
+				"steps": [
+					{
+						"id": "olympia.step.openFolder",
+						"title": "打开或新建你的工程目录",
+						"description": "所有竞赛代码建议放在一个独立的工程文件夹里，方便统一编译配置和模板管理。\n\n[打开文件夹](command:workbench.action.files.openFolder)",
+						"media": {
+							"altText": "工程目录里的源文件列表",
+							"markdown": "media/openFolder.svg"
+						},
+						"completionEvents": [
+							"onCommand:workbench.action.files.openFolder"
+						]
+					},
+					{
+						"id": "olympia.step.pickProfile",
+						"title": "选择评测机编译配置",
+						"description": "Olympia 内置了各评测机的真实编译参数。选一个预设，就不用自己拼 g++ 命令行了。\n\n[选择编译配置](command:olympia.pickCompileProfile)",
+						"media": {
+							"altText": "编译配置选择列表",
+							"markdown": "media/pickProfile.svg"
+						},
+						"completionEvents": [
+							"onCommand:olympia.pickCompileProfile"
+						]
+					},
+					{
+						"id": "olympia.step.checkEnv",
+						"title": "跑一次环境自检",
+						"description": "确认编译器就绪，并看看当前版本和目标评测机是否一致。\n\n[立即自检](command:olympia.checkEnvironment)",
+						"media": {
+							"altText": "环境自检结果列表",
+							"markdown": "media/checkEnv.svg"
+						},
+						"completionEvents": [
+							"onCommand:olympia.checkEnvironment"
+						]
+					},
+					{
+						"id": "olympia.step.website",
+						"title": "了解更多",
+						"description": "文档、下载与更新日志都在官网。\n\n[打开官网](https://olympia.dpdns.org)",
+						"media": {
+							"altText": "Olympia 官网",
+							"markdown": "media/website.svg"
+						},
+						"completionEvents": [
+							"onLink:https://olympia.dpdns.org"
+						]
+					}
+				]
+			},
+			{
+				"id": "olympia.compiler",
+				"title": "内置编译器与环境自检",
+				"description": "确认编译器就绪，并看清本机版本和评测机的差异。",
+				"when": "!isWeb",
+				"steps": [
+					{
+						"id": "olympia.compiler.check",
+						"title": "一键环境自检",
+						"description": "检测 g++ 是否可用、版本号是多少，以及和洛谷 / NOI 官方环境是否匹配。\n\n[立即自检](command:olympia.checkEnvironment)",
+						"media": {
+							"altText": "编译器版本检测结果",
+							"markdown": "media/compilerCheck.svg"
+						},
+						"completionEvents": [
+							"onCommand:olympia.checkEnvironment"
+						]
+					}
+				]
+			}
+		],
+		"configuration": {
+			"title": "Olympia",
+			"properties": {
+				"olympia.compiler.path": {
+					"type": "string",
+					"default": "",
+					"markdownDescription": "自定义 `g++` 可执行文件路径。留空则使用系统 PATH 中的 g++。"
+				},
+				"olympia.compiler.profile": {
+					"type": "string",
+					"enum": [
+						"luogu",
+						"noi",
+						"custom"
+					],
+					"enumDescriptions": [
+						"洛谷默认：GCC 15.1.0 / C++23，评测环境定义 ONLINE_JUDGE=luogu",
+						"NOI 官方：GCC 9.3.0 / C++14，符合 CCF NOI Linux 2.0 竞赛环境",
+						"自定义：由你自己指定编译参数"
+					],
+					"default": "luogu",
+					"markdownDescription": "竞赛编译配置。切换后按对应评测机的真实参数编译，避免「本地 AC、赛场 WA」。"
+				},
+				"olympia.compiler.customFlags": {
+					"type": "string",
+					"default": "",
+					"markdownDescription": "`olympia.compiler.profile` 为 `custom` 时使用的额外编译参数。"
+				},
+				"olympia.compiler.optimization": {
+					"type": "string",
+					"enum": [
+						"none",
+						"-O2",
+						"-O3"
+					],
+					"enumDescriptions": [
+						"不优化（调试用）。评测机按题目设置可能开 -O2，本地保持关闭便于单步调试",
+						"-O2：洛谷标准优化级别，绝大多数题目的评测环境",
+						"-O3：更激进的优化，仅在确实需要时开启"
+					],
+					"default": "none",
+					"markdownDescription": "优化级别。**本地调试建议保持 `none`**——洛谷改过 GCC，源码里用 `#pragma GCC optimize` 或 `__attribute__((optimize))` 打开优化会直接编译失败。"
+				},
+				"olympia.compiler.showCompileCommand": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "编译时把完整的 `g++` 命令行打印到终端，方便对照评测机参数排查。"
+				},
+				"olympia.check.enabled": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "启用提交前体检。保存 `.cpp` / `.c` / `.h` 时扫描常见提交雷区并给出提示。"
+				},
+				"olympia.check.onSave": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "保存时自动运行体检。关闭后只能手动执行「提交前体检」命令。"
+				},
+				"olympia.check.rules.crlf": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "检查行尾符：评测机是 Linux，CRLF 行尾可能直接导致 Presentation Error。"
+				},
+				"olympia.check.rules.pragmaOptimize": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "检查 `#pragma GCC optimize` / `__attribute__((optimize))`——带优化属性的代码在评测机上可能编译失败。"
+				},
+				"olympia.check.rules.onlineJudge": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "检查是否用 `ONLINE_JUDGE` 宏区分评测环境（洛谷为 `luogu`）。"
+				},
+				"olympia.check.rules.memoryLeak": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "检查 `new` / `malloc` 是否有对应的 `delete` / `free`——评测机按峰值内存计分，泄漏会 MLE。"
+				},
+				"olympia.check.rules.reservedWord": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "检查 Linux 保留字（`asm`、`bool`、`true`、`false` 等）被误用作变量名的问题。"
+				},
+				"olympia.check.rules.freopen": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "检查本地调试用的 `freopen` 是否会在评测机上吞掉输入。"
+				},
+				"olympia.startPage.enabled": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "启动时显示 Olympia 起始页。"
+				},
+				"olympia.startPage.recentContest": {
+					"type": "string",
+					"default": "",
+					"markdownDescription": "最近一次比赛的名称，用于在起始页提示比赛倒计时。留空则不提示。"
+				}
+			}
+		}
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/yuandd0412/olympia-ide"
+	}
+}

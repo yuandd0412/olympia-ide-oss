@@ -1,0 +1,17 @@
+Package: @@NAME@@
+Version: @@VERSION@@
+Section: devel
+Depends: @@DEPENDS@@
+Recommends: @@RECOMMENDS@@
+Priority: optional
+Architecture: @@ARCHITECTURE@@
+Maintainer: Olympia IDE <dev.oler.ide@olympia.dpdns.org>
+Homepage: https://olympia.dpdns.org/
+Installed-Size: @@INSTALLEDSIZE@@
+Provides: visual-studio-@@NAME@@
+Conflicts: visual-studio-@@NAME@@
+Replaces: visual-studio-@@NAME@@
+Description: 面向算法竞赛的代码编辑与训练环境
+ Olympia IDE 把题目导入、样例测试、对拍、比赛计时与 AI 教练装进一个
+ 编辑器，覆盖 OI 日常训练与赛时的完整流程。安装说明与文档见
+ https://olympia.dpdns.org

@@ -1,0 +1,14 @@
+{
+	"displayName": "媒体预览",
+	"description": "为图像、音频和视频提供 Olympia 的内置预览",
+	"customEditor.audioPreview.displayName": "音频预览",
+	"customEditor.imagePreview.displayName": "图像预览",
+	"customEditor.videoPreview.displayName": "视频预览",
+	"videoPreviewerAutoPlay": "开始自动静音播放视频。",
+	"videoPreviewerLoop": "自动再次循环播放视频。",
+	"command.zoomIn": "放大",
+	"command.zoomOut": "缩小",
+	"command.copyImage": "复制",
+	"command.reopenAsPreview": "作为图像预览重新打开",
+	"command.reopenAsText": "作为源文本重新打开"
+}

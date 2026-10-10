@@ -1,0 +1,186 @@
+{
+	"nameShort": "Olympia",
+	"nameLong": "Olympia IDE",
+	"applicationName": "olympia",
+	"dataFolderName": ".olympia-ide",
+	"sharedDataFolderName": ".olympia-ide-shared",
+	"win32MutexName": "olympia",
+	"licenseName": "GPL-3.0-or-later",
+	"licenseUrl": "https://github.com/yuandd0412/olympia-ide/blob/main/LICENSE",
+	"serverLicenseUrl": "https://github.com/yuandd0412/olympia-ide/blob/main/LICENSE",
+	"serverGreeting": [],
+	"serverLicense": [],
+	"serverLicensePrompt": "",
+	"serverApplicationName": "olympia-server",
+	"serverDataFolderName": ".olympia-server",
+	"tunnelApplicationName": "olympia-tunnel",
+	"win32DirName": "Olympia IDE",
+	"win32NameVersion": "Olympia IDE",
+	"win32RegValueName": "OlympiaIDE",
+	"win32x64AppId": "{{92A230A6-89AD-4887-92F7-91F5257ECB38}",
+	"win32arm64AppId": "{{8E09D57A-123B-4EE5-8E3B-F5C269967B7A}",
+	"win32x64UserAppId": "{{5E32210D-FEB0-426D-99B2-9E5BF16E44B5}",
+	"win32arm64UserAppId": "{{867C3D1C-1EF1-4D4F-AA5E-D3734607DEEF}",
+	"win32AppUserModelId": "dev.oler.ide",
+	"win32ShellNameShort": "O&lympia IDE",
+	"win32TunnelServiceMutex": "olympia-tunnelservice",
+	"win32TunnelMutex": "olympia-tunnel",
+	"darwinBundleIdentifier": "dev.oler.ide",
+	"darwinProfileUUID": "47827DD9-4734-49A0-AF80-7E19B11495CC",
+	"darwinProfilePayloadUUID": "CF808BE7-53F3-46C6-A7E2-7EDB98A5E959",
+	"linuxDesktopName": "Olympia IDE",
+	"linuxIconName": "olympia",
+	"licenseFileName": "LICENSE",
+	"reportIssueUrl": "https://github.com/yuandd0412/olympia-ide/issues/new",
+	"olympiaVersion": "0.1.0",
+	"nodejsArtifactFeed": "",
+	"electronArtifactFeed": "",
+	"urlProtocol": "olympia",
+	"agentsTelemetryAppName": "olympia",
+	"webviewContentExternalBaseUrlTemplate": "https://{{uuid}}.vscode-cdn.net/insider/ef65ac1ba57f57f2a3961bfe94aa20481caca4c6/out/vs/workbench/contrib/webview/browser/pre/",
+	"defaultChatAgent": {
+		"extensionId": "olympia.olympia-coach",
+		"chatExtensionId": "olympia.olympia-coach",
+		"chatExtensionOutputId": "olympia.olympia-coach.Olympia AI Coach.log",
+		"chatExtensionOutputExtensionStateCommand": "olympia.coach.debug.extensionState",
+		"documentationUrl": "https://olympia.dpdns.org/docs/ai",
+		"termsStatementUrl": "https://olympia.dpdns.org/terms",
+		"privacyStatementUrl": "https://olympia.dpdns.org/privacy",
+		"skusDocumentationUrl": "https://olympia.dpdns.org/docs/ai",
+		"optimizeUsageDocumentationUrl": "https://olympia.dpdns.org/docs/ai",
+		"publicCodeMatchesUrl": "https://olympia.dpdns.org/docs/ai",
+		"managePlanUrl": "https://olympia.dpdns.org/docs/ai",
+		"upgradePlanUrl": "https://olympia.dpdns.org/docs/ai",
+		"signUpUrl": "https://olympia.dpdns.org/download",
+		"provider": {
+			"default": {
+				"id": "olympia",
+				"name": "Olympia"
+			},
+			"enterprise": {
+				"id": "olympia-enterprise",
+				"name": "Olympia Enterprise"
+			},
+			"google": {
+				"id": "google",
+				"name": "Google"
+			},
+			"apple": {
+				"id": "apple",
+				"name": "Apple"
+			},
+			"microsoft": {
+				"id": "microsoft",
+				"name": "Microsoft"
+			}
+		},
+		"providerExtensionId": "olympia.olympia-coach",
+		"providerUriSetting": "olympia.ai.baseUrl",
+		"providerScopes": [],
+		"entitlementUrl": "",
+		"entitlementSignupLimitedUrl": "",
+		"chatQuotaExceededContext": "olympia.coach.quotaExceeded",
+		"completionsQuotaExceededContext": "olympia.coach.completions.quotaExceeded",
+		"walkthroughCommand": "olympia.coach.open.walkthrough",
+		"completionsMenuCommand": "olympia.coach.toggleStatusMenu",
+		"chatRefreshTokenCommand": "olympia.coach.refreshToken",
+		"generateCommitMessageCommand": "",
+		"resolveMergeConflictsCommand": "",
+		"completionsAdvancedSetting": "olympia.ai.advanced",
+		"completionsEnablementSetting": "olympia.ai.enable",
+		"nextEditSuggestionsSetting": "olympia.ai.nextEditSuggestions.enabled",
+		"tokenEntitlementUrl": "",
+		"mcpRegistryDataUrl": "",
+		"mcpConnectorsUrl": "",
+		"managedSettingsUrl": ""
+	},
+	"extensionsGallery": {
+		"serviceUrl": "https://open-vsx.org/vscode/gallery",
+		"itemUrl": "https://open-vsx.org/vscode/item",
+		"resourceUrlTemplate": "https://open-vsx.org/vscode/unpkg/{publisher}/{name}/{version}/{path}",
+		"extensionUrlTemplate": "https://open-vsx.org/vscode/gallery/{publisher}/{name}/latest",
+		"controlUrl": "",
+		"nlsBaseUrl": ""
+	},
+	"linkProtectionTrustedDomains": [
+		"https://open-vsx.org"
+	],
+	"builtInExtensions": [],
+	"onboardingKeymaps": [
+		{
+			"id": "vscode",
+			"label": "默认键位",
+			"description": "默认键位映射"
+		},
+		{
+			"id": "sublime",
+			"label": "Sublime Text",
+			"extensionId": "ms-vscode.sublime-keybindings",
+			"description": "Sublime Text 键位映射"
+		},
+		{
+			"id": "intellij",
+			"label": "IntelliJ / JetBrains",
+			"extensionId": "k--kato.intellij-idea-keybindings",
+			"description": "IntelliJ IDEA 键位映射"
+		},
+		{
+			"id": "vim",
+			"label": "Vim",
+			"extensionId": "vscodevim.vim",
+			"description": "Vim 模态编辑"
+		},
+		{
+			"id": "eclipse",
+			"label": "Eclipse",
+			"extensionId": "alphabotsec.vscode-eclipse-keybindings",
+			"description": "Eclipse 键位映射"
+		},
+		{
+			"id": "notepadpp",
+			"label": "Notepad++",
+			"extensionId": "ms-vscode.notepadplusplus-keybindings",
+			"description": "Notepad++ 键位映射"
+		}
+	],
+	"onboardingThemes": [
+		{
+			"id": "dark-2026",
+			"label": "Dark 2026",
+			"themeId": "Dark 2026",
+			"type": "dark"
+		},
+		{
+			"id": "hc-dark",
+			"label": "Dark High Contrast",
+			"themeId": "Default High Contrast",
+			"type": "hcDark"
+		},
+		{
+			"id": "solarized-dark",
+			"label": "Solarized Dark",
+			"themeId": "Solarized Dark",
+			"type": "dark"
+		},
+		{
+			"id": "light-2026",
+			"label": "Light 2026",
+			"themeId": "Light 2026",
+			"type": "light"
+		},
+		{
+			"id": "hc-light",
+			"label": "Light High Contrast",
+			"themeId": "Default High Contrast Light",
+			"type": "hcLight"
+		},
+		{
+			"id": "solarized-light",
+			"label": "Solarized Light",
+			"themeId": "Solarized Light",
+			"type": "light"
+		}
+	],
+	"builtInExtensionsEnabledWithAutoUpdates": [],
+	"sessionsWindowAllowedExtensions": []
+}

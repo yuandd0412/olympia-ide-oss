@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+	<!-- Olympia IDE - Verdict Ring. Single source of truth for the titlebar app
+	     icon, Welcome page tab, banner and update tooltip, all of which reference
+	     this file via CSS background-image.
+
+	     Geometry is the small-size variant: a closed, heavy ring with a fat check.
+	     The gapped ring from resources/brand/logo.svg collapses into noise once
+	     the whole mark is rasterised into 16 CSS pixels. -->
+	<defs>
+		<linearGradient id="olympiaTile" x1="0" y1="0" x2="0" y2="1">
+			<stop offset="0" stop-color="#303036"/>
+			<stop offset="1" stop-color="#16161a"/>
+		</linearGradient>
+		<linearGradient id="olympiaRing" x1="0" y1="0" x2="1" y2="1">
+			<stop offset="0" stop-color="#6ec8f5"/>
+			<stop offset="1" stop-color="#0072c6"/>
+		</linearGradient>
+		<linearGradient id="olympiaCheck" x1="0" y1="0" x2="0" y2="1">
+			<stop offset="0" stop-color="#5ce68c"/>
+			<stop offset="1" stop-color="#1fb862"/>
+		</linearGradient>
+	</defs>
+	<rect x="44" y="44" width="936" height="936" rx="186" fill="url(#olympiaTile)"/>
+	<rect x="44" y="44" width="936" height="936" rx="186" fill="none" stroke="#4a4a55" stroke-width="9"/>
+	<path d="M 523 196 A 316 316 0 1 1 363.6 233" fill="none" stroke="url(#olympiaRing)" stroke-width="152" stroke-linecap="round"/>
+	<path d="M 372 520 L 482 662 L 692 410" fill="none" stroke="url(#olympiaCheck)" stroke-width="134" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

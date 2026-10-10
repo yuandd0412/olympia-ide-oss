@@ -1,0 +1,6 @@
+Template: @@NAME@@/add-update-repo
+Type: boolean
+Default: true
+Description: 为 Olympia IDE 添加更新源？
+ The installer would like to add the Olympia repository and signing
+ key so that Olympia IDE can be updated through apt.

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 300" width="480" height="300" role="img" aria-label="打开工程目录">
+	<rect width="480" height="300" fill="#16161a"/>
+	<rect x="40" y="52" width="400" height="200" rx="14" fill="#1f1f26" stroke="#3a3a46" stroke-width="2"/>
+	<rect x="66" y="82" width="34" height="26" rx="5" fill="#6ec8f5"/>
+	<rect x="78" y="76" width="20" height="12" rx="4" fill="#6ec8f5"/>
+	<rect x="66" y="128" width="170" height="10" rx="5" fill="#4a4a58"/>
+	<rect x="66" y="152" width="128" height="10" rx="5" fill="#3a3a46"/>
+	<rect x="66" y="176" width="206" height="10" rx="5" fill="#3a3a46"/>
+	<rect x="66" y="200" width="96" height="10" rx="5" fill="#3a3a46"/>
+	<rect x="66" y="224" width="146" height="10" rx="5" fill="#3a3a46"/>
+	<circle cx="400" cy="200" r="46" fill="none" stroke="#1fb862" stroke-width="12"/>
+	<path d="M 378 200 L 394 218 L 424 182" fill="none" stroke="#5ce68c" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

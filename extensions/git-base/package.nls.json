@@ -1,0 +1,5 @@
+{
+	"displayName": "Git 基础",
+	"description": "Git 静态贡献和选取器。",
+	"command.api.getRemoteSources": "获取远程源"
+}

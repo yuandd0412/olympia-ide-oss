@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 300" width="480" height="300" role="img" aria-label="环境自检结果">
+	<rect width="480" height="300" fill="#16161a"/>
+	<rect x="56" y="46" width="368" height="208" rx="14" fill="#1f1f26" stroke="#3a3a46" stroke-width="2"/>
+	<rect x="84" y="76" width="200" height="11" rx="5" fill="#4a4a58"/>
+	<circle cx="98" cy="120" r="10" fill="none" stroke="#1fb862" stroke-width="4"/>
+	<path d="M 92 120 L 97 126 L 105 114" fill="none" stroke="#5ce68c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+	<rect x="122" y="114" width="180" height="12" rx="6" fill="#7fbf9a"/>
+	<rect x="320" y="114" width="76" height="12" rx="6" fill="#3f6b52"/>
+	<circle cx="98" cy="164" r="10" fill="none" stroke="#e0a33e" stroke-width="4"/>
+	<path d="M 98 158 L 98 165 M 98 169 L 98 170" fill="none" stroke="#e0a33e" stroke-width="4" stroke-linecap="round"/>
+	<rect x="122" y="158" width="212" height="12" rx="6" fill="#9a865f"/>
+	<rect x="350" y="158" width="46" height="12" rx="6" fill="#6b5a33"/>
+	<circle cx="98" cy="208" r="10" fill="none" stroke="#1fb862" stroke-width="4"/>
+	<path d="M 92 208 L 97 214 L 105 202" fill="none" stroke="#5ce68c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+	<rect x="122" y="202" width="164" height="12" rx="6" fill="#7fbf9a"/>
+	<rect x="300" y="202" width="96" height="12" rx="6" fill="#3f6b52"/>
+</svg>

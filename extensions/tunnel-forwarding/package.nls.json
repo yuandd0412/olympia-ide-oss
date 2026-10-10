@@ -1,0 +1,7 @@
+{
+	"displayName": "本地隧道端口转发",
+	"description": "允许通过 Internet 访问转发本地端口。",
+	"category": "端口转发",
+	"command.showLog": "显示日志",
+	"command.restart": "重新启动转发系统"
+}

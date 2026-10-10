@@ -1,0 +1,135 @@
+{
+	"name": "contest",
+	"displayName": "Olympia 竞赛助手",
+	"description": "题面拉取（洛谷 / Codeforces / AtCoder）、赛制模板、样例用例管理。",
+	"version": "0.1.0",
+	"publisher": "olympia",
+	"license": "GPL-3.0-or-later",
+	"engines": {
+		"vscode": "^1.140.0"
+	},
+	"categories": [
+		"Other",
+		"Education"
+	],
+	"capabilities": {
+		"virtualWorkspaces": true,
+		"untrustedWorkspaces": {
+			"supported": true
+		}
+	},
+	"activationEvents": [
+		"onStartupFinished"
+	],
+	"main": "./out/extension",
+	"scripts": {
+		"compile": "gulp compile-extension:olympia-contest"
+	},
+	"contributes": {
+		"commands": [
+			{
+				"command": "olympia.problem.pull",
+				"title": "拉取题面...",
+				"category": "Olympia 竞赛"
+			},
+			{
+				"command": "olympia.problem.pullFromClipboard",
+				"title": "从剪贴板题号拉取题面",
+				"category": "Olympia 竞赛"
+			},
+			{
+				"command": "olympia.template.insert",
+				"title": "插入赛制模板...",
+				"category": "Olympia 竞赛"
+			},
+			{
+				"command": "olympia.problem.openStatement",
+				"title": "打开已缓存的题面",
+				"category": "Olympia 竞赛"
+			}
+		],
+		"menus": {
+			"commandPalette": [
+				{
+					"command": "olympia.problem.pull",
+					"when": "true"
+				},
+				{
+					"command": "olympia.problem.pullFromClipboard",
+					"when": "true"
+				},
+				{
+					"command": "olympia.template.insert",
+					"when": "editorLangId == cpp"
+				},
+				{
+					"command": "olympia.problem.openStatement",
+					"when": "true"
+				}
+			],
+			"explorer/context": [
+				{
+					"command": "olympia.problem.pull",
+					"group": "7_modification@1"
+				}
+			],
+			"editor/title/context": [
+				{
+					"command": "olympia.template.insert",
+					"when": "resourceLangId == cpp",
+					"group": "1_olympia@1"
+				}
+			]
+		},
+		"keybindings": [
+			{
+				"command": "olympia.problem.pull",
+				"key": "ctrl+alt+p",
+				"mac": "cmd+alt+p"
+			},
+			{
+				"command": "olympia.problem.pullFromClipboard",
+				"key": "ctrl+alt+v",
+				"mac": "cmd+alt+v",
+				"when": "editorTextFocus"
+			},
+			{
+				"command": "olympia.template.insert",
+				"key": "ctrl+alt+t",
+				"mac": "cmd+alt+t",
+				"when": "editorTextFocus"
+			},
+			{
+				"command": "olympia.problem.openStatement",
+				"key": "ctrl+alt+o",
+				"mac": "cmd+alt+o",
+				"when": "editorTextFocus"
+			}
+		],
+		"configuration": {
+			"title": "Olympia 竞赛助手",
+			"properties": {
+				"olympia.problem.problemsDir": {
+					"type": "string",
+					"default": ".olympia/problems",
+					"description": "拉取的题面保存目录（相对于工作区根目录）。"
+				},
+				"olympia.problem.templateOnPull": {
+					"type": "boolean",
+					"default": false,
+					"description": "拉取题面后是否自动生成 ACM 赛制的 main.cpp。"
+				},
+				"olympia.problem.requestTimeoutMs": {
+					"type": "number",
+					"default": 15000,
+					"description": "拉取题面时的网络请求超时时间（毫秒）。"
+				},
+				"olympia.problem.cfMetadata": {
+					"type": "boolean",
+					"default": false,
+					"description": "拉取 Codeforces 题目时是否额外查询标题、标签与难度。Codeforces 的题面网页有人机校验无法自动抓取，此选项只能补齐元数据，且需要下载约 10 MB 的题目表，因此默认关闭。"
+				}
+			}
+		}
+	}
+}

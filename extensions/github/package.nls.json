@@ -1,0 +1,16 @@
+{
+	"displayName": "GitHub",
+	"description": "适用于 Olympia 的 GitHub 功能",
+	"command.copyVscodeDevLink": "复制 vscode.dev 链接",
+	"command.publish": "发布到 GitHub",
+	"command.openOnGitHub": "在 GitHub 上打开",
+	"command.openOnVscodeDev": "在 vscode.dev 中打开",
+	"command.createPullRequest": "创建 PR",
+	"command.openPullRequest": "打开 PR",
+	"config.branchProtection": "控制是否查询 GitHub 存储库的存储库规则",
+	"config.gitAuthentication": "控制是否在 Olympia 中为 git 命令启用自动 GitHub 身份验证。",
+	"config.gitProtocol": "控制用于克隆 GitHub 仓库的协议",
+	"config.showAvatar": "控制是否以各种悬停方式显示提交作者的 GitHub 虚拟形象 (，例如 Git 追溯、日程表、源代码管理图等 )",
+	"welcome.publishFolder": "可以直接将此文件夹发布到 GitHub 仓库。发布后，你将有权访问由 Git 和 GitHub 提供支持的源代码管理功能。\r\n[$(github) 发布到 GitHub](command:github.publish)",
+	"welcome.publishWorkspaceFolder": "可以直接将工作区文件夹发布到 GitHub 仓库。发布后，你将有权访问由 Git 和 GitHub 提供支持的源代码管理功能。\r\n[$(github) 发布到 GitHub](command:github.publish)"
+}
