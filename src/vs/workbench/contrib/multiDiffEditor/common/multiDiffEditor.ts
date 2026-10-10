@@ -33,6 +33,7 @@ export function observableWorkbenchMultiDiffEditorVariant(
 
 Registry.as<IConfigurationRegistry>(Extensions.Configuration).registerConfiguration({
 	id: 'multiDiffEditor',
+	// allow-any-unicode-next-line
 	title: localize('multiDiffEditorConfigurationTitle', "多差异编辑器"),
 	type: 'object',
 	properties: {
@@ -40,11 +41,14 @@ Registry.as<IConfigurationRegistry>(Extensions.Configuration).registerConfigurat
 			type: 'string',
 			enum: ['cards', 'noCards'],
 			enumDescriptions: [
-				localize('multiDiffEditor.experimental.variant.cards', "Use the compact card-based variant."),
-				localize('multiDiffEditor.experimental.variant.noCards', "Use the compact variant without cards."),
+				// allow-any-unicode-next-line
+				localize('multiDiffEditor.experimental.variant.cards', "使用基于卡片的紧凑变体。"),
+				// allow-any-unicode-next-line
+				localize('multiDiffEditor.experimental.variant.noCards', "使用不带卡片的紧凑变体。"),
 			],
 			default: defaultMultiDiffEditorExperimentalVariant,
-			description: localize('multiDiffEditor.experimental.variant', "Controls the experimental variant of the multi diff editor."),
+			// allow-any-unicode-next-line
+			description: localize('multiDiffEditor.experimental.variant', "控制多重差异编辑器的实验性变体。"),
 			scope: ConfigurationScope.WINDOW,
 			tags: ['experimental'],
 			experiment: { mode: 'auto' },

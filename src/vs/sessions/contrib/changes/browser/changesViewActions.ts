@@ -45,6 +45,7 @@ import { isChangesFileResource } from './changesViewRenderer.js';
 
 const openChangesViewActionOptions: IAction2Options = {
 	id: 'workbench.action.agentSessions.openChangesView',
+	// allow-any-unicode-next-line
 	title: localize2('openChangesView', "更改"),
 	icon: Codicon.diffMultiple,
 	f1: false,
@@ -105,6 +106,7 @@ class OpenPullRequestAction extends Action2 {
 	constructor() {
 		super({
 			id: OpenPullRequestAction.ID,
+			// allow-any-unicode-next-line
 			title: localize2('openPullRequest', "打开拉取请求"),
 			icon: Codicon.gitPullRequest,
 			f1: false,
@@ -385,6 +387,7 @@ class SetChangesListViewModeAction extends Action2 {
 	constructor() {
 		super({
 			id: SetChangesListViewModeAction.ID,
+			// allow-any-unicode-next-line
 			title: localize2('agentSessions.setChangesListViewMode', "以列表显示"),
 			icon: Codicon.listFlat,
 			f1: false,
@@ -414,6 +417,7 @@ class SetChangesTreeViewModeAction extends Action2 {
 	constructor() {
 		super({
 			id: SetChangesTreeViewModeAction.ID,
+			// allow-any-unicode-next-line
 			title: localize2('agentSessions.setChangesTreeViewMode', "以树状显示"),
 			icon: Codicon.listTree,
 			f1: false,
@@ -443,6 +447,7 @@ class CollapseAllSessionChangesDiffsAction extends Action2 {
 	constructor() {
 		super({
 			id: CollapseAllSessionChangesDiffsAction.ID,
+			// allow-any-unicode-next-line
 			title: localize2('agentSessions.collapseAllDiffs', "折叠所有差异"),
 			icon: Codicon.collapseAll,
 			f1: false,
@@ -473,6 +478,7 @@ class ExpandAllSessionChangesDiffsAction extends Action2 {
 	constructor() {
 		super({
 			id: ExpandAllSessionChangesDiffsAction.ID,
+			// allow-any-unicode-next-line
 			title: localize2('agentSessions.expandAllDiffs', "展开所有差异"),
 			icon: Codicon.expandAll,
 			f1: false,
@@ -506,14 +512,16 @@ registerAction2(ExpandAllSessionChangesDiffsAction);
 
 MenuRegistry.appendMenuItem(Menus.SessionsEditorHeaderLayout, {
 	submenu: Menus.SessionsDiffEditorView,
-	title: localize('diffView', "Diff View"),
+	// allow-any-unicode-next-line
+	title: localize('diffView', "差异视图"),
 	group: 'secondary/1_diff',
 	order: 20,
 	when: singlePaneDiffEditorTitleVisible,
 });
 MenuRegistry.appendMenuItem(MenuId.EditorTitle, {
 	submenu: Menus.SessionsDiffEditorView,
-	title: localize('diffView', "Diff View"),
+	// allow-any-unicode-next-line
+	title: localize('diffView', "差异视图"),
 	group: '1_diff',
 	order: 10,
 	when: ContextKeyExpr.and(agentsDiffEditorActive, SinglePaneLayoutEnabledContext.negate()),
@@ -521,6 +529,7 @@ MenuRegistry.appendMenuItem(MenuId.EditorTitle, {
 MenuRegistry.appendMenuItem(Menus.SessionsDiffEditorView, {
 	command: {
 		id: SET_DIFF_VIEW_MODE_INLINE,
+		// allow-any-unicode-next-line
 		title: localize('diffView.inline', "内联"),
 		toggled: SessionsDiffViewModeContext.isEqualTo('inline'),
 	},
@@ -530,6 +539,7 @@ MenuRegistry.appendMenuItem(Menus.SessionsDiffEditorView, {
 MenuRegistry.appendMenuItem(Menus.SessionsDiffEditorView, {
 	command: {
 		id: SET_DIFF_VIEW_MODE_SIDE_BY_SIDE,
+		// allow-any-unicode-next-line
 		title: localize('diffView.sideBySide', "并肩协作"),
 		toggled: SessionsDiffViewModeContext.isEqualTo('sideBySide'),
 	},
@@ -537,8 +547,10 @@ MenuRegistry.appendMenuItem(Menus.SessionsDiffEditorView, {
 	order: 2,
 });
 for (const [title, when] of [
-	[localize('diffView.automaticSideBySide', "Automatic (Currently Side by Side)"), EditorContextKeys.diffEditorAutomaticRenderSideBySide],
-	[localize('diffView.automaticInline', "Automatic (Currently Inline)"), EditorContextKeys.diffEditorAutomaticRenderSideBySide.toNegated()],
+	// allow-any-unicode-next-line
+	[localize('diffView.automaticSideBySide', "自动（当前为并排）"), EditorContextKeys.diffEditorAutomaticRenderSideBySide],
+	// allow-any-unicode-next-line
+	[localize('diffView.automaticInline', "自动（当前为内联）"), EditorContextKeys.diffEditorAutomaticRenderSideBySide.toNegated()],
 ] as const) {
 	MenuRegistry.appendMenuItem(Menus.SessionsDiffEditorView, {
 		command: {
@@ -557,7 +569,8 @@ for (const [title, when] of [
 MenuRegistry.appendMenuItem(Menus.SessionsDiffEditorView, {
 	command: {
 		id: DIFF_VIEW_MODE_INLINE_TEMPORARY,
-		title: localize('diffView.inlineTemporary', "Inline (Temporary)"),
+		// allow-any-unicode-next-line
+		title: localize('diffView.inlineTemporary', "内联（临时）"),
 		toggled: EditorContextKeys.diffEditorTemporaryInlineMode,
 		precondition: ContextKeyExpr.false(),
 	},
@@ -571,6 +584,7 @@ MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 	command: {
 		id: TOGGLE_DIFF_SIDE_BY_SIDE,
 		title: localize2('togglePreferredDiffView', "Toggle Preferred Diff View"),
+		// allow-any-unicode-next-line
 		category: localize2('changes', "更改"),
 	},
 	when: agentsDiffEditorActive
@@ -582,6 +596,7 @@ class OpenChangesAction extends Action2 {
 	constructor() {
 		super({
 			id: OpenChangesAction.ID,
+			// allow-any-unicode-next-line
 			title: localize2('openChanges', "打开更改"),
 			icon: Codicon.gitCompare,
 			f1: false
@@ -615,6 +630,7 @@ class OpenFileAction extends Action2 {
 	constructor() {
 		super({
 			id: OpenFileAction.ID,
+			// allow-any-unicode-next-line
 			title: localize2('openFile', "打开文件"),
 			icon: Codicon.goToFile,
 			f1: false,
@@ -638,6 +654,7 @@ class OpenFileAction extends Action2 {
 					order: 1,
 					alt: {
 						id: OpenChangesAction.ID,
+						// allow-any-unicode-next-line
 						title: localize2('openChanges', "打开更改"),
 						icon: Codicon.gitCompare,
 					},

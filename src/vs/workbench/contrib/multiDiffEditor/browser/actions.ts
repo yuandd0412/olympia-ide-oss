@@ -29,7 +29,8 @@ import { IWorkbenchEnvironmentService } from '../../../services/environment/comm
 
 MenuRegistry.appendMenuItem(MenuId.EditorTitle, {
 	submenu: MenuId.DiffEditorViewSubmenu,
-	title: localize('diffView', "Diff View"),
+	// allow-any-unicode-next-line
+	title: localize('diffView', "差异视图"),
 	group: '1_diff',
 	order: 10,
 	when: ContextKeyExpr.and(ActiveEditorContext.isEqualTo(MultiDiffEditor.ID), IsSessionsWindowContext.toNegated()),
@@ -39,6 +40,7 @@ export class GoToFileAction extends Action2 {
 	constructor() {
 		super({
 			id: 'multiDiffEditor.goToFile',
+			// allow-any-unicode-next-line
 			title: localize2('goToFile', "打开文件"),
 			icon: Codicon.goToFile,
 			precondition: ActiveEditorContext.isEqualTo(MultiDiffEditor.ID),
@@ -85,7 +87,8 @@ export class GoToFileAction extends Action2 {
 export class OpenMultiDiffEditorLayoutDebugAction extends Action2 {
 
 	static readonly ID = 'multiDiffEditor.openLayoutDebug';
-	static readonly TITLE = localize2('openMultiDiffEditorLayoutDebug', 'Open Multi Diff Editor Layout Debug State');
+	// allow-any-unicode-next-line
+	static readonly TITLE = localize2('openMultiDiffEditorLayoutDebug', "打开多重差异编辑器的布局调试状态");
 
 	constructor() {
 		super({
@@ -129,6 +132,7 @@ export class GoToNextChangeAction extends Action2 {
 	constructor() {
 		super({
 			id: 'multiDiffEditor.goToNextChange',
+			// allow-any-unicode-next-line
 			title: localize2('goToNextChange', "转到下一处改动"),
 			icon: Codicon.arrowDown,
 			precondition: ContextKeyExpr.equals('activeEditor', MultiDiffEditor.ID),
@@ -163,6 +167,7 @@ export class GoToPreviousChangeAction extends Action2 {
 	constructor() {
 		super({
 			id: 'multiDiffEditor.goToPreviousChange',
+			// allow-any-unicode-next-line
 			title: localize2('goToPreviousChange', "转到上一处改动"),
 			icon: Codicon.arrowUp,
 			precondition: ContextKeyExpr.equals('activeEditor', MultiDiffEditor.ID),
@@ -197,6 +202,7 @@ export class CollapseAllAction extends Action2 {
 	constructor() {
 		super({
 			id: 'multiDiffEditor.collapseAll',
+			// allow-any-unicode-next-line
 			title: localize2('collapseAllDiffs', "折叠所有差异"),
 			icon: Codicon.collapseAll,
 			precondition: ContextKeyExpr.and(ContextKeyExpr.equals('activeEditor', MultiDiffEditor.ID), ContextKeyExpr.not('multiDiffEditorAllCollapsed')),
@@ -246,6 +252,7 @@ export class ExpandAllAction extends Action2 {
 	constructor() {
 		super({
 			id: 'multiDiffEditor.expandAll',
+			// allow-any-unicode-next-line
 			title: localize2('ExpandAllDiffs', "展开所有差异"),
 			icon: Codicon.expandAll,
 			precondition: ContextKeyExpr.and(ContextKeyExpr.equals('activeEditor', MultiDiffEditor.ID), ContextKeyExpr.has('multiDiffEditorAllCollapsed')),

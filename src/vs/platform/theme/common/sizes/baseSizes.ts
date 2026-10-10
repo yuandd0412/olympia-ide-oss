@@ -11,20 +11,26 @@ import { registerSize, sizeForAllThemes } from '../sizeUtils.js';
 /** @deprecated Use {@link fontSizeBody1} instead. */
 export const bodyFontSize = registerSize('bodyFontSize',
 	sizeForAllThemes(13, 'px'),
+	// allow-any-unicode-next-line
 	nls.localize('bodyFontSize', "基础字号。如果未由组件替代，则使用此大小。"),
-	nls.localize('bodyFontSize.deprecated', "Deprecated: use `fontSize.body1` instead."));
+	// allow-any-unicode-next-line
+	nls.localize('bodyFontSize.deprecated', "已弃用：请改用 `fontSize.body1`。"));
 
 /** @deprecated Use {@link fontSizeLabel1} instead. */
 export const bodyFontSizeSmall = registerSize('bodyFontSize.small',
 	sizeForAllThemes(12, 'px'),
+	// allow-any-unicode-next-line
 	nls.localize('bodyFontSizeSmall', "辅助内容的小字号。"),
-	nls.localize('bodyFontSizeSmall.deprecated', "Deprecated: use `fontSize.label1` instead."));
+	// allow-any-unicode-next-line
+	nls.localize('bodyFontSizeSmall.deprecated', "已弃用：请改用 `fontSize.label1`。"));
 
 /** @deprecated Use {@link fontSizeBody2} instead. */
 export const bodyFontSizeXSmall = registerSize('bodyFontSize.xSmall',
 	sizeForAllThemes(11, 'px'),
+	// allow-any-unicode-next-line
 	nls.localize('bodyFontSizeXSmall', "次要内容的超小字号。"),
-	nls.localize('bodyFontSizeXSmall.deprecated', "Deprecated: use `fontSize.body2` instead."));
+	// allow-any-unicode-next-line
+	nls.localize('bodyFontSizeXSmall.deprecated', "已弃用：请改用 `fontSize.body2`。"));
 
 // ------ Font ramp
 //
@@ -34,35 +40,43 @@ export const bodyFontSizeXSmall = registerSize('bodyFontSize.xSmall',
 
 export const fontSizeHeading1 = registerSize('fontSize.heading1',
 	sizeForAllThemes(26, 'px'),
-	nls.localize('fontSizeHeading1', "Heading 1 font size (largest heading)."));
+	// allow-any-unicode-next-line
+	nls.localize('fontSizeHeading1', "1 级标题字号（最大标题）。"));
 
 export const fontSizeHeading2 = registerSize('fontSize.heading2',
 	sizeForAllThemes(18, 'px'),
-	nls.localize('fontSizeHeading2', "Heading 2 font size (title)."));
+	// allow-any-unicode-next-line
+	nls.localize('fontSizeHeading2', "2 级标题字号（题名）。"));
 
 export const fontSizeHeading3 = registerSize('fontSize.heading3',
 	sizeForAllThemes(13, 'px'),
-	nls.localize('fontSizeHeading3', "Heading 3 font size (subtitle)."));
+	// allow-any-unicode-next-line
+	nls.localize('fontSizeHeading3', "3 级标题字号（副标题）。"));
 
 export const fontSizeBody1 = registerSize('fontSize.body1',
 	sizeForAllThemes(13, 'px'),
-	nls.localize('fontSizeBody1', "Primary body font size."));
+	// allow-any-unicode-next-line
+	nls.localize('fontSizeBody1', "主要正文字号。"));
 
 export const fontSizeBody2 = registerSize('fontSize.body2',
 	sizeForAllThemes(11, 'px'),
-	nls.localize('fontSizeBody2', "Secondary body font size."));
+	// allow-any-unicode-next-line
+	nls.localize('fontSizeBody2', "次要正文字号。"));
 
 export const fontSizeLabel1 = registerSize('fontSize.label1',
 	sizeForAllThemes(12, 'px'),
-	nls.localize('fontSizeLabel1', "Label 1 font size (section title, tabs)."));
+	// allow-any-unicode-next-line
+	nls.localize('fontSizeLabel1', "1 级标签字号（分区标题、选项卡）。"));
 
 export const fontSizeLabel2 = registerSize('fontSize.label2',
 	sizeForAllThemes(11, 'px'),
-	nls.localize('fontSizeLabel2', "Label 2 font size (metadata)."));
+	// allow-any-unicode-next-line
+	nls.localize('fontSizeLabel2', "2 级标签字号（元信息）。"));
 
 export const fontSizeLabel3 = registerSize('fontSize.label3',
 	sizeForAllThemes(10, 'px'),
-	nls.localize('fontSizeLabel3', "Label 3 font size (badge)."));
+	// allow-any-unicode-next-line
+	nls.localize('fontSizeLabel3', "3 级标签字号（徽标）。"));
 
 // ------ Font weights
 //
@@ -71,50 +85,61 @@ export const fontSizeLabel3 = registerSize('fontSize.label3',
 
 export const fontWeightRegular = registerSize('fontWeight.regular',
 	sizeForAllThemes(400, ''),
-	nls.localize('fontWeightRegular', "Regular font weight (400) for body, labels and metadata."));
+	// allow-any-unicode-next-line
+	nls.localize('fontWeightRegular', "常规字重（400），用于正文、标签与元信息。"));
 
 export const fontWeightSemiBold = registerSize('fontWeight.semiBold',
 	sizeForAllThemes(600, ''),
-	nls.localize('fontWeightSemiBold', "SemiBold font weight (600) for headings and strong emphasis."));
+	// allow-any-unicode-next-line
+	nls.localize('fontWeightSemiBold', "半粗字重（600），用于标题与强调文本。"));
 
 export const codiconFontSize = registerSize('codiconFontSize',
 	sizeForAllThemes(16, 'px'),
+	// allow-any-unicode-next-line
 	nls.localize('codiconFontSize', "codicons 的基础字号。"));
 
 export const codiconFontSizeCompact = registerSize('codiconFontSize.compact',
 	sizeForAllThemes(12, 'px'),
+	// allow-any-unicode-next-line
 	nls.localize('codiconFontSizeCompact', "condicons 的紧凑字号。"));
 
 // ------ Corner Radii
 
 export const cornerRadiusMedium = registerSize('cornerRadius.medium',
 	sizeForAllThemes(6, 'px'),
+	// allow-any-unicode-next-line
 	nls.localize('cornerRadiusMedium', "UI 元素的基础圆角半径。"));
 
 export const cornerRadiusXSmall = registerSize('cornerRadius.xSmall',
 	sizeForAllThemes(2, 'px'),
+	// allow-any-unicode-next-line
 	nls.localize('cornerRadiusXSmall', "非常紧凑的 UI 元素的超小圆角半径。"));
 
 export const cornerRadiusSmall = registerSize('cornerRadius.small',
 	sizeForAllThemes(4, 'px'),
+	// allow-any-unicode-next-line
 	nls.localize('cornerRadiusSmall', "紧凑 UI 元素的小圆角半径。"));
 
 export const cornerRadiusLarge = registerSize('cornerRadius.large',
 	sizeForAllThemes(8, 'px'),
+	// allow-any-unicode-next-line
 	nls.localize('cornerRadiusLarge', "醒目 UI 元素的大圆角半径。"));
 
 export const cornerRadiusXLarge = registerSize('cornerRadius.xLarge',
 	sizeForAllThemes(12, 'px'),
+	// allow-any-unicode-next-line
 	nls.localize('cornerRadiusXLarge', "突出显示的 UI 元素的超大圆角半径。"));
 
 export const cornerRadiusCircle = registerSize('cornerRadius.circle',
 	sizeForAllThemes(9999, 'px'),
+	// allow-any-unicode-next-line
 	nls.localize('cornerRadiusCircle', "全圆角 UI 元素的圆形圆角半径。"));
 
 // ------ Stroke Thickness
 
 export const strokeThickness = registerSize('strokeThickness',
 	sizeForAllThemes(1, 'px'),
+	// allow-any-unicode-next-line
 	nls.localize('strokeThickness', "边框和轮廓的基本笔划粗细。"));
 
 // ------ Spacing ramp
@@ -125,56 +150,70 @@ export const strokeThickness = registerSize('strokeThickness',
 
 export const spacingNone = registerSize('spacing.sizeNone',
 	sizeForAllThemes(0, 'px'),
+	// allow-any-unicode-next-line
 	nls.localize('spacingNone', "无间距(0px)。"));
 
 export const spacingSize20 = registerSize('spacing.size20',
 	sizeForAllThemes(2, 'px'),
+	// allow-any-unicode-next-line
 	nls.localize('spacingSize20', "间距为 2px。"));
 
 export const spacingSize40 = registerSize('spacing.size40',
 	sizeForAllThemes(4, 'px'),
+	// allow-any-unicode-next-line
 	nls.localize('spacingSize40', "间距为 4px。"));
 
 export const spacingSize60 = registerSize('spacing.size60',
 	sizeForAllThemes(6, 'px'),
+	// allow-any-unicode-next-line
 	nls.localize('spacingSize60', "间距为 6px。"));
 
 export const spacingSize80 = registerSize('spacing.size80',
 	sizeForAllThemes(8, 'px'),
+	// allow-any-unicode-next-line
 	nls.localize('spacingSize80', "间距为 8px。"));
 
 export const spacingSize100 = registerSize('spacing.size100',
 	sizeForAllThemes(10, 'px'),
+	// allow-any-unicode-next-line
 	nls.localize('spacingSize100', "间距为 10px。"));
 
 export const spacingSize120 = registerSize('spacing.size120',
 	sizeForAllThemes(12, 'px'),
+	// allow-any-unicode-next-line
 	nls.localize('spacingSize120', "间距为 12px。"));
 
 export const spacingSize160 = registerSize('spacing.size160',
 	sizeForAllThemes(16, 'px'),
+	// allow-any-unicode-next-line
 	nls.localize('spacingSize160', "间距为 16px。"));
 
 export const spacingSize200 = registerSize('spacing.size200',
 	sizeForAllThemes(20, 'px'),
+	// allow-any-unicode-next-line
 	nls.localize('spacingSize200', "间距为 20px。"));
 
 export const spacingSize240 = registerSize('spacing.size240',
 	sizeForAllThemes(24, 'px'),
+	// allow-any-unicode-next-line
 	nls.localize('spacingSize240', "间距为 24px。"));
 
 export const spacingSize280 = registerSize('spacing.size280',
 	sizeForAllThemes(28, 'px'),
+	// allow-any-unicode-next-line
 	nls.localize('spacingSize280', "间距为 28px。"));
 
 export const spacingSize320 = registerSize('spacing.size320',
 	sizeForAllThemes(32, 'px'),
+	// allow-any-unicode-next-line
 	nls.localize('spacingSize320', "间距为 32px。"));
 
 export const spacingSize360 = registerSize('spacing.size360',
 	sizeForAllThemes(36, 'px'),
+	// allow-any-unicode-next-line
 	nls.localize('spacingSize360', "间距为 36px。"));
 
 export const spacingSize400 = registerSize('spacing.size400',
 	sizeForAllThemes(40, 'px'),
+	// allow-any-unicode-next-line
 	nls.localize('spacingSize400', "间距为 40px。"));

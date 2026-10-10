@@ -335,11 +335,17 @@ class StatusInputMode extends Disposable {
 	}
 }
 
+// allow-any-unicode-next-line
 const nlsSingleSelectionRange = localize('singleSelectionRange', "行 {0}，列 {1}（已选 {2}）");
+// allow-any-unicode-next-line
 const nlsSingleSelection = localize('singleSelection', "行 {0}，列 {1}");
+// allow-any-unicode-next-line
 const nlsMultiSelectionRange = localize('multiSelectionRange', "{0} 个选区（已选 {1} 个字符）");
+// allow-any-unicode-next-line
 const nlsMultiSelection = localize('multiSelection', "{0} 个选区");
+// allow-any-unicode-next-line
 const nlsEOLLF = localize('endOfLineLineFeed', "LF（换行）");
+// allow-any-unicode-next-line
 const nlsEOLCRLF = localize('endOfLineCarriageReturnLineFeed', "CRLF（回车换行）");
 
 class EditorStatus extends Disposable {
@@ -405,10 +411,12 @@ class EditorStatus extends Disposable {
 	private async showIndentationPicker(): Promise<unknown> {
 		const activeTextEditorControl = getCodeEditor(this.editorService.activeTextEditorControl);
 		if (!activeTextEditorControl) {
+			// allow-any-unicode-next-line
 			return this.quickInputService.pick([{ label: localize('noEditor', "当前没有活动的文本编辑器") }]);
 		}
 
 		if (this.editorService.activeEditor?.isReadonly()) {
+			// allow-any-unicode-next-line
 			return this.quickInputService.pick([{ label: localize('noWritableCodeEditor', "当前代码编辑器为只读。") }]);
 		}
 
@@ -432,9 +440,12 @@ class EditorStatus extends Disposable {
 			};
 		});
 
+		// allow-any-unicode-next-line
 		picks.splice(3, 0, { type: 'separator', label: localize('indentConvert', "转换文件") });
+		// allow-any-unicode-next-line
 		picks.unshift({ type: 'separator', label: localize('indentView', "切换视图") });
 
+		// allow-any-unicode-next-line
 		const action = await this.quickInputService.pick(picks, { placeHolder: localize('pickAction', "选择操作"), matchOnDetail: true });
 		return action?.run();
 	}
@@ -442,11 +453,14 @@ class EditorStatus extends Disposable {
 	private updateTabFocusModeElement(visible: boolean): void {
 		if (visible) {
 			if (!this.tabFocusModeElement.value) {
+				// allow-any-unicode-next-line
 				const text = localize('tabFocusModeEnabled', "Tab 键移动焦点");
 				this.tabFocusModeElement.value = this.statusbarService.addEntry({
+					// allow-any-unicode-next-line
 					name: localize('status.editor.tabFocusMode', "无障碍模式"),
 					text,
 					ariaLabel: text,
+					// allow-any-unicode-next-line
 					tooltip: localize('disableTabMode', "关闭无障碍模式"),
 					command: 'editor.action.toggleTabFocusMode',
 					kind: 'prominent'
@@ -460,7 +474,9 @@ class EditorStatus extends Disposable {
 	private updateInputModeElement(inputMode: 'overtype' | 'insert' | undefined): void {
 		if (inputMode === 'overtype') {
 			if (!this.inputModeElement.value) {
-				const text = localize('inputModeOvertype', 'OVR');
+				// allow-any-unicode-next-line
+				const text = localize('inputModeOvertype', "改写");
+				// allow-any-unicode-next-line
 				const name = localize('status.editor.enableInsertMode', "开启插入模式");
 				this.inputModeElement.value = this.statusbarService.addEntry({
 					name,
@@ -479,11 +495,14 @@ class EditorStatus extends Disposable {
 	private updateColumnSelectionModeElement(visible: boolean): void {
 		if (visible) {
 			if (!this.columnSelectionModeElement.value) {
+				// allow-any-unicode-next-line
 				const text = localize('columnSelectionModeEnabled', "列选择");
 				this.columnSelectionModeElement.value = this.statusbarService.addEntry({
+					// allow-any-unicode-next-line
 					name: localize('status.editor.columnSelectionMode', "列选择模式"),
 					text,
 					ariaLabel: text,
+					// allow-any-unicode-next-line
 					tooltip: localize('disableColumnSelectionMode', "关闭列选择模式"),
 					command: 'editor.action.toggleColumnSelection',
 					kind: 'prominent'
@@ -507,9 +526,11 @@ class EditorStatus extends Disposable {
 		}
 
 		const props: IStatusbarEntry = {
+			// allow-any-unicode-next-line
 			name: localize('status.editor.selection', "编辑器选区"),
 			text,
 			ariaLabel: text,
+			// allow-any-unicode-next-line
 			tooltip: localize('gotoLine', "转到行/列"),
 			command: 'workbench.action.gotoLine'
 		};
@@ -530,9 +551,11 @@ class EditorStatus extends Disposable {
 		}
 
 		const props: IStatusbarEntry = {
+			// allow-any-unicode-next-line
 			name: localize('status.editor.indentation', "编辑器缩进"),
 			text,
 			ariaLabel: text,
+			// allow-any-unicode-next-line
 			tooltip: localize('selectIndentation', "选择缩进"),
 			command: `changeEditorIndentation${this.targetWindowId}`
 		};
@@ -547,9 +570,11 @@ class EditorStatus extends Disposable {
 		}
 
 		const props: IStatusbarEntry = {
+			// allow-any-unicode-next-line
 			name: localize('status.editor.encoding', "编辑器编码"),
 			text,
 			ariaLabel: text,
+			// allow-any-unicode-next-line
 			tooltip: localize('selectEncoding', "选择编码"),
 			command: 'workbench.action.editor.changeEncoding'
 		};
@@ -564,9 +589,11 @@ class EditorStatus extends Disposable {
 		}
 
 		const props: IStatusbarEntry = {
+			// allow-any-unicode-next-line
 			name: localize('status.editor.eol', "编辑器行尾"),
 			text,
 			ariaLabel: text,
+			// allow-any-unicode-next-line
 			tooltip: localize('selectEOL', "选择行尾序列"),
 			command: 'workbench.action.editor.changeEOL'
 		};
@@ -581,9 +608,11 @@ class EditorStatus extends Disposable {
 		}
 
 		const props: IStatusbarEntry = {
+			// allow-any-unicode-next-line
 			name: localize('status.editor.mode', "编辑器语言"),
 			text,
 			ariaLabel: text,
+			// allow-any-unicode-next-line
 			tooltip: localize('selectLanguageMode', "选择语言模式"),
 			command: 'workbench.action.editor.changeLanguageMode'
 		};
@@ -598,9 +627,11 @@ class EditorStatus extends Disposable {
 		}
 
 		const props: IStatusbarEntry = {
+			// allow-any-unicode-next-line
 			name: localize('status.editor.info', "文件信息"),
 			text,
 			ariaLabel: text,
+			// allow-any-unicode-next-line
 			tooltip: localize('fileInfo', "文件信息")
 		};
 
@@ -801,8 +832,11 @@ class EditorStatus extends Disposable {
 				update.indentation = (
 					modelOpts.insertSpaces
 						? modelOpts.tabSize === modelOpts.indentSize
+							// allow-any-unicode-next-line
 							? localize('spacesSize', "空格：{0}", modelOpts.indentSize)
+							// allow-any-unicode-next-line
 							: localize('spacesAndTabsSize', "空格：{0}（制表符宽度：{1}）", modelOpts.indentSize, modelOpts.tabSize)
+						// allow-any-unicode-next-line
 						: localize({ key: 'tabSize', comment: ['Tab corresponds to the tab key'] }, "制表符长度: {0}", modelOpts.tabSize)
 				);
 			}
@@ -999,8 +1033,10 @@ class ShowCurrentMarkerInStatusbarContribution extends Disposable {
 				const line = splitLines(this.currentMarker.message)[0];
 				const text = `${this.getType(this.currentMarker)} ${line}`;
 				if (!this.statusBarEntryAccessor.value) {
+					// allow-any-unicode-next-line
 					this.statusBarEntryAccessor.value = this.statusbarService.addEntry({ name: localize('currentProblem', "当前问题"), text, ariaLabel: text }, 'statusbar.currentProblem', StatusbarAlignment.LEFT);
 				} else {
+					// allow-any-unicode-next-line
 					this.statusBarEntryAccessor.value.update({ name: localize('currentProblem', "当前问题"), text, ariaLabel: text });
 				}
 			} else {
@@ -1114,6 +1150,7 @@ export class ChangeLanguageAction extends Action2 {
 	constructor() {
 		super({
 			id: ChangeLanguageAction.ID,
+			// allow-any-unicode-next-line
 			title: localize2('changeMode', "更改语言模式"),
 			f1: true,
 			keybinding: {
@@ -1122,9 +1159,11 @@ export class ChangeLanguageAction extends Action2 {
 			},
 			precondition: ContextKeyExpr.not('notebookEditorFocused'),
 			metadata: {
+				// allow-any-unicode-next-line
 				description: localize('changeLanguageMode.description', "更改当前文本编辑器的语言模式。"),
 				args: [
 					{
+						// allow-any-unicode-next-line
 						name: localize('changeLanguageMode.arg.name', "要切换到的语言模式名称。"),
 						constraint: (value: unknown) => typeof value === 'string',
 					}
@@ -1147,6 +1186,7 @@ export class ChangeLanguageAction extends Action2 {
 
 		const activeTextEditorControl = getCodeEditor(editorService.activeTextEditorControl);
 		if (!activeTextEditorControl) {
+			// allow-any-unicode-next-line
 			await quickInputService.pick([{ label: localize('noEditor', "当前没有活动的文本编辑器") }]);
 			return;
 		}
@@ -1174,6 +1214,7 @@ export class ChangeLanguageAction extends Action2 {
 				const extensions = languageService.getExtensions(languageId).join(' ');
 				let description: string;
 				if (currentLanguageName === languageName) {
+					// allow-any-unicode-next-line
 					description = localize('languageDescription', "（{0}）- 已配置的语言", languageId);
 				} else {
 					description = localize('languageDescriptionConfigured', "({0})", languageId);
@@ -1188,6 +1229,7 @@ export class ChangeLanguageAction extends Action2 {
 				};
 			});
 
+		// allow-any-unicode-next-line
 		picks.unshift({ type: 'separator', label: localize('languagesPicks', "语言（标识符）") });
 
 		// Offer action to configure via settings
@@ -1200,24 +1242,29 @@ export class ChangeLanguageAction extends Action2 {
 			if (galleryService.isEnabled()) {
 				galleryAction = toAction({
 					id: 'workbench.action.showLanguageExtensions',
+					// allow-any-unicode-next-line
 					label: localize('showLanguageExtensions', "在扩展市场中搜索 '{0}'...", ext),
 					run: () => commandService.executeCommand('workbench.extensions.action.showExtensionsForLanguage', ext)
 				});
 				picks.unshift(galleryAction);
 			}
 
+			// allow-any-unicode-next-line
 			configureLanguageSettings = { label: localize('configureModeSettings', "配置 '{0}' 的语言相关设置...", currentLanguageName) };
 			picks.unshift(configureLanguageSettings);
+			// allow-any-unicode-next-line
 			configureLanguageAssociations = { label: localize('configureAssociationsExt', "配置 '{0}' 的文件关联...", ext) };
 			picks.unshift(configureLanguageAssociations);
 		}
 
 		// Offer to "Auto Detect", but only if the document is not empty.
+		// allow-any-unicode-next-line
 		const autoDetectLanguage: IQuickPickItem = { label: localize('autoDetect', "自动检测") };
 		if (textModel && textModel.getValueLength() > 0) {
 			picks.unshift(autoDetectLanguage);
 		}
 
+		// allow-any-unicode-next-line
 		const pick = typeof languageMode === 'string' ? { label: languageMode } : await quickInputService.pick(picks, { placeHolder: localize('pickLanguage', "选择语言模式"), matchOnDescription: true });
 		if (!pick) {
 			return;
@@ -1342,11 +1389,13 @@ export class ChangeLanguageAction extends Action2 {
 				id: languageId,
 				label: languageName,
 				iconClasses: getIconClassesForLanguageId(languageId),
+				// allow-any-unicode-next-line
 				description: (languageId === currentAssociation) ? localize('currentAssociation', "当前关联") : undefined
 			};
 		});
 
 		setTimeout(async () => {
+			// allow-any-unicode-next-line
 			const language = await quickInputService.pick(picks, { placeHolder: localize('pickLanguageToConfigure', "选择要与 '{0}' 关联的语言模式", extension || base) });
 			if (language) {
 				const fileAssociationsConfig = configurationService.inspect<{}>(FILES_ASSOCIATIONS_CONFIG);
@@ -1383,6 +1432,7 @@ export class ChangeEOLAction extends Action2 {
 	constructor() {
 		super({
 			id: 'workbench.action.editor.changeEOL',
+			// allow-any-unicode-next-line
 			title: localize2('changeEndOfLine', "更改行尾序列"),
 			f1: true
 		});
@@ -1394,11 +1444,13 @@ export class ChangeEOLAction extends Action2 {
 
 		const activeTextEditorControl = getCodeEditor(editorService.activeTextEditorControl);
 		if (!activeTextEditorControl) {
+			// allow-any-unicode-next-line
 			await quickInputService.pick([{ label: localize('noEditor', "当前没有活动的文本编辑器") }]);
 			return;
 		}
 
 		if (editorService.activeEditor?.isReadonly()) {
+			// allow-any-unicode-next-line
 			await quickInputService.pick([{ label: localize('noWritableCodeEditor', "当前代码编辑器为只读。") }]);
 			return;
 		}
@@ -1412,6 +1464,7 @@ export class ChangeEOLAction extends Action2 {
 
 		const selectedIndex = (textModel?.getEOL() === '\n') ? 0 : 1;
 
+		// allow-any-unicode-next-line
 		const eol = await quickInputService.pick(EOLOptions, { placeHolder: localize('pickEndOfLine', "选择行尾序列"), activeItem: EOLOptions[selectedIndex] });
 		if (eol) {
 			const activeCodeEditor = getCodeEditor(editorService.activeTextEditorControl);
@@ -1432,6 +1485,7 @@ export class ChangeEncodingAction extends Action2 {
 	constructor() {
 		super({
 			id: 'workbench.action.editor.changeEncoding',
+			// allow-any-unicode-next-line
 			title: localize2('changeEncoding', "更改文件编码"),
 			f1: true
 		});
@@ -1447,23 +1501,28 @@ export class ChangeEncodingAction extends Action2 {
 
 		const activeTextEditorControl = getCodeEditor(editorService.activeTextEditorControl);
 		if (!activeTextEditorControl) {
+			// allow-any-unicode-next-line
 			await quickInputService.pick([{ label: localize('noEditor', "当前没有活动的文本编辑器") }]);
 			return;
 		}
 
 		const activeEditorPane = editorService.activeEditorPane;
 		if (!activeEditorPane) {
+			// allow-any-unicode-next-line
 			await quickInputService.pick([{ label: localize('noEditor', "当前没有活动的文本编辑器") }]);
 			return;
 		}
 
 		const encodingSupport: IEncodingSupport | null = toEditorWithEncodingSupport(activeEditorPane.input);
 		if (!encodingSupport) {
+			// allow-any-unicode-next-line
 			await quickInputService.pick([{ label: localize('noFileEditor', "当前没有活动的文件") }]);
 			return;
 		}
 
+		// allow-any-unicode-next-line
 		const saveWithEncodingPick: IQuickPickItem = { label: localize('saveWithEncoding', "以指定编码保存") };
+		// allow-any-unicode-next-line
 		const reopenWithEncodingPick: IQuickPickItem = { label: localize('reopenWithEncoding', "以指定编码重新打开") };
 
 		if (!Language.isDefaultVariant()) {
@@ -1484,6 +1543,7 @@ export class ChangeEncodingAction extends Action2 {
 		} else if (activeEditorPane.input.isReadonly()) {
 			action = reopenWithEncodingPick;
 		} else {
+			// allow-any-unicode-next-line
 			action = await quickInputService.pick([reopenWithEncodingPick, saveWithEncodingPick], { placeHolder: localize('pickAction', "选择操作"), matchOnDetail: true });
 		}
 
@@ -1547,10 +1607,12 @@ export class ChangeEncodingAction extends Action2 {
 		// If we have a guessed encoding, show it first unless it matches the configured encoding
 		if (guessedEncoding && configuredEncoding !== guessedEncoding && SUPPORTED_ENCODINGS[guessedEncoding]) {
 			picks.unshift({ type: 'separator' });
+			// allow-any-unicode-next-line
 			picks.unshift({ id: guessedEncoding, label: SUPPORTED_ENCODINGS[guessedEncoding].labelLong, description: localize('guessedEncoding', "根据内容推测") });
 		}
 
 		const encoding = await quickInputService.pick(picks, {
+			// allow-any-unicode-next-line
 			placeHolder: isReopenWithEncoding ? localize('pickEncodingForReopen', "选择重新打开文件所用的编码") : localize('pickEncodingForSave', "选择保存文件所用的编码"),
 			activeItem: items[typeof directMatchIndex === 'number' ? directMatchIndex : typeof aliasMatchIndex === 'number' ? aliasMatchIndex : -1]
 		});
@@ -1569,8 +1631,11 @@ export class ChangeEncodingAction extends Action2 {
 			// Re-open with encoding does not work on dirty editors, ask to revert
 			if (isReopenWithEncoding && editorService.activeEditorPane.input.isDirty()) {
 				const { confirmed } = await dialogService.confirm({
+					// allow-any-unicode-next-line
 					message: localize('reopenWithEncodingWarning', "要还原当前文本编辑器并用其他编码重新打开吗？"),
+					// allow-any-unicode-next-line
 					detail: localize('reopenWithEncodingDetail', "这将丢弃所有未保存的更改。"),
+					// allow-any-unicode-next-line
 					primaryButton: localize('reopen', "丢弃更改并重新打开")
 				});
 

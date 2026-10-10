@@ -81,6 +81,7 @@ Registry.as<IEditorPaneRegistry>(EditorExtensions.EditorPane).registerEditorPane
 	EditorPaneDescriptor.create(
 		TextResourceEditor,
 		TextResourceEditor.ID,
+		// allow-any-unicode-next-line
 		localize('textEditor', "文本编辑器"),
 	),
 	[
@@ -93,6 +94,7 @@ Registry.as<IEditorPaneRegistry>(EditorExtensions.EditorPane).registerEditorPane
 	EditorPaneDescriptor.create(
 		TextDiffEditor,
 		TextDiffEditor.ID,
+		// allow-any-unicode-next-line
 		localize('textDiffEditor', "文本差异编辑器")
 	),
 	[
@@ -104,6 +106,7 @@ Registry.as<IEditorPaneRegistry>(EditorExtensions.EditorPane).registerEditorPane
 	EditorPaneDescriptor.create(
 		BinaryResourceDiffEditor,
 		BinaryResourceDiffEditor.ID,
+		// allow-any-unicode-next-line
 		localize('binaryDiffEditor', "二进制差异编辑器")
 	),
 	[
@@ -115,6 +118,7 @@ Registry.as<IEditorPaneRegistry>(EditorExtensions.EditorPane).registerEditorPane
 	EditorPaneDescriptor.create(
 		SideBySideEditor,
 		SideBySideEditor.ID,
+		// allow-any-unicode-next-line
 		localize('sideBySideEditor', "并排编辑器")
 	),
 	[
@@ -147,7 +151,9 @@ quickAccessRegistry.registerQuickAccessProvider({
 	ctor: ActiveGroupEditorsByMostRecentlyUsedQuickAccess,
 	prefix: ActiveGroupEditorsByMostRecentlyUsedQuickAccess.PREFIX,
 	contextKey: editorPickerContextKey,
+	// allow-any-unicode-next-line
 	placeholder: localize('editorQuickAccessPlaceholder', "输入要打开的编辑器名称。"),
+	// allow-any-unicode-next-line
 	helpEntries: [{ description: localize('activeGroupEditorsByMostRecentlyUsedQuickAccess', "按最近使用排序显示活动组中的编辑器"), commandId: ShowEditorsInActiveGroupByMostRecentlyUsedAction.ID }]
 });
 
@@ -155,7 +161,9 @@ quickAccessRegistry.registerQuickAccessProvider({
 	ctor: AllEditorsByAppearanceQuickAccess,
 	prefix: AllEditorsByAppearanceQuickAccess.PREFIX,
 	contextKey: editorPickerContextKey,
+	// allow-any-unicode-next-line
 	placeholder: localize('editorQuickAccessPlaceholder', "输入要打开的编辑器名称。"),
+	// allow-any-unicode-next-line
 	helpEntries: [{ description: localize('allEditorsByAppearanceQuickAccess', "按打开顺序显示所有已打开的编辑器"), commandId: ShowAllEditorsByAppearanceAction.ID }]
 });
 
@@ -163,7 +171,9 @@ quickAccessRegistry.registerQuickAccessProvider({
 	ctor: AllEditorsByMostRecentlyUsedQuickAccess,
 	prefix: AllEditorsByMostRecentlyUsedQuickAccess.PREFIX,
 	contextKey: editorPickerContextKey,
+	// allow-any-unicode-next-line
 	placeholder: localize('editorQuickAccessPlaceholder', "输入要打开的编辑器名称。"),
+	// allow-any-unicode-next-line
 	helpEntries: [{ description: localize('allEditorsByMostRecentlyUsedQuickAccess', "按最近使用显示所有已打开的编辑器"), commandId: ShowAllEditorsByMostRecentlyUsedAction.ID }]
 });
 
@@ -351,83 +361,139 @@ if (isMacintosh) {
 }
 
 // Empty Editor Group Toolbar
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EmptyEditorGroup, { command: { id: LOCK_GROUP_COMMAND_ID, title: localize('lockGroupAction', "锁定组"), icon: Codicon.unlock }, group: 'navigation', order: 10, when: ContextKeyExpr.and(IsAuxiliaryWindowContext, ActiveEditorGroupLockedContext.toNegated()) });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EmptyEditorGroup, { command: { id: UNLOCK_GROUP_COMMAND_ID, title: localize('unlockGroupAction', "解除锁定组"), icon: Codicon.lock, toggled: ContextKeyExpr.true() }, group: 'navigation', order: 10, when: ActiveEditorGroupLockedContext });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EmptyEditorGroup, { command: { id: CLOSE_EDITOR_GROUP_COMMAND_ID, title: localize('closeGroupAction', "关闭组"), icon: Codicon.close }, group: 'navigation', order: 20, when: ContextKeyExpr.or(IsAuxiliaryWindowContext, EditorPartMultipleEditorGroupsContext) });
 
 // Empty Editor Group Context Menu
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EmptyEditorGroupContext, { command: { id: SPLIT_EDITOR_UP, title: localize('splitUp', "向上拆分") }, group: '2_split', order: 10 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EmptyEditorGroupContext, { command: { id: SPLIT_EDITOR_DOWN, title: localize('splitDown', "向下拆分") }, group: '2_split', order: 20 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EmptyEditorGroupContext, { command: { id: SPLIT_EDITOR_LEFT, title: localize('splitLeft', "向左拆分") }, group: '2_split', order: 30 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EmptyEditorGroupContext, { command: { id: SPLIT_EDITOR_RIGHT, title: localize('splitRight', "向右拆分") }, group: '2_split', order: 40 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EmptyEditorGroupContext, { command: { id: NEW_EMPTY_EDITOR_WINDOW_COMMAND_ID, title: localize('newWindow', "新建窗口") }, group: '3_window', order: 10 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EmptyEditorGroupContext, { command: { id: TOGGLE_LOCK_GROUP_COMMAND_ID, title: localize('toggleLockGroup', "锁定组"), toggled: ActiveEditorGroupLockedContext }, group: '4_lock', order: 10, when: IsAuxiliaryWindowContext.toNegated() /* already a primary action for aux windows */ });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EmptyEditorGroupContext, { command: { id: CLOSE_EDITOR_GROUP_COMMAND_ID, title: localize('close', "关闭") }, group: '5_close', order: 10, when: MultipleEditorGroupsContext });
 
 // Editor Tab Container Context Menu
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTabsBarContext, { command: { id: SPLIT_EDITOR_UP, title: localize('splitUp', "向上拆分") }, group: '2_split', order: 10 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTabsBarContext, { command: { id: SPLIT_EDITOR_DOWN, title: localize('splitDown', "向下拆分") }, group: '2_split', order: 20 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTabsBarContext, { command: { id: SPLIT_EDITOR_LEFT, title: localize('splitLeft', "向左拆分") }, group: '2_split', order: 30 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTabsBarContext, { command: { id: SPLIT_EDITOR_RIGHT, title: localize('splitRight', "向右拆分") }, group: '2_split', order: 40 });
 
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTabsBarContext, { command: { id: MOVE_EDITOR_GROUP_INTO_NEW_WINDOW_COMMAND_ID, title: localize('moveEditorGroupToNewWindow', "移入新窗口") }, group: '3_window', order: 10 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTabsBarContext, { command: { id: COPY_EDITOR_GROUP_INTO_NEW_WINDOW_COMMAND_ID, title: localize('copyEditorGroupToNewWindow', "复制到新窗口") }, group: '3_window', order: 20 });
 
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTabsBarContext, { submenu: MenuId.EditorTabsBarShowTabsSubmenu, title: localize('tabBar', "标签栏"), group: '4_config', order: 10, when: InEditorZenModeContext.negate() });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTabsBarShowTabsSubmenu, { command: { id: ShowMultipleEditorTabsAction.ID, title: localize('multipleTabs', "多标签页"), toggled: ContextKeyExpr.equals('config.workbench.editor.showTabs', 'multiple') }, group: '1_config', order: 10 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTabsBarShowTabsSubmenu, { command: { id: ShowSingleEditorTabAction.ID, title: localize('singleTab', "单标签页"), toggled: ContextKeyExpr.equals('config.workbench.editor.showTabs', 'single') }, group: '1_config', order: 20 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTabsBarShowTabsSubmenu, { command: { id: HideEditorTabsAction.ID, title: localize('hideTabs', "隐藏"), toggled: ContextKeyExpr.equals('config.workbench.editor.showTabs', 'none') }, group: '1_config', order: 30 });
 
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTabsBarContext, { submenu: MenuId.EditorTabsBarShowTabsZenModeSubmenu, title: localize('tabBar', "标签栏"), group: '4_config', order: 10, when: InEditorZenModeContext });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTabsBarShowTabsZenModeSubmenu, { command: { id: ZenShowMultipleEditorTabsAction.ID, title: localize('multipleTabs', "多标签页"), toggled: ContextKeyExpr.equals('config.zenMode.showTabs', 'multiple') }, group: '1_config', order: 10 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTabsBarShowTabsZenModeSubmenu, { command: { id: ZenShowSingleEditorTabAction.ID, title: localize('singleTab', "单标签页"), toggled: ContextKeyExpr.equals('config.zenMode.showTabs', 'single') }, group: '1_config', order: 20 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTabsBarShowTabsZenModeSubmenu, { command: { id: ZenHideEditorTabsAction.ID, title: localize('hideTabs', "隐藏"), toggled: ContextKeyExpr.equals('config.zenMode.showTabs', 'none') }, group: '1_config', order: 30 });
 
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTabsBarContext, { submenu: MenuId.EditorActionsPositionSubmenu, title: localize('editorActionsPosition', "编辑器操作按钮位置"), group: '4_config', order: 20 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorActionsPositionSubmenu, { command: { id: EditorActionsDefaultAction.ID, title: localize('tabBar', "标签栏"), toggled: ContextKeyExpr.equals('config.workbench.editor.editorActionsLocation', 'default') }, group: '1_config', order: 10, when: ContextKeyExpr.equals('config.workbench.editor.showTabs', 'none').negate() });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorActionsPositionSubmenu, { command: { id: EditorActionsTitleBarAction.ID, title: localize('titleBar', "标题栏"), toggled: ContextKeyExpr.or(ContextKeyExpr.equals('config.workbench.editor.editorActionsLocation', 'titleBar'), ContextKeyExpr.and(ContextKeyExpr.equals('config.workbench.editor.showTabs', 'none'), ContextKeyExpr.equals('config.workbench.editor.editorActionsLocation', 'default'))) }, group: '1_config', order: 20 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorActionsPositionSubmenu, { command: { id: HideEditorActionsAction.ID, title: localize('hidden', "隐藏"), toggled: ContextKeyExpr.equals('config.workbench.editor.editorActionsLocation', 'hidden') }, group: '1_config', order: 30 });
 
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTabsBarContext, { command: { id: ConfigureEditorTabsAction.ID, title: localize('configureTabs', "配置标签页") }, group: '9_configure', order: 10 });
 
 // Editor Title Context Menu
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTitleContext, { command: { id: CLOSE_EDITOR_COMMAND_ID, title: localize('close', "关闭") }, group: '1_close', order: 10, when: ActiveEditorCannotCloseContext.toNegated() });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTitleContext, { command: { id: CLOSE_OTHER_EDITORS_IN_GROUP_COMMAND_ID, title: localize('closeOthers', "关闭其他"), precondition: EditorGroupEditorsCountContext.notEqualsTo('1') }, group: '1_close', order: 20 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTitleContext, { command: { id: CLOSE_EDITORS_TO_THE_RIGHT_COMMAND_ID, title: localize('closeRight', "关闭右侧的"), precondition: ContextKeyExpr.and(ActiveEditorLastInGroupContext.toNegated(), MultipleEditorsSelectedInGroupContext.negate()) }, group: '1_close', order: 30, when: EditorTabsVisibleContext });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTitleContext, { command: { id: CLOSE_SAVED_EDITORS_COMMAND_ID, title: localize('closeAllSaved', "关闭已保存的编辑器") }, group: '1_close', order: 40 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTitleContext, { command: { id: CLOSE_EDITORS_IN_GROUP_COMMAND_ID, title: localize('closeAll', "全部关闭") }, group: '1_close', order: 50 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTitleContext, { command: { id: REOPEN_WITH_COMMAND_ID, title: localize('reopenWith', "使用其他编辑器重新打开...") }, group: '1_open', order: 10, when: ActiveEditorAvailableEditorIdsContext });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTitleContext, { command: { id: KEEP_EDITOR_COMMAND_ID, title: localize('keepOpen', "保持打开"), precondition: ActiveEditorPinnedContext.toNegated() }, group: '3_preview', order: 10, when: ContextKeyExpr.has('config.workbench.editor.enablePreview') });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTitleContext, { command: { id: PIN_EDITOR_COMMAND_ID, title: localize('pin', "固定") }, group: '3_preview', order: 20, when: ActiveEditorStickyContext.toNegated() });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTitleContext, { command: { id: UNPIN_EDITOR_COMMAND_ID, title: localize('unpin', "取消固定") }, group: '3_preview', order: 20, when: ActiveEditorStickyContext });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTitleContext, { command: { id: SPLIT_EDITOR, title: localize('splitRight', "向右拆分") }, group: '5_split', order: 10, when: SplitEditorsVertically.negate() });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTitleContext, { command: { id: SPLIT_EDITOR, title: localize('splitDown', "向下拆分") }, group: '5_split', order: 10, when: SplitEditorsVertically });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTitleContext, { submenu: MenuId.EditorSplitMoveSubmenu, title: localize('splitAndMoveEditor', "拆分并移动"), group: '5_split', order: 15 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTitleContext, { command: { id: MOVE_EDITOR_INTO_NEW_WINDOW_COMMAND_ID, title: localize('moveToNewWindow', "移入新窗口") }, group: '7_new_window', order: 10 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTitleContext, { command: { id: COPY_EDITOR_INTO_NEW_WINDOW_COMMAND_ID, title: localize('copyToNewWindow', "复制到新窗口") }, group: '7_new_window', order: 20 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTitleContext, { submenu: MenuId.EditorTitleContextShare, title: localize('share', "共享"), group: '11_share', order: -1, when: MultipleEditorsSelectedInGroupContext.negate() });
 
 // Editor Title Context Menu: Split & Move Editor Submenu
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorSplitMoveSubmenu, { command: { id: SPLIT_EDITOR_UP, title: localize('splitUp', "向上拆分") }, group: '1_split', order: 10 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorSplitMoveSubmenu, { command: { id: SPLIT_EDITOR_DOWN, title: localize('splitDown', "向下拆分") }, group: '1_split', order: 20 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorSplitMoveSubmenu, { command: { id: SPLIT_EDITOR_LEFT, title: localize('splitLeft', "向左拆分") }, group: '1_split', order: 30 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorSplitMoveSubmenu, { command: { id: SPLIT_EDITOR_RIGHT, title: localize('splitRight', "向右拆分") }, group: '1_split', order: 40 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorSplitMoveSubmenu, { command: { id: MOVE_EDITOR_INTO_ABOVE_GROUP, title: localize('moveAbove', "移到上方") }, group: '2_move', order: 10 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorSplitMoveSubmenu, { command: { id: MOVE_EDITOR_INTO_BELOW_GROUP, title: localize('moveBelow', "移到下方") }, group: '2_move', order: 20 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorSplitMoveSubmenu, { command: { id: MOVE_EDITOR_INTO_LEFT_GROUP, title: localize('moveLeft', "移到左侧") }, group: '2_move', order: 30 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorSplitMoveSubmenu, { command: { id: MOVE_EDITOR_INTO_RIGHT_GROUP, title: localize('moveRight', "移到右侧") }, group: '2_move', order: 40 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorSplitMoveSubmenu, { command: { id: SPLIT_EDITOR_IN_GROUP, title: localize('splitInGroup', "在组内拆分"), precondition: MultipleEditorsSelectedInGroupContext.negate() }, group: '3_split_in_group', order: 10, when: ActiveEditorCanSplitInGroupContext });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorSplitMoveSubmenu, { command: { id: JOIN_EDITOR_IN_GROUP, title: localize('joinInGroup', "合并到组"), precondition: MultipleEditorsSelectedInGroupContext.negate() }, group: '3_split_in_group', order: 10, when: SideBySideEditorActiveContext });
 
 // Editor Title Menu
 MenuRegistry.appendMenuItem(MenuId.EditorTitle, {
 	submenu: MenuId.DiffEditorViewSubmenu,
-	title: localize('diffView', "Diff View"),
+	// allow-any-unicode-next-line
+	title: localize('diffView', "差异视图"),
 	group: '1_diff',
 	order: 10,
 	when: ContextKeyExpr.and(ContextKeyExpr.has('isInDiffEditor'), IsSessionsWindowContext.toNegated()),
 });
 MenuRegistry.appendMenuItem(MenuId.EditorTitle, {
+	// allow-any-unicode-next-line
 	command: { id: TOGGLE_DIFF_SIDE_BY_SIDE, title: localize('inlineView', "内联视图"), toggled: ContextKeyExpr.equals('config.diffEditor.renderSideBySide', false) },
 	group: '1_diff',
 	order: 10,
@@ -436,6 +502,7 @@ MenuRegistry.appendMenuItem(MenuId.EditorTitle, {
 MenuRegistry.appendMenuItem(MenuId.DiffEditorViewSubmenu, {
 	command: {
 		id: SET_DIFF_VIEW_MODE_INLINE,
+		// allow-any-unicode-next-line
 		title: localize('diffView.inline', "内联"),
 		toggled: ContextKeyExpr.equals('config.diffEditor.renderSideBySide', false),
 	},
@@ -445,6 +512,7 @@ MenuRegistry.appendMenuItem(MenuId.DiffEditorViewSubmenu, {
 MenuRegistry.appendMenuItem(MenuId.DiffEditorViewSubmenu, {
 	command: {
 		id: SET_DIFF_VIEW_MODE_SIDE_BY_SIDE,
+		// allow-any-unicode-next-line
 		title: localize('diffView.sideBySide', "并肩协作"),
 		toggled: ContextKeyExpr.and(
 			ContextKeyExpr.equals('config.diffEditor.renderSideBySide', true),
@@ -455,8 +523,10 @@ MenuRegistry.appendMenuItem(MenuId.DiffEditorViewSubmenu, {
 	order: 2,
 });
 for (const [title, when] of [
-	[localize('diffView.automaticSideBySide', "Automatic (Currently Side by Side)"), EditorContextKeys.diffEditorAutomaticRenderSideBySide],
-	[localize('diffView.automaticInline', "Automatic (Currently Inline)"), EditorContextKeys.diffEditorAutomaticRenderSideBySide.toNegated()],
+	// allow-any-unicode-next-line
+	[localize('diffView.automaticSideBySide', "自动（当前为并排）"), EditorContextKeys.diffEditorAutomaticRenderSideBySide],
+	// allow-any-unicode-next-line
+	[localize('diffView.automaticInline', "自动（当前为内联）"), EditorContextKeys.diffEditorAutomaticRenderSideBySide.toNegated()],
 ] as const) {
 	MenuRegistry.appendMenuItem(MenuId.DiffEditorViewSubmenu, {
 		command: {
@@ -476,7 +546,8 @@ for (const [title, when] of [
 MenuRegistry.appendMenuItem(MenuId.DiffEditorViewSubmenu, {
 	command: {
 		id: DIFF_VIEW_MODE_INLINE_TEMPORARY,
-		title: localize('diffView.inlineTemporary', "Inline (Temporary)"),
+		// allow-any-unicode-next-line
+		title: localize('diffView.inlineTemporary', "内联（临时）"),
 		toggled: EditorContextKeys.diffEditorTemporaryInlineMode,
 		precondition: ContextKeyExpr.false(),
 	},
@@ -484,13 +555,21 @@ MenuRegistry.appendMenuItem(MenuId.DiffEditorViewSubmenu, {
 	order: 4,
 	when: EditorContextKeys.diffEditorTemporaryInlineMode,
 });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTitle, { command: { id: SHOW_EDITORS_IN_GROUP, title: localize('showOpenedEditors', "显示已打开的编辑器") }, group: '3_open', order: 10, when: EditorPartModalContext.toNegated() /* not applicable to modal editor */ });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTitle, { command: { id: CLOSE_EDITORS_IN_GROUP_COMMAND_ID, title: localize('closeAll', "全部关闭") }, group: '5_close', order: 10, when: EditorPartModalContext.toNegated() /* not applicable to modal editor */ });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTitle, { command: { id: CLOSE_SAVED_EDITORS_COMMAND_ID, title: localize('closeAllSaved', "关闭已保存的编辑器") }, group: '5_close', order: 20, when: EditorPartModalContext.toNegated() /* not applicable to modal editor */ });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTitle, { command: { id: TOGGLE_KEEP_EDITORS_COMMAND_ID, title: localize('togglePreviewMode', "启用预览编辑器"), toggled: ContextKeyExpr.has('config.workbench.editor.enablePreview') }, group: '7_settings', order: 10, when: EditorPartModalContext.toNegated() /* not applicable to modal editor */ });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTitle, { command: { id: TOGGLE_MAXIMIZE_EDITOR_GROUP, title: localize('maximizeGroup', "最大化编辑器组") }, group: '8_group_operations', order: 5, when: ContextKeyExpr.and(EditorPartMaximizedEditorGroupContext.negate(), EditorPartMultipleEditorGroupsContext) });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTitle, { command: { id: TOGGLE_MAXIMIZE_EDITOR_GROUP, title: localize('unmaximizeGroup', "还原编辑器组") }, group: '8_group_operations', order: 5, when: EditorPartMaximizedEditorGroupContext });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTitle, { command: { id: TOGGLE_LOCK_GROUP_COMMAND_ID, title: localize('lockGroup', "锁定组"), toggled: ActiveEditorGroupLockedContext }, group: '8_group_operations', order: 10, when: ContextKeyExpr.and(IsAuxiliaryWindowContext.toNegated(), EditorPartModalContext.toNegated()) /* already a primary action for aux windows, not applicable to modal editor */ });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.EditorTitle, { command: { id: ConfigureEditorAction.ID, title: localize('configureEditors', "配置编辑器") }, group: '9_configure', order: 10, when: EditorPartModalContext.toNegated() /* not applicable to modal editor */ });
 
 function appendEditorToolItem(primary: ICommandAction, when: ContextKeyExpression | undefined, order: number, alternative?: ICommandAction, precondition?: ContextKeyExpression | undefined, enableInCompactMode?: boolean, enableInModalMode?: boolean): void {
@@ -533,6 +612,7 @@ const CLOSE_ORDER = 1000000; // towards the far end
 appendEditorToolItem(
 	{
 		id: SPLIT_EDITOR,
+		// allow-any-unicode-next-line
 		title: localize('splitEditorRight', "向右拆分编辑器"),
 		icon: Codicon.splitHorizontal
 	},
@@ -540,6 +620,7 @@ appendEditorToolItem(
 	SPLIT_ORDER,
 	{
 		id: SPLIT_EDITOR_DOWN,
+		// allow-any-unicode-next-line
 		title: localize('splitEditorDown', "向下拆分编辑器"),
 		icon: Codicon.splitVertical
 	}
@@ -548,6 +629,7 @@ appendEditorToolItem(
 appendEditorToolItem(
 	{
 		id: SPLIT_EDITOR,
+		// allow-any-unicode-next-line
 		title: localize('splitEditorDown', "向下拆分编辑器"),
 		icon: Codicon.splitVertical
 	},
@@ -555,6 +637,7 @@ appendEditorToolItem(
 	SPLIT_ORDER,
 	{
 		id: SPLIT_EDITOR_RIGHT,
+		// allow-any-unicode-next-line
 		title: localize('splitEditorRight', "向右拆分编辑器"),
 		icon: Codicon.splitHorizontal
 	}
@@ -566,6 +649,7 @@ appendEditorToolItem(
 MenuRegistry.appendMenuItem(MenuId.EditorTitle, {
 	command: {
 		id: SPLIT_EDITOR,
+		// allow-any-unicode-next-line
 		title: localize('splitEditorRight', "向右拆分编辑器"),
 		icon: Codicon.splitHorizontal
 	},
@@ -576,6 +660,7 @@ MenuRegistry.appendMenuItem(MenuId.EditorTitle, {
 MenuRegistry.appendMenuItem(MenuId.EditorTitle, {
 	command: {
 		id: SPLIT_EDITOR,
+		// allow-any-unicode-next-line
 		title: localize('splitEditorDown', "向下拆分编辑器"),
 		icon: Codicon.splitVertical
 	},
@@ -588,6 +673,7 @@ MenuRegistry.appendMenuItem(MenuId.EditorTitle, {
 appendEditorToolItem(
 	{
 		id: TOGGLE_SPLIT_EDITOR_IN_GROUP_LAYOUT,
+		// allow-any-unicode-next-line
 		title: localize('toggleSplitEditorInGroupLayout', "切换布局"),
 		icon: Codicon.editorLayout
 	},
@@ -599,6 +685,7 @@ appendEditorToolItem(
 appendEditorToolItem(
 	{
 		id: CLOSE_EDITOR_COMMAND_ID,
+		// allow-any-unicode-next-line
 		title: localize('close', "关闭"),
 		icon: Codicon.close
 	},
@@ -606,6 +693,7 @@ appendEditorToolItem(
 	CLOSE_ORDER,
 	{
 		id: CLOSE_EDITORS_IN_GROUP_COMMAND_ID,
+		// allow-any-unicode-next-line
 		title: localize('closeAll', "全部关闭"),
 		icon: Codicon.closeAll
 	}
@@ -615,6 +703,7 @@ appendEditorToolItem(
 appendEditorToolItem(
 	{
 		id: CLOSE_EDITOR_COMMAND_ID,
+		// allow-any-unicode-next-line
 		title: localize('close', "关闭"),
 		icon: Codicon.closeDirty
 	},
@@ -622,6 +711,7 @@ appendEditorToolItem(
 	CLOSE_ORDER,
 	{
 		id: CLOSE_EDITORS_IN_GROUP_COMMAND_ID,
+		// allow-any-unicode-next-line
 		title: localize('closeAll', "全部关闭"),
 		icon: Codicon.closeAll
 	}
@@ -631,6 +721,7 @@ appendEditorToolItem(
 appendEditorToolItem(
 	{
 		id: UNPIN_EDITOR_COMMAND_ID,
+		// allow-any-unicode-next-line
 		title: localize('unpin', "取消固定"),
 		icon: Codicon.pinned
 	},
@@ -638,6 +729,7 @@ appendEditorToolItem(
 	CLOSE_ORDER,
 	{
 		id: CLOSE_EDITOR_COMMAND_ID,
+		// allow-any-unicode-next-line
 		title: localize('close', "关闭"),
 		icon: Codicon.close
 	}
@@ -647,6 +739,7 @@ appendEditorToolItem(
 appendEditorToolItem(
 	{
 		id: UNPIN_EDITOR_COMMAND_ID,
+		// allow-any-unicode-next-line
 		title: localize('unpin', "取消固定"),
 		icon: Codicon.pinnedDirty
 	},
@@ -654,6 +747,7 @@ appendEditorToolItem(
 	CLOSE_ORDER,
 	{
 		id: CLOSE_EDITOR_COMMAND_ID,
+		// allow-any-unicode-next-line
 		title: localize('close', "关闭"),
 		icon: Codicon.close
 	}
@@ -663,6 +757,7 @@ appendEditorToolItem(
 appendEditorToolItem(
 	{
 		id: LOCK_GROUP_COMMAND_ID,
+		// allow-any-unicode-next-line
 		title: localize('lockEditorGroup', "锁定组"),
 		icon: Codicon.unlock
 	},
@@ -674,6 +769,7 @@ appendEditorToolItem(
 appendEditorToolItem(
 	{
 		id: UNLOCK_GROUP_COMMAND_ID,
+		// allow-any-unicode-next-line
 		title: localize('unlockEditorGroup', "解除锁定组"),
 		icon: Codicon.lock,
 		toggled: ContextKeyExpr.true()
@@ -683,10 +779,12 @@ appendEditorToolItem(
 );
 
 // Diff Editor Title Menu: Previous Change
+// allow-any-unicode-next-line
 const previousChangeIcon = registerIcon('diff-editor-previous-change', Codicon.arrowUp, localize('previousChangeIcon', "差异编辑器中上一个更改操作的图标"));
 appendEditorToolItem(
 	{
 		id: GOTO_PREVIOUS_CHANGE,
+		// allow-any-unicode-next-line
 		title: localize('navigate.prev.label', "上一处更改"),
 		icon: previousChangeIcon
 	},
@@ -699,10 +797,12 @@ appendEditorToolItem(
 );
 
 // Diff Editor Title Menu: Next Change
+// allow-any-unicode-next-line
 const nextChangeIcon = registerIcon('diff-editor-next-change', Codicon.arrowDown, localize('nextChangeIcon', "差异编辑器中下一个更改操作的图标"));
 appendEditorToolItem(
 	{
 		id: GOTO_NEXT_CHANGE,
+		// allow-any-unicode-next-line
 		title: localize('navigate.next.label', "下一处更改"),
 		icon: nextChangeIcon
 	},
@@ -718,6 +818,7 @@ appendEditorToolItem(
 appendEditorToolItem(
 	{
 		id: DIFF_SWAP_SIDES,
+		// allow-any-unicode-next-line
 		title: localize('swapDiffSides', "切换左右端"),
 		icon: Codicon.arrowSwap
 	},
@@ -731,6 +832,7 @@ appendEditorToolItem(
 appendEditorToolItem(
 	{
 		id: ReOpenInTextEditorAction.ID,
+		// allow-any-unicode-next-line
 		title: localize('reopenAsText', "以文本方式重新打开"),
 		icon: Codicon.fileCode
 	},
@@ -742,10 +844,12 @@ appendEditorToolItem(
 	true
 );
 
+// allow-any-unicode-next-line
 const toggleWhitespace = registerIcon('diff-editor-toggle-whitespace', Codicon.whitespace, localize('toggleWhitespace', "差异编辑器中“切换空白”操作的图标"));
 MenuRegistry.appendMenuItem(MenuId.EditorTitle, {
 	command: {
 		id: TOGGLE_DIFF_IGNORE_TRIM_WHITESPACE,
+		// allow-any-unicode-next-line
 		title: localize('ignoreTrimWhitespace.label', "显示行首/行尾空白差异"),
 		icon: toggleWhitespace,
 		precondition: TextCompareEditorActiveContext,
@@ -757,16 +861,27 @@ MenuRegistry.appendMenuItem(MenuId.EditorTitle, {
 });
 
 // Editor Commands for Command Palette
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.CommandPalette, { command: { id: KEEP_EDITOR_COMMAND_ID, title: localize2('keepEditor', "保留编辑器"), category: Categories.View }, when: ContextKeyExpr.has('config.workbench.editor.enablePreview') });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.CommandPalette, { command: { id: PIN_EDITOR_COMMAND_ID, title: localize2('pinEditor', "固定编辑器"), category: Categories.View } });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.CommandPalette, { command: { id: UNPIN_EDITOR_COMMAND_ID, title: localize2('unpinEditor', "取消固定编辑器"), category: Categories.View } });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.CommandPalette, { command: { id: CLOSE_EDITOR_COMMAND_ID, title: localize2('closeEditor', "关闭编辑器"), category: Categories.View } });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.CommandPalette, { command: { id: CLOSE_PINNED_EDITOR_COMMAND_ID, title: localize2('closePinnedEditor', "关闭固定的编辑器"), category: Categories.View } });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.CommandPalette, { command: { id: CLOSE_EDITORS_IN_GROUP_COMMAND_ID, title: localize2('closeEditorsInGroup', "关闭组中的所有编辑器"), category: Categories.View } });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.CommandPalette, { command: { id: CLOSE_SAVED_EDITORS_COMMAND_ID, title: localize2('closeSavedEditors', "关闭组中已保存的编辑器"), category: Categories.View } });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.CommandPalette, { command: { id: CLOSE_OTHER_EDITORS_IN_GROUP_COMMAND_ID, title: localize2('closeOtherEditors', "关闭组中其他编辑器"), category: Categories.View } });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.CommandPalette, { command: { id: CLOSE_EDITORS_TO_THE_RIGHT_COMMAND_ID, title: localize2('closeRightEditors', "关闭组中右侧编辑器"), category: Categories.View }, when: ActiveEditorLastInGroupContext.toNegated() });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.CommandPalette, { command: { id: CLOSE_EDITORS_AND_GROUP_COMMAND_ID, title: localize2('closeEditorGroup', "关闭编辑器组"), category: Categories.View }, when: MultipleEditorGroupsContext });
+// allow-any-unicode-next-line
 MenuRegistry.appendMenuItem(MenuId.CommandPalette, { command: { id: REOPEN_WITH_COMMAND_ID, title: localize2('reopenWith', "使用其他编辑器重新打开..."), category: Categories.View }, when: ActiveEditorAvailableEditorIdsContext });
 
 // File menu
@@ -774,6 +889,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarRecentMenu, {
 	group: '1_editor',
 	command: {
 		id: ReopenClosedEditorAction.ID,
+		// allow-any-unicode-next-line
 		title: localize({ key: 'miReopenClosedEditor', comment: ['&& denotes a mnemonic'] }, "重新打开已关闭的编辑器(&&R)"),
 		precondition: ContextKeyExpr.has('canReopenClosedEditor')
 	},
@@ -784,12 +900,14 @@ MenuRegistry.appendMenuItem(MenuId.MenubarRecentMenu, {
 	group: 'z_clear',
 	command: {
 		id: ClearRecentFilesAction.ID,
+		// allow-any-unicode-next-line
 		title: localize({ key: 'miClearRecentOpen', comment: ['&& denotes a mnemonic'] }, "清除最近打开的…(&&C)")
 	},
 	order: 1
 });
 
 MenuRegistry.appendMenuItem(MenuId.MenubarFileMenu, {
+	// allow-any-unicode-next-line
 	title: localize('miShare', "共享"),
 	submenu: MenuId.MenubarShare,
 	group: '45_share',
@@ -800,6 +918,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarFileMenu, {
 // Layout menu
 MenuRegistry.appendMenuItem(MenuId.MenubarViewMenu, {
 	group: '2_appearance',
+	// allow-any-unicode-next-line
 	title: localize({ key: 'miEditorLayout', comment: ['&& denotes a mnemonic'] }, "编辑器布局(&&L)"),
 	submenu: MenuId.MenubarLayoutMenu,
 	order: 2,
@@ -811,7 +930,9 @@ MenuRegistry.appendMenuItem(MenuId.MenubarLayoutMenu, {
 	command: {
 		id: SPLIT_EDITOR_UP,
 		title: {
+			// allow-any-unicode-next-line
 			...localize2('miSplitEditorUpWithoutMnemonic', "向上拆分"),
+			// allow-any-unicode-next-line
 			mnemonicTitle: localize({ key: 'miSplitEditorUp', comment: ['&& denotes a mnemonic'] }, "向上拆分(&&U)"),
 		}
 	},
@@ -823,7 +944,9 @@ MenuRegistry.appendMenuItem(MenuId.MenubarLayoutMenu, {
 	command: {
 		id: SPLIT_EDITOR_DOWN,
 		title: {
+			// allow-any-unicode-next-line
 			...localize2('miSplitEditorDownWithoutMnemonic', "向下拆分"),
+			// allow-any-unicode-next-line
 			mnemonicTitle: localize({ key: 'miSplitEditorDown', comment: ['&& denotes a mnemonic'] }, "向下拆分(&&D)"),
 		}
 	},
@@ -835,7 +958,9 @@ MenuRegistry.appendMenuItem(MenuId.MenubarLayoutMenu, {
 	command: {
 		id: SPLIT_EDITOR_LEFT,
 		title: {
+			// allow-any-unicode-next-line
 			...localize2('miSplitEditorLeftWithoutMnemonic', "向左拆分"),
+			// allow-any-unicode-next-line
 			mnemonicTitle: localize({ key: 'miSplitEditorLeft', comment: ['&& denotes a mnemonic'] }, "向左拆分(&&L)"),
 		}
 	},
@@ -847,7 +972,9 @@ MenuRegistry.appendMenuItem(MenuId.MenubarLayoutMenu, {
 	command: {
 		id: SPLIT_EDITOR_RIGHT,
 		title: {
+			// allow-any-unicode-next-line
 			...localize2('miSplitEditorRightWithoutMnemonic', "向右拆分"),
+			// allow-any-unicode-next-line
 			mnemonicTitle: localize({ key: 'miSplitEditorRight', comment: ['&& denotes a mnemonic'] }, "向右拆分(&&R)"),
 		}
 	},
@@ -859,7 +986,9 @@ MenuRegistry.appendMenuItem(MenuId.MenubarLayoutMenu, {
 	command: {
 		id: SPLIT_EDITOR_IN_GROUP,
 		title: {
+			// allow-any-unicode-next-line
 			...localize2('miSplitEditorInGroupWithoutMnemonic', "在组内拆分"),
+			// allow-any-unicode-next-line
 			mnemonicTitle: localize({ key: 'miSplitEditorInGroup', comment: ['&& denotes a mnemonic'] }, "在组中拆分(&&G)"),
 		}
 	},
@@ -872,7 +1001,9 @@ MenuRegistry.appendMenuItem(MenuId.MenubarLayoutMenu, {
 	command: {
 		id: JOIN_EDITOR_IN_GROUP,
 		title: {
+			// allow-any-unicode-next-line
 			...localize2('miJoinEditorInGroupWithoutMnemonic', "合并到组"),
+			// allow-any-unicode-next-line
 			mnemonicTitle: localize({ key: 'miJoinEditorInGroup', comment: ['&& denotes a mnemonic'] }, "加入组(&&G)"),
 		}
 	},
@@ -885,7 +1016,9 @@ MenuRegistry.appendMenuItem(MenuId.MenubarLayoutMenu, {
 	command: {
 		id: MOVE_EDITOR_INTO_NEW_WINDOW_COMMAND_ID,
 		title: {
+			// allow-any-unicode-next-line
 			...localize2('moveEditorToNewWindow', "把编辑器移入新窗口"),
+			// allow-any-unicode-next-line
 			mnemonicTitle: localize({ key: 'miMoveEditorToNewWindow', comment: ['&& denotes a mnemonic'] }, "将编辑器移入新窗口(&&M)"),
 		}
 	},
@@ -897,7 +1030,9 @@ MenuRegistry.appendMenuItem(MenuId.MenubarLayoutMenu, {
 	command: {
 		id: COPY_EDITOR_INTO_NEW_WINDOW_COMMAND_ID,
 		title: {
+			// allow-any-unicode-next-line
 			...localize2('copyEditorToNewWindow', "把编辑器复制到新窗口"),
+			// allow-any-unicode-next-line
 			mnemonicTitle: localize({ key: 'miCopyEditorToNewWindow', comment: ['&& denotes a mnemonic'] }, "将编辑器复制到新窗口(&&C)"),
 		}
 	},
@@ -909,7 +1044,9 @@ MenuRegistry.appendMenuItem(MenuId.MenubarLayoutMenu, {
 	command: {
 		id: EditorLayoutSingleAction.ID,
 		title: {
+			// allow-any-unicode-next-line
 			...localize2('miSingleColumnEditorLayoutWithoutMnemonic', "单一"),
+			// allow-any-unicode-next-line
 			mnemonicTitle: localize({ key: 'miSingleColumnEditorLayout', comment: ['&& denotes a mnemonic'] }, "单列(&&S)"),
 		}
 	},
@@ -921,7 +1058,9 @@ MenuRegistry.appendMenuItem(MenuId.MenubarLayoutMenu, {
 	command: {
 		id: EditorLayoutTwoColumnsAction.ID,
 		title: {
+			// allow-any-unicode-next-line
 			...localize2('miTwoColumnsEditorLayoutWithoutMnemonic', "两列"),
+			// allow-any-unicode-next-line
 			mnemonicTitle: localize({ key: 'miTwoColumnsEditorLayout', comment: ['&& denotes a mnemonic'] }, "双列(&&T)"),
 		}
 	},
@@ -933,7 +1072,9 @@ MenuRegistry.appendMenuItem(MenuId.MenubarLayoutMenu, {
 	command: {
 		id: EditorLayoutThreeColumnsAction.ID,
 		title: {
+			// allow-any-unicode-next-line
 			...localize2('miThreeColumnsEditorLayoutWithoutMnemonic', "三列"),
+			// allow-any-unicode-next-line
 			mnemonicTitle: localize({ key: 'miThreeColumnsEditorLayout', comment: ['&& denotes a mnemonic'] }, "三列(&&H)"),
 		}
 	},
@@ -945,7 +1086,9 @@ MenuRegistry.appendMenuItem(MenuId.MenubarLayoutMenu, {
 	command: {
 		id: EditorLayoutTwoRowsAction.ID,
 		title: {
+			// allow-any-unicode-next-line
 			...localize2('miTwoRowsEditorLayoutWithoutMnemonic', "双行"),
+			// allow-any-unicode-next-line
 			mnemonicTitle: localize({ key: 'miTwoRowsEditorLayout', comment: ['&& denotes a mnemonic'] }, "双行(&&W)"),
 		}
 	},
@@ -957,7 +1100,9 @@ MenuRegistry.appendMenuItem(MenuId.MenubarLayoutMenu, {
 	command: {
 		id: EditorLayoutThreeRowsAction.ID,
 		title: {
+			// allow-any-unicode-next-line
 			...localize2('miThreeRowsEditorLayoutWithoutMnemonic', "三行"),
+			// allow-any-unicode-next-line
 			mnemonicTitle: localize({ key: 'miThreeRowsEditorLayout', comment: ['&& denotes a mnemonic'] }, "三行(&&R)"),
 		}
 	},
@@ -969,7 +1114,9 @@ MenuRegistry.appendMenuItem(MenuId.MenubarLayoutMenu, {
 	command: {
 		id: EditorLayoutTwoByTwoGridAction.ID,
 		title: {
+			// allow-any-unicode-next-line
 			...localize2('miTwoByTwoGridEditorLayoutWithoutMnemonic', "2x2 网格"),
+			// allow-any-unicode-next-line
 			mnemonicTitle: localize({ key: 'miTwoByTwoGridEditorLayout', comment: ['&& denotes a mnemonic'] }, "2x2 网格(&&G)"),
 		}
 	},
@@ -981,7 +1128,9 @@ MenuRegistry.appendMenuItem(MenuId.MenubarLayoutMenu, {
 	command: {
 		id: EditorLayoutTwoRowsRightAction.ID,
 		title: {
+			// allow-any-unicode-next-line
 			...localize2('miTwoRowsRightEditorLayoutWithoutMnemonic', "右侧双行"),
+			// allow-any-unicode-next-line
 			mnemonicTitle: localize({ key: 'miTwoRowsRightEditorLayout', comment: ['&& denotes a mnemonic'] }, "右侧双行(&&O)"),
 		}
 	},
@@ -993,7 +1142,9 @@ MenuRegistry.appendMenuItem(MenuId.MenubarLayoutMenu, {
 	command: {
 		id: EditorLayoutTwoColumnsBottomAction.ID,
 		title: {
+			// allow-any-unicode-next-line
 			...localize2('miTwoColumnsBottomEditorLayoutWithoutMnemonic', "底部双列"),
+			// allow-any-unicode-next-line
 			mnemonicTitle: localize({ key: 'miTwoColumnsBottomEditorLayout', comment: ['&& denotes a mnemonic'] }, "底部双列(&&C)"),
 		}
 	},
@@ -1006,6 +1157,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarGoMenu, {
 	group: '1_history_nav',
 	command: {
 		id: 'workbench.action.navigateToLastEditLocation',
+		// allow-any-unicode-next-line
 		title: localize({ key: 'miLastEditLocation', comment: ['&& denotes a mnemonic'] }, "上次编辑位置(&&L)"),
 		precondition: ContextKeyExpr.has('canNavigateToLastEditLocation')
 	},
@@ -1018,6 +1170,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarSwitchEditorMenu, {
 	group: '1_sideBySide',
 	command: {
 		id: FOCUS_FIRST_SIDE_EDITOR,
+		// allow-any-unicode-next-line
 		title: localize({ key: 'miFirstSideEditor', comment: ['&& denotes a mnemonic'] }, "编辑器中的第一侧(&&F)")
 	},
 	when: ContextKeyExpr.or(SideBySideEditorActiveContext, TextCompareEditorActiveContext),
@@ -1028,6 +1181,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarSwitchEditorMenu, {
 	group: '1_sideBySide',
 	command: {
 		id: FOCUS_SECOND_SIDE_EDITOR,
+		// allow-any-unicode-next-line
 		title: localize({ key: 'miSecondSideEditor', comment: ['&& denotes a mnemonic'] }, "编辑器中的第二侧(&&S)")
 	},
 	when: ContextKeyExpr.or(SideBySideEditorActiveContext, TextCompareEditorActiveContext),
@@ -1038,6 +1192,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarSwitchEditorMenu, {
 	group: '2_any',
 	command: {
 		id: 'workbench.action.nextEditor',
+		// allow-any-unicode-next-line
 		title: localize({ key: 'miNextEditor', comment: ['&& denotes a mnemonic'] }, "下一个编辑器(&&N)")
 	},
 	order: 1
@@ -1047,6 +1202,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarSwitchEditorMenu, {
 	group: '2_any',
 	command: {
 		id: 'workbench.action.previousEditor',
+		// allow-any-unicode-next-line
 		title: localize({ key: 'miPreviousEditor', comment: ['&& denotes a mnemonic'] }, "上一个编辑器(&&P)")
 	},
 	order: 2
@@ -1056,6 +1212,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarSwitchEditorMenu, {
 	group: '3_any_used',
 	command: {
 		id: 'workbench.action.openNextRecentlyUsedEditor',
+		// allow-any-unicode-next-line
 		title: localize({ key: 'miNextRecentlyUsedEditor', comment: ['&& denotes a mnemonic'] }, "下一个使用过的编辑器(&&N)")
 	},
 	order: 1
@@ -1065,6 +1222,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarSwitchEditorMenu, {
 	group: '3_any_used',
 	command: {
 		id: 'workbench.action.openPreviousRecentlyUsedEditor',
+		// allow-any-unicode-next-line
 		title: localize({ key: 'miPreviousRecentlyUsedEditor', comment: ['&& denotes a mnemonic'] }, "上一个使用过的编辑器(&&P)")
 	},
 	order: 2
@@ -1074,6 +1232,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarSwitchEditorMenu, {
 	group: '4_group',
 	command: {
 		id: 'workbench.action.nextEditorInGroup',
+		// allow-any-unicode-next-line
 		title: localize({ key: 'miNextEditorInGroup', comment: ['&& denotes a mnemonic'] }, "组中的下一个编辑器(&&N)")
 	},
 	order: 1
@@ -1083,6 +1242,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarSwitchEditorMenu, {
 	group: '4_group',
 	command: {
 		id: 'workbench.action.previousEditorInGroup',
+		// allow-any-unicode-next-line
 		title: localize({ key: 'miPreviousEditorInGroup', comment: ['&& denotes a mnemonic'] }, "组中的上一个编辑器(&&P)")
 	},
 	order: 2
@@ -1092,6 +1252,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarSwitchEditorMenu, {
 	group: '5_group_used',
 	command: {
 		id: 'workbench.action.openNextRecentlyUsedEditorInGroup',
+		// allow-any-unicode-next-line
 		title: localize({ key: 'miNextUsedEditorInGroup', comment: ['&& denotes a mnemonic'] }, "组中下一个使用过的编辑器(&&N)")
 	},
 	order: 1
@@ -1101,6 +1262,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarSwitchEditorMenu, {
 	group: '5_group_used',
 	command: {
 		id: 'workbench.action.openPreviousRecentlyUsedEditorInGroup',
+		// allow-any-unicode-next-line
 		title: localize({ key: 'miPreviousUsedEditorInGroup', comment: ['&& denotes a mnemonic'] }, "组中上一个使用过的编辑器(&&P)")
 	},
 	order: 2
@@ -1108,6 +1270,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarSwitchEditorMenu, {
 
 MenuRegistry.appendMenuItem(MenuId.MenubarGoMenu, {
 	group: '2_editor_nav',
+	// allow-any-unicode-next-line
 	title: localize({ key: 'miSwitchEditor', comment: ['&& denotes a mnemonic'] }, "切换编辑器(&&E)"),
 	submenu: MenuId.MenubarSwitchEditorMenu,
 	order: 1
@@ -1118,6 +1281,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarSwitchGroupMenu, {
 	group: '1_focus_index',
 	command: {
 		id: 'workbench.action.focusFirstEditorGroup',
+		// allow-any-unicode-next-line
 		title: localize({ key: 'miFocusFirstGroup', comment: ['&& denotes a mnemonic'] }, "第 1 组(&&1)")
 	},
 	order: 1
@@ -1127,6 +1291,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarSwitchGroupMenu, {
 	group: '1_focus_index',
 	command: {
 		id: 'workbench.action.focusSecondEditorGroup',
+		// allow-any-unicode-next-line
 		title: localize({ key: 'miFocusSecondGroup', comment: ['&& denotes a mnemonic'] }, "第 2 组(&&2)")
 	},
 	order: 2
@@ -1136,6 +1301,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarSwitchGroupMenu, {
 	group: '1_focus_index',
 	command: {
 		id: 'workbench.action.focusThirdEditorGroup',
+		// allow-any-unicode-next-line
 		title: localize({ key: 'miFocusThirdGroup', comment: ['&& denotes a mnemonic'] }, "第 3 组(&&3)"),
 		precondition: MultipleEditorGroupsContext
 	},
@@ -1146,6 +1312,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarSwitchGroupMenu, {
 	group: '1_focus_index',
 	command: {
 		id: 'workbench.action.focusFourthEditorGroup',
+		// allow-any-unicode-next-line
 		title: localize({ key: 'miFocusFourthGroup', comment: ['&& denotes a mnemonic'] }, "第 4 组(&&4)"),
 		precondition: MultipleEditorGroupsContext
 	},
@@ -1156,6 +1323,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarSwitchGroupMenu, {
 	group: '1_focus_index',
 	command: {
 		id: 'workbench.action.focusFifthEditorGroup',
+		// allow-any-unicode-next-line
 		title: localize({ key: 'miFocusFifthGroup', comment: ['&& denotes a mnemonic'] }, "第 5 组(&&5)"),
 		precondition: MultipleEditorGroupsContext
 	},
@@ -1166,6 +1334,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarSwitchGroupMenu, {
 	group: '2_next_prev',
 	command: {
 		id: 'workbench.action.focusNextGroup',
+		// allow-any-unicode-next-line
 		title: localize({ key: 'miNextGroup', comment: ['&& denotes a mnemonic'] }, "下一个组(&&N)"),
 		precondition: MultipleEditorGroupsContext
 	},
@@ -1176,6 +1345,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarSwitchGroupMenu, {
 	group: '2_next_prev',
 	command: {
 		id: 'workbench.action.focusPreviousGroup',
+		// allow-any-unicode-next-line
 		title: localize({ key: 'miPreviousGroup', comment: ['&& denotes a mnemonic'] }, "上一个组(&&P)"),
 		precondition: MultipleEditorGroupsContext
 	},
@@ -1186,6 +1356,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarSwitchGroupMenu, {
 	group: '3_directional',
 	command: {
 		id: 'workbench.action.focusLeftGroup',
+		// allow-any-unicode-next-line
 		title: localize({ key: 'miFocusLeftGroup', comment: ['&& denotes a mnemonic'] }, "左侧组(&&L)"),
 		precondition: MultipleEditorGroupsContext
 	},
@@ -1196,6 +1367,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarSwitchGroupMenu, {
 	group: '3_directional',
 	command: {
 		id: 'workbench.action.focusRightGroup',
+		// allow-any-unicode-next-line
 		title: localize({ key: 'miFocusRightGroup', comment: ['&& denotes a mnemonic'] }, "右侧组(&&R)"),
 		precondition: MultipleEditorGroupsContext
 	},
@@ -1206,6 +1378,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarSwitchGroupMenu, {
 	group: '3_directional',
 	command: {
 		id: 'workbench.action.focusAboveGroup',
+		// allow-any-unicode-next-line
 		title: localize({ key: 'miFocusAboveGroup', comment: ['&& denotes a mnemonic'] }, "上方组(&&A)"),
 		precondition: MultipleEditorGroupsContext
 	},
@@ -1216,6 +1389,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarSwitchGroupMenu, {
 	group: '3_directional',
 	command: {
 		id: 'workbench.action.focusBelowGroup',
+		// allow-any-unicode-next-line
 		title: localize({ key: 'miFocusBelowGroup', comment: ['&& denotes a mnemonic'] }, "下方组(&&B)"),
 		precondition: MultipleEditorGroupsContext
 	},
@@ -1224,6 +1398,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarSwitchGroupMenu, {
 
 MenuRegistry.appendMenuItem(MenuId.MenubarGoMenu, {
 	group: '2_editor_nav',
+	// allow-any-unicode-next-line
 	title: localize({ key: 'miSwitchGroup', comment: ['&& denotes a mnemonic'] }, "切换组(&&G)"),
 	submenu: MenuId.MenubarSwitchGroupMenu,
 	order: 2
