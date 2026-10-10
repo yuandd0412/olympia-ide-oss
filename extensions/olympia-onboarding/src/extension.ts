@@ -1,4 +1,8 @@
 /*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+/*---------------------------------------------------------------------------------------------
  *  Olympia IDE - built-in onboarding extension.
  *
  *  Owns the competition-oriented entry points that do not belong in the workbench:

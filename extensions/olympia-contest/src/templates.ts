@@ -1,4 +1,8 @@
 /*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+/*---------------------------------------------------------------------------------------------
  *  赛制模板: ACM 赛制 (单文件 judge) 与 IOI 赛制 (函数接口 + grader).
  *
  *  Both are the shape Chinese OI training expects: 洛谷/Codeforces 用 ACM 模板，NOIP/省选用

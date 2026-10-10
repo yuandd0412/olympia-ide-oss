@@ -1,4 +1,8 @@
 /*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+/*---------------------------------------------------------------------------------------------
  *  Olympia IDE - judge-accurate C++ compilation.
  *
  *  Turns `olympia.compiler.*` into an actual g++ invocation instead of a setting nobody reads.

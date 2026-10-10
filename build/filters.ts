@@ -56,6 +56,10 @@ export const unicodeFilter = Object.freeze<string[]>([
 	'!extensions/mermaid-markdown-features/chat-webview-out/**',
 	'!extensions/ipynb/notebook-out/**',
 	'!extensions/notebook-renderers/renderer-out/**',
+	// Olympia's own extensions carry student-facing Chinese text in the source of truth: prompts,
+	// command titles and diagnostics. The product ships Chinese only, so the guard would have to be
+	// silenced line by line forever.
+	'!extensions/olympia-*/**',
 	'!extensions/php-language-features/src/features/phpGlobalFunctions.ts',
 	'!extensions/terminal-suggest/src/completions/upstream/**',
 	'!extensions/typescript-language-features/test-workspace/**',
@@ -104,6 +108,8 @@ export const indentationFilter = Object.freeze<string[]>([
 	'!build/npm/gyp/patches/gyp_spectre_mitigation_support.patch',
 	'!product.overrides.json',
 	'!src/vs/platform/endpoint/common/licenseAgreement.ts',
+	// The contest templates are 4-space-indented C++ *text* handed to students, not source style.
+	'!extensions/olympia-contest/src/templates.ts',
 
 	// except specific folders
 	'!test/automation/out/**',

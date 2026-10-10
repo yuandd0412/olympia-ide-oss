@@ -1,4 +1,8 @@
 /*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+/*---------------------------------------------------------------------------------------------
  *  Minimal HTTPS fetch for the contest helper. Node's https module only — the extension
  *  must not depend on anything that is not already in the Electron runtime, because
  *  competition machines are frequently offline except for the judge sites.
@@ -82,8 +86,12 @@ function oneHop(
 ): Promise<{ status: number; body: string; raw: http.IncomingMessage }> {
 	return new Promise((resolve, reject) => {
 		let settled = false;
+		// Declared apart from their assignments on purpose: done() below has to reach the timer it
+		// clears and the request it destroys, both of which only exist a few lines later.
+		/* eslint-disable prefer-const */
 		let timer: NodeJS.Timeout | undefined;
 		let req: ClientRequest | undefined;
+		/* eslint-enable prefer-const */
 
 		const done = (err: Error | null, res?: { status: number; body: string; raw: http.IncomingMessage }) => {
 			if (settled) { return; }

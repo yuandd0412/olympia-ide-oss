@@ -70,6 +70,7 @@ const compilations = [
 	'extensions/notebook-renderers/tsconfig.json',
 	'extensions/olympia-onboarding/tsconfig.json',
 	'extensions/olympia-contest/tsconfig.json',
+	'extensions/olympia-coach/tsconfig.json',
 	'extensions/references-view/tsconfig.json',
 	'extensions/search-result/tsconfig.json',
 	'extensions/tunnel-forwarding/tsconfig.json',

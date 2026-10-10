@@ -1,0 +1,53 @@
+{
+	"name": "olympia-coach",
+	"displayName": "Olympia AI 教练",
+	"description": "面向信息学奥赛的聊天教练：错因分析、思路提示、提交前检查。使用你在“管理语言模型”里配置的本地或自有密钥模型。",
+	"version": "0.1.0",
+	"publisher": "olympia",
+	"license": "MIT",
+	"engines": {
+		"vscode": "^1.140.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"main": "./out/extension",
+	"activationEvents": [
+		"onStartupFinished"
+	],
+	"contributes": {
+		"chatParticipants": [
+			{
+				"id": "olympia.coach",
+				"name": "coach",
+				"fullName": "Olympia AI 教练",
+				"description": "分析错因、给出思路提示、提交前风险检查",
+				"sampleRequest": "这段代码为什么是 WA？先给方向，不要直接给完整代码。",
+				"commands": [
+					{
+						"name": "wa",
+						"description": "结合题面、样例与你的输出，列出最可能的 3 个错因和验证方法"
+					},
+					{
+						"name": "hint",
+						"description": "只给方向性提示与关键不变量，不输出完整代码"
+					},
+					{
+						"name": "check",
+						"description": "提交前风险清单：边界、整数溢出、复杂度、读入终止、多组数据"
+					}
+				]
+			}
+		],
+		"commands": [
+			{
+				"command": "olympia.coach.selectModel",
+				"title": "Olympia：选择 AI 教练使用的模型"
+			}
+		]
+	},
+	"scripts": {
+		"compile": "gulp compile-extension:olympia-coach",
+		"watch": "gulp watch-extension:olympia-coach"
+	}
+}

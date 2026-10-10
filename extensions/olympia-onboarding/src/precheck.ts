@@ -1,4 +1,8 @@
 /*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+/*---------------------------------------------------------------------------------------------
  *  Olympia IDE - submission pre-flight check ("提交前体检").
  *
  *  Scans a C/C++ translation unit for the failure modes that make a solution pass locally and
@@ -314,15 +318,15 @@ const CHECKERS: ReadonlyArray<{
 	readonly defaultOn: boolean;
 	readonly run: (ctx: RuleContext) => Finding | undefined;
 }> = [
-	{ id: 'crlf', defaultOn: true, run: checkCrlf },
-	{ id: 'pragmaOptimize', defaultOn: true, run: checkPragmaOptimize },
-	{ id: 'onlineJudge', defaultOn: true, run: checkOnlineJudge },
-	{ id: 'memoryLeak', defaultOn: true, run: checkMemoryLeak },
-	{ id: 'reservedWord', defaultOn: true, run: checkReservedWord },
-	{ id: 'freopen', defaultOn: true, run: checkFreopen },
-	{ id: 'ioMix', defaultOn: true, run: checkIoMix },
-	{ id: 'removedCpp', defaultOn: true, run: checkRemovedCpp },
-];
+		{ id: 'crlf', defaultOn: true, run: checkCrlf },
+		{ id: 'pragmaOptimize', defaultOn: true, run: checkPragmaOptimize },
+		{ id: 'onlineJudge', defaultOn: true, run: checkOnlineJudge },
+		{ id: 'memoryLeak', defaultOn: true, run: checkMemoryLeak },
+		{ id: 'reservedWord', defaultOn: true, run: checkReservedWord },
+		{ id: 'freopen', defaultOn: true, run: checkFreopen },
+		{ id: 'ioMix', defaultOn: true, run: checkIoMix },
+		{ id: 'removedCpp', defaultOn: true, run: checkRemovedCpp },
+	];
 
 export function analyse(text: string, profile: string): Finding[] {
 	const ctx: RuleContext = { text, profile };
