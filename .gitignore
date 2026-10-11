@@ -54,3 +54,6 @@ dist
 .v[0-9]*/
 # Local agent validation evidence
 .agent-validation/
+
+# 在线引导安装器的编译产物（build/win32/code-web.iss 输出）
+build/win32/web-out/
