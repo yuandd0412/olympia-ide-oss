@@ -10,6 +10,7 @@ import { localize } from '../../../../../../../nls.js';
 import { ActionListItemKind, IActionListItem } from '../../../../../../../platform/actionWidget/browser/actionList.js';
 import { IActionWidgetDropdownAction } from '../../../../../../../platform/actionWidget/browser/actionWidgetDropdown.js';
 import { ICommandService } from '../../../../../../../platform/commands/common/commands.js';
+import product from '../../../../../../../platform/product/common/product.js';
 import { ChatEntitlement, IChatEntitlementService, isProUser } from '../../../../../../services/chat/common/chatEntitlementService.js';
 import { MANAGE_CHAT_COMMAND_ID } from '../../../../common/constants.js';
 import { IModelControlEntry, ILanguageModelChatMetadataAndIdentifier, IModelsControlManifest } from '../../../../common/languageModels.js';
@@ -74,7 +75,16 @@ export function createManageModelsAction(commandService: ICommandService): IActi
 		// allow-any-unicode-next-line
 		tooltip: localize('chat.manageModels.tooltip', "管理语言模型"),
 		label: localize('chat.manageModels', "管理模型…"),
-		run: () => { commandService.executeCommand(MANAGE_CHAT_COMMAND_ID); },
+		run: () => {
+			if (product.defaultChatAgent?.byokOnly) {
+				// `workbench.action.chat.manage` is contributed by the Copilot chat extension, which
+				// this product does not ship, so the item would silently do nothing. Send the user to
+				// the settings that actually drive our own provider instead.
+				commandService.executeCommand('workbench.action.openSettings', 'olympia.ai');
+			} else {
+				commandService.executeCommand(MANAGE_CHAT_COMMAND_ID);
+			}
+		},
 	};
 }
 

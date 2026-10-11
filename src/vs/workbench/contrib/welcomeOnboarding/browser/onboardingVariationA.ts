@@ -116,7 +116,11 @@ export class OnboardingVariationA extends Disposable implements IOnboardingServi
 	private _footerSignInBtn: HTMLButtonElement | undefined;
 
 	private currentStepIndex = 0;
-	private readonly steps = ONBOARDING_STEPS;
+	// The sign-in step asks for a GitHub/Google/Apple/Copilot enterprise account that this product
+	// has no provider for, so it is dropped from the flow rather than shown-and-failing.
+	private readonly steps = defaultChat.byokOnly
+		? ONBOARDING_STEPS.filter(step => step !== OnboardingStepId.SignIn)
+		: ONBOARDING_STEPS;
 	private readonly disposables = this._register(new DisposableStore());
 	private readonly stepDisposables = this._register(new DisposableStore());
 	private previouslyFocusedElement: HTMLElement | undefined;
@@ -447,7 +451,7 @@ export class OnboardingVariationA extends Disposable implements IOnboardingServi
 		if (this.footerLeft) {
 			if (this._isLastStep()) {
 				// Show sign-in nudge in footer
-				if (!this._footerSignInBtn && !this._userSignedIn) {
+				if (!this._footerSignInBtn && !this._userSignedIn && !defaultChat.byokOnly) {
 					this._footerSignInBtn = append(this.footerLeft, $<HTMLButtonElement>('button.onboarding-a-signin-nudge-btn'));
 					this._footerSignInBtn.type = 'button';
 					this._footerSignInBtn.textContent = localize('onboarding.sessions.signInNudge', "登录以使用 GitHub Copilot");

@@ -10,6 +10,7 @@ import { IHistoryNavigationWidget } from '../../../../../../base/browser/history
 import { hasModifierKeys, StandardKeyboardEvent } from '../../../../../../base/browser/keyboardEvent.js';
 import { IActionViewItem } from '../../../../../../base/browser/ui/actionbar/actionbar.js';
 import { ActionViewItem, BaseActionViewItem, IActionViewItemOptions } from '../../../../../../base/browser/ui/actionbar/actionViewItems.js';
+import product from '../../../../../../platform/product/common/product.js';
 import * as aria from '../../../../../../base/browser/ui/aria/aria.js';
 import { ButtonWithIcon } from '../../../../../../base/browser/ui/button/button.js';
 import { createInstantHoverDelegate } from '../../../../../../base/browser/ui/hover/hoverDelegateFactory.js';
@@ -2025,6 +2026,12 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	 * additionally requires an empty model list.
 	 */
 	private _showAutoModel(): boolean {
+		if (product.defaultChatAgent?.byokOnly) {
+			// "Auto" is Copilot's routing pseudo-model. With BYOK only, the picker must not offer a
+			// model that no provider can serve, and must not mask an empty list (hasNoAvailableModel
+			// below is what surfaces "no model configured" instead).
+			return false;
+		}
 		const sessionType = this.getCurrentSessionType();
 		return !sessionType || this.chatSessionsService.supportsAutoModelForSessionType(sessionType);
 	}
