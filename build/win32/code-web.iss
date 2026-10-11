@@ -105,6 +105,7 @@ function FetchInto(const Name, DestPath: string): Boolean;
 var
   Attempt, I: Integer;
   Bases: array[0..1] of string;
+  Url: string;
 begin
   Bases[0] := GITEE_BASE;
   Bases[1] := GITHUB_BASE;
@@ -114,12 +115,14 @@ begin
     for I := 0 to 1 do
     begin
       DeleteFile(DestPath);
-      if OneFetch(Bases[I] + '{#ReleaseTag}/' + Name, DestPath) then
+      Url := Bases[I] + '{#ReleaseTag}/' + Name;
+      if OneFetch(Url, DestPath) then
       begin
+        Say('got ' + Url);
         Result := True;
         Exit;
       end;
-      Say('fetch failed from ' + Bases[I] + ' (attempt ' + IntToStr(Attempt) + '): ' + Name);
+      Say('fetch failed from ' + Url + ' (attempt ' + IntToStr(Attempt) + ')');
     end;
   end;
 end;
