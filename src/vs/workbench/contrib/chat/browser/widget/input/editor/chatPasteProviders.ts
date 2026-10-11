@@ -479,7 +479,7 @@ export class PasteTextProvider implements DocumentPasteEditProvider {
 				}],
 				Mimes.text,
 				this.kind,
-				localize('pastedTextArtifact', "Pasted Text Attachment"),
+				localize('pastedTextArtifact', "粘贴文本附件"),
 				this.pasteTargetService,
 				{
 					inlineReference: { text: artifact.referenceText, range: referenceRange },
@@ -522,7 +522,7 @@ export function createPastedTextArtifact(
 	let index = 1;
 	let name: string;
 	do {
-		name = localize('pastedTextArtifact.name', "Pasted text #{0}", index++);
+		name = localize('pastedTextArtifact.name', "粘贴文本 #{0}", index++);
 	} while (existingAttachments.some(attachment => attachment.name === name));
 
 	const content = options?.content;

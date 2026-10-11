@@ -36,7 +36,7 @@ export function getPriceCategoryLabel(priceCategory: string | undefined): string
 		case 'very_high':
 			return localize('chat.priceCategory.veryHigh', "很高成本");
 		default:
-			return localize('chat.priceCategory.unknown', "{0} cost", priceCategory.charAt(0).toUpperCase() + priceCategory.slice(1));
+			return localize('chat.priceCategory.unknown', "{0}费用", priceCategory.charAt(0).toUpperCase() + priceCategory.slice(1));
 	}
 }
 

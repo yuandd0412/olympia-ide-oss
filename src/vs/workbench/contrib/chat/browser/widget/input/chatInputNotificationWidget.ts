@@ -147,7 +147,7 @@ export class ChatInputNotificationWidget extends Disposable implements IChatInpu
 		this._notice = this._register(new ChatInputNoticeWidget({
 			variant: ChatInputNoticeVariant.Notification,
 			className: 'chat-input-notification-widget',
-			ariaRoleDescription: localize('chatInputNotificationRoleDescription', "notification"),
+			ariaRoleDescription: localize('chatInputNotificationRoleDescription', "通知"),
 		}));
 		this._notice.setVisible(false);
 

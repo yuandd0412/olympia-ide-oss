@@ -174,7 +174,7 @@ export class ChatInputNoticeWidget extends Disposable implements IChatInputNotic
 			return;
 		}
 
-		const message = localize('chatInputNotice.focusHint', "{0}. Use Shift+Tab to reach the notice.", this._ariaLabel);
+		const message = localize('chatInputNotice.focusHint', "{0}。按 Shift+Tab 可聚焦到该提示。", this._ariaLabel);
 		if (this._variant === ChatInputNoticeVariant.Tip) {
 			status(message);
 		} else {

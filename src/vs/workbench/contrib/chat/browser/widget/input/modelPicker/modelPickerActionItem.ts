@@ -188,7 +188,7 @@ export class ModelPickerActionItem extends BaseActionViewItem {
 		if (this._pickerWidget.isRestrictedMode()) {
 			// Suffix avoids a leading "Models" so the hover doesn't stutter as
 			// "Models • Models unavailable…" once the prefix is "Models".
-			return localize('chat.modelPicker.restrictedHover', "{0} • Unavailable while in Restricted mode. Trust Workspace to enable models.", label);
+			return localize('chat.modelPicker.restrictedHover', "{0} • 受限模式下不可用。信任工作区后即可启用模型。", label);
 		}
 		if (this._pickerWidget.isSetupRequired()) {
 			return localize('chat.modelPicker.setupRequiredHover', "{0} • Sign in to GitHub Copilot to choose a model.", label);
