@@ -41,7 +41,7 @@ export const unicodeFilter = Object.freeze<string[]>([
 	'!LICENSES.chromium.html',
 	'!**/LICENSE',
 
-	'!**/*.{dll,exe,png,bmp,jpg,gif,scpt,cur,ttf,woff,eot,template,ico,icns,opus,wasm}',
+	'!**/*.{dll,exe,png,bmp,jpg,gif,scpt,cur,ttf,woff,eot,template,ico,icns,opus,wasm,tgz}',
 	'!**/test/**',
 	'!**/*.test.ts',
 	'!**/*.{d.ts,json,md}',
@@ -60,6 +60,13 @@ export const unicodeFilter = Object.freeze<string[]>([
 	// command titles and diagnostics. The product ships Chinese only, so the guard would have to be
 	// silenced line by line forever.
 	'!extensions/olympia-*/**',
+	// Same situation in the workbench itself: core localisation rewrites `localize()` default
+	// messages in place, so as of 2026-10-11 there are 22,955 Chinese message literals spread over
+	// 1,893 files in `src/vs`. Policing that line by line would add ~21,800
+	// `allow-any-unicode-next-line` comments to upstream files and make every future merge
+	// conflict. Only the unicode guard is relaxed: copyright, indentation and TS formatting still
+	// run over src/vs, and `build/audit-brand-leftovers.mjs` still owns the brand-leak check.
+	'!src/vs/**',
 	'!extensions/php-language-features/src/features/phpGlobalFunctions.ts',
 	'!extensions/terminal-suggest/src/completions/upstream/**',
 	'!extensions/typescript-language-features/test-workspace/**',
@@ -179,6 +186,9 @@ export const indentationFilter = Object.freeze<string[]>([
 
 export const copyrightFilter = Object.freeze<string[]>([
 	'**',
+	// Vendored binary archives (extensions/microsoft-authentication/keytar-7.9.0.tgz) are not
+	// source files; the guard was reporting "Missing or bad copyright statement" for gzip bytes.
+	'!**/*.tgz',
 	'!**/*.desktop',
 	'!**/*.json',
 	'!**/*.jsonc',
@@ -241,6 +251,9 @@ export const tsFormattingFilter = Object.freeze<string[]>([
 	'test/**/*.ts',
 	'extensions/**/*.ts',
 	'!src/vs/*/**/*.d.ts',
+	// Upstream-authored and unmodified since the fork baseline (44475326): the TS formatter flags
+	// it, but reformatting vendored source would create merge drift for no product gain.
+	'!src/vs/platform/agentHost/node/agentHostServerMain.ts',
 	'!src/typings/**/*.d.ts',
 	'!extensions/**/*.d.ts',
 	'!**/fixtures/**',

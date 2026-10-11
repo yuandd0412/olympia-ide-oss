@@ -6,10 +6,16 @@ import { gulp } from './lib/gulp/facade.ts';
 import es from 'event-stream';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 import * as task from './lib/gulp/task.ts';
 import { checkCopilotEnginesVersion, checkNoNewJavaScriptFiles, hygiene } from './hygiene.ts';
 
-const dirName = path.dirname(new URL(import.meta.url).pathname);
+// `new URL(import.meta.url).pathname` is POSIX-shaped on every platform: on Windows it comes
+// back as `/D:/…/build`, and path.join() of that against '..' keeps the leading separator, so
+// fs treats it as relative to the current drive root and reads `D:\D:\…\remote\package.json`
+// — ENOENT. Only `npm run hygiene` hit this; the husky pre-commit path streams the staged
+// files and never reached checkPackageJSON. fileURLToPath decodes a Windows drive correctly.
+const dirName = path.dirname(fileURLToPath(import.meta.url));
 
 function checkPackageJSON(this: NodeJS.ReadWriteStream, actualPath: string) {
 	const actual = JSON.parse(fs.readFileSync(path.join(dirName, '..', actualPath), 'utf8'));
