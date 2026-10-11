@@ -39,6 +39,7 @@
 	"agentsTelemetryAppName": "olympia",
 	"webviewContentExternalBaseUrlTemplate": "https://{{uuid}}.vscode-cdn.net/insider/ef65ac1ba57f57f2a3961bfe94aa20481caca4c6/out/vs/workbench/contrib/webview/browser/pre/",
 	"defaultChatAgent": {
+		"byokOnly": true,
 		"extensionId": "olympia.olympia-coach",
 		"chatExtensionId": "olympia.olympia-coach",
 		"chatExtensionOutputId": "olympia.coach.Olympia AI Coach.log",

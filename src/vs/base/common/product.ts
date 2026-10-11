@@ -426,6 +426,13 @@ export interface IDefaultChatAgent {
 	readonly extensionId: string;
 	readonly chatExtensionId: string;
 
+	/**
+	 * Olympia fork: the product has no hosted assistant at all. Chat models come only from a
+	 * user-configured BYOK provider, so the setup/sign-in/plan/entitlement machinery must never
+	 * render and no request may go to a vendor endpoint.
+	 */
+	readonly byokOnly?: boolean;
+
 	readonly chatExtensionOutputId: string;
 	readonly chatExtensionOutputExtensionStateCommand: string;
 

@@ -459,6 +459,17 @@ export class ChatEntitlementService extends Disposable implements IChatEntitleme
 			return; // we need a default chat agent configured going forward from here
 		}
 
+		if (productService.defaultChatAgent.byokOnly) {
+			// Olympia: no hosted assistant exists, so report setup as hidden and finished. Every
+			// `!Setup.hidden` / `Setup.completed` gate in the chat UI resolves to "nothing to set up",
+			// and returning before the context/requests are built is what keeps the window from
+			// phoning a vendor entitlement and quota endpoint on every start.
+			ChatEntitlementContextKeys.Setup.hidden.bindTo(this.contextKeyService).set(true);
+			ChatEntitlementContextKeys.Setup.installed.bindTo(this.contextKeyService).set(true);
+			ChatEntitlementContextKeys.Setup.completed.bindTo(this.contextKeyService).set(true);
+			return;
+		}
+
 		const context = this.context = new Lazy(() => this._register(instantiationService.createInstance(ChatEntitlementContext)));
 		this.requests = new Lazy(() => this._register(instantiationService.createInstance(ChatEntitlementRequests, context.value, {
 			clearQuotas: () => this.clearQuotas(),

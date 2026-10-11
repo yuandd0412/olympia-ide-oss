@@ -1638,6 +1638,11 @@ class DefaultAccountProviderContribution extends Disposable implements IWorkbenc
 		@IDefaultAccountService defaultAccountService: IDefaultAccountService,
 	) {
 		super();
+		if (productService.defaultChatAgent?.byokOnly) {
+			// Olympia: BYOK-only, so there is no default account to sign into. Registering the
+			// provider would put an entry in the accounts menu whose auth provider does not exist.
+			return;
+		}
 		const defaultAccountProvider = this._register(instantiationService.createInstance(DefaultAccountProvider, toDefaultAccountConfig(productService.defaultChatAgent)));
 		defaultAccountService.setDefaultAccountProvider(defaultAccountProvider);
 	}
