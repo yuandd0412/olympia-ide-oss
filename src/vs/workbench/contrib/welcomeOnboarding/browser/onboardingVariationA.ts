@@ -431,7 +431,10 @@ export class OnboardingVariationA extends Disposable implements IOnboardingServi
 			this.backButton.style.display = (this.currentStepIndex === 0 && !showEnterpriseBack) ? 'none' : '';
 		}
 		if (this.nextButton) {
-			if (this.currentStepIndex === 0) {
+			// Branch on the step's identity, not its index: with `byokOnly` the sign-in step is
+			// removed, so index 0 is the personalization step and an index test here handed it the
+			// secondary "Continue without Signing In" label and swallowed 开始使用.
+			if (this.steps[this.currentStepIndex] === OnboardingStepId.SignIn) {
 				if (this._userSignedIn) {
 					this.nextButton.className = 'onboarding-a-btn onboarding-a-btn-primary';
 					this.nextButton.textContent = localize('onboarding.continue', "继续");
