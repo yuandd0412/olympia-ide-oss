@@ -40,8 +40,8 @@ export function createModelPickerTryout(): IOnboardingTryout<IGuidedTryoutPayloa
 					payload: {
 						id: 'modelPicker',
 						targetId: ChatOnboardingTarget.ModelPicker,
-						title: localize('chat.tryout.modelPicker.step.title', "Choose a Model and Provider"),
-						description: localize('chat.tryout.modelPicker.step.description', "Models can come from different providers and vary in capability, speed, and billing or premium request usage. Review the details for your provider and plan before choosing."),
+						title: localize('chat.tryout.modelPicker.step.title', "选择模型与提供方"),
+						description: localize('chat.tryout.modelPicker.step.description', "模型可能来自不同提供方，在能力、速度与计费（或高级请求用量）上也有差异。选择前请先查看你所用提供方与方案的具体说明。"),
 						placement: 'below',
 						openTarget: true,
 						allowTargetInteraction: true,
