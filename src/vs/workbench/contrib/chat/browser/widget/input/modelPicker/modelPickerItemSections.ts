@@ -51,7 +51,7 @@ export function buildUnavailableStateItems(options: IBuildModelPickerItemsOption
 					enabled,
 					checked: false,
 					class: undefined,
-					tooltip: localize('chat.modelPicker.restrictedMode.trustTooltip', "Trust the workspace to enable models."),
+					tooltip: localize('chat.modelPicker.restrictedMode.trustTooltip', "信任此工作区以启用模型。"),
 					// allow-any-unicode-next-line
 					label: localize('chat.modelPicker.restrictedMode.trust', "信任此工作区以启用模型..."),
 					run: () => options.actions.onRequestTrust?.(),

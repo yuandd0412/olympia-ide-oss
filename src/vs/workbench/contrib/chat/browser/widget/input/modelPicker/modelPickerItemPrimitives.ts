@@ -228,7 +228,7 @@ export function createUnavailableModelItem(
 	if (reason === 'upgrade') {
 		description = new MarkdownString(localize('chat.modelPicker.upgradeLink', "[Upgrade](command:workbench.action.chat.upgradePlan \" \")"), { isTrusted: true });
 	} else if (reason === 'update') {
-		description = localize('chat.modelPicker.updateDescription', "Update Olympia IDE");
+		description = localize('chat.modelPicker.updateDescription', "更新 Olympia IDE");
 	} else {
 		description = manageSettingsUrl
 			? new MarkdownString(localize('chat.modelPicker.adminLink', "[Contact your admin]({0})", manageSettingsUrl), { isTrusted: true })
@@ -248,7 +248,7 @@ export function createUnavailableModelItem(
 		hoverContent = getUpdateHoverContent(updateStateType);
 	} else {
 		hoverContent = new MarkdownString('', { isTrusted: true, supportThemeIcons: true });
-		hoverContent.appendMarkdown(localize('chat.modelPicker.adminHover', "This model is not available. Contact your administrator to enable it."));
+		hoverContent.appendMarkdown(localize('chat.modelPicker.adminHover', "该模型不可用。请联系管理员启用。"));
 	}
 
 	return {

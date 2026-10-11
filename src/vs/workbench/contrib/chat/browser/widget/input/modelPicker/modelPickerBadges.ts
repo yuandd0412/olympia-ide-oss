@@ -6,7 +6,7 @@
 import { localize } from '../../../../../../../nls.js';
 import { ILanguageModelChatMetadata, ILanguageModelChatMetadataAndIdentifier } from '../../../../common/languageModels.js';
 
-export const organizationDefaultLabel = localize('chat.modelPicker.organizationDefault', "Org default");
+export const organizationDefaultLabel = localize('chat.modelPicker.organizationDefault', "组织默认");
 
 export function getOrganizationDefaultDescription(modelName: string): string {
 	return localize('chat.modelPicker.organizationDefaultDescription', "Your organization sets {0} as the default for new chats. You can choose another model for this chat.", modelName);
@@ -44,7 +44,7 @@ export function getModelBadge(
 	context: IModelBadgeContext,
 ): IModelBadge | undefined {
 	if (isDeprecated(model)) {
-		return { text: localize('chat.modelPicker.badge.deprecated', "Retiring"), tone: ModelBadgeTone.Warning };
+		return { text: localize('chat.modelPicker.badge.deprecated', "即将停用"), tone: ModelBadgeTone.Warning };
 	}
 	const promo = ILanguageModelChatMetadata.hasPromoDiscount(model.metadata) ? model.metadata.promo : undefined;
 	if (promo) {

@@ -287,7 +287,7 @@ export class ModelCard extends DisposableStore {
 		if (changed.length) {
 			const reset = this._contentDisposables.add(new Action(
 				'chat.modelPicker.resetToDefault',
-				localize('chat.modelPicker.resetToDefault', "Reset to Default"),
+				localize('chat.modelPicker.resetToDefault', "恢复默认"),
 				ThemeIcon.asClassName(Codicon.discard),
 				true,
 				() => this._resetToDefaults().catch(onUnexpectedError),
@@ -400,10 +400,10 @@ export class ModelCard extends DisposableStore {
 			return;
 		}
 		const choices = [
-			{ label: localize('models.speed.standard', "Standard"), model: variants.standard },
+			{ label: localize('models.speed.standard', "标准"), model: variants.standard },
 			{ label: localize('models.speed.fast', "快速"), model: variants.fast },
 		];
-		const title = localize('models.speed', "Speed");
+		const title = localize('models.speed', "速度");
 		const section = this._renderSection(title);
 		const control = this._contentDisposables.add(new Radio({
 			ariaLabel: title,
@@ -473,7 +473,7 @@ export class ModelCard extends DisposableStore {
 				disclosure.setExpanded(!disclosure.isExpanded());
 			}));
 		}
-		dom.append(heading, dom.$('span.chat-model-card-section-title', undefined, localize('models.pricingDetails', "Pricing details")));
+		dom.append(heading, dom.$('span.chat-model-card-section-title', undefined, localize('models.pricingDetails', "价格说明")));
 		const priceBadgeLabel = getPriceCategoryLabel(metadata.priceCategory);
 		if (priceBadgeLabel) {
 			this._renderBadge(heading, priceBadgeLabel, isHighCostCategory(metadata.priceCategory));

@@ -34,7 +34,7 @@ export function getPriceCategoryLabel(priceCategory: string | undefined): string
 		case 'high':
 			return localize('chat.priceCategory.high', "高成本");
 		case 'very_high':
-			return localize('chat.priceCategory.veryHigh', "Very high cost");
+			return localize('chat.priceCategory.veryHigh', "很高成本");
 		default:
 			return localize('chat.priceCategory.unknown', "{0} cost", priceCategory.charAt(0).toUpperCase() + priceCategory.slice(1));
 	}
@@ -52,9 +52,9 @@ export function getCategoryLabel(category: string | undefined): string | undefin
 		case 'lightweight':
 			return localize('chat.category.lightweight', "轻量");
 		case 'versatile':
-			return localize('chat.category.versatile', "Versatile");
+			return localize('chat.category.versatile', "通用");
 		case 'powerful':
-			return localize('chat.category.powerful', "Powerful");
+			return localize('chat.category.powerful', "强大");
 		default:
 			return typeof category === 'string'
 				? category.charAt(0).toUpperCase() + category.slice(1)

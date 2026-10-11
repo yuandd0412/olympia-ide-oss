@@ -326,7 +326,7 @@ export class ModelPickerWidget extends Disposable {
 	 */
 	private async _requestWorkspaceTrust(): Promise<void> {
 		await this._workspaceTrustRequestService.requestWorkspaceTrust({
-			message: localize('chat.modelPicker.trustMessage', "Trusting this workspace enables AI models and chat features.")
+			message: localize('chat.modelPicker.trustMessage', "信任此工作区后会启用 AI 模型与聊天功能。")
 		});
 	}
 

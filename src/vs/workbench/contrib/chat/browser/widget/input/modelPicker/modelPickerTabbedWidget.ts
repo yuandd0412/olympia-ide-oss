@@ -464,7 +464,7 @@ export class TabbedModelPicker extends Disposable {
 		actions.push({
 			id: 'search',
 			icon: Codicon.search,
-			tooltip: localize('chat.modelPicker.searchToggle', "Search Models"),
+			tooltip: localize('chat.modelPicker.searchToggle', "搜索模型"),
 			alignEnd: true,
 			checked: this._searchVisible,
 			run: () => {

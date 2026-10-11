@@ -68,7 +68,7 @@ export class ModelPickerConfiguration {
 			// for "Optimize for" while regular models use it for thinking effort.
 			ariaParts.push(effortConfig.schema.title
 				? localize('chat.modelPicker.navigationAriaLabel', "{0}: {1}", effortConfig.schema.title, effortLabel)
-				: localize('chat.modelPicker.effortAriaLabel', "Thinking Effort: {0}", effortLabel));
+				: localize('chat.modelPicker.effortAriaLabel', "思考强度：{0}", effortLabel));
 		}
 		if (tokensConfig && tokensConfig.value !== undefined) {
 			const enumIndex = tokensConfig.schema.enum?.indexOf(tokensConfig.value) ?? -1;
