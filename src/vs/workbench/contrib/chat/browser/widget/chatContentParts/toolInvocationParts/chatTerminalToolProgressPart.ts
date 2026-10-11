@@ -839,7 +839,7 @@ export class ChatTerminalToolProgressPart extends BaseChatToolInvocationSubPart 
 		const editorService = this._editorService;
 		const action = this._register(new Action(
 			OPEN_TERMINAL_FULL_OUTPUT_ACTION_ID,
-			localize('openTerminalFullOutputReadonly', "Open Full Output (Read-Only)"),
+			localize('openTerminalFullOutputReadonly', "展开完整输出（只读）"),
 			ThemeIcon.asClassName(Codicon.openInProduct),
 			true,
 			() => editorService.openEditor({

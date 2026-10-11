@@ -401,7 +401,7 @@ export class ModelCard extends DisposableStore {
 		}
 		const choices = [
 			{ label: localize('models.speed.standard', "Standard"), model: variants.standard },
-			{ label: localize('models.speed.fast', "Fast"), model: variants.fast },
+			{ label: localize('models.speed.fast', "快速"), model: variants.fast },
 		];
 		const title = localize('models.speed', "Speed");
 		const section = this._renderSection(title);

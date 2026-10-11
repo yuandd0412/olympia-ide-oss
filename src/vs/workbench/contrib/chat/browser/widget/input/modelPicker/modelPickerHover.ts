@@ -118,7 +118,7 @@ export function getModelHoverContent(
 			headerRow.appendChild(dom.$('span.chat-model-hover-cost-heading', undefined, getCreditsPerMillionTokensLabel()));
 			if (hasLongContext) {
 				headerRow.appendChild(dom.$('span.chat-model-hover-cost-value.subheader', undefined, localize('models.defaultContext', "默认")));
-				headerRow.appendChild(dom.$('span.chat-model-hover-cost-value.subheader', undefined, localize('models.longContext', "Long Context")));
+				headerRow.appendChild(dom.$('span.chat-model-hover-cost-value.subheader', undefined, localize('models.longContext', "长上下文")));
 			} else {
 				headerRow.appendChild(dom.$('span.chat-model-hover-cost-value.subheader'));
 			}
@@ -182,7 +182,7 @@ export function getModelHoverContent(
 		}
 		if (configButtons.length > 0) {
 			const configRow = dom.$('.chat-model-hover-configurable');
-			configRow.appendChild(dom.$('span.chat-model-hover-configurable-label', undefined, localize('models.configurable', "Configurable")));
+			configRow.appendChild(dom.$('span.chat-model-hover-configurable-label', undefined, localize('models.configurable', "可配置")));
 			const buttonsContainer = dom.$('.chat-model-hover-configurable-buttons');
 			for (const { group, label } of configButtons) {
 				const button = disposables.add(new Button(buttonsContainer, {

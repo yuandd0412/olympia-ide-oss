@@ -34,7 +34,7 @@ export class ChatToolAuthenticationSubPart extends BaseChatToolInvocationSubPart
 			ChatCustomConfirmationWidget<() => Promise<void>>,
 			context,
 			{
-				title: localize('chat.toolAuthentication.title', "MCP authentication required"),
+				title: localize('chat.toolAuthentication.title', "需要 MCP 身份验证"),
 				icon: Codicon.mcp,
 				subtitle: state.server.name,
 				buttons: [

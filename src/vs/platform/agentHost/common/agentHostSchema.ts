@@ -363,7 +363,7 @@ export const platformSessionSchema = createSchema({
 		],
 		enumDescriptions: [
 			localize('agentHost.sessionConfig.autoApprove.defaultDescription', "Copilot 使用你配置的设置"),
-			localize('agentHost.sessionConfig.autoApprove.assistedDescription', "Evaluates risk before running tools"),
+			localize('agentHost.sessionConfig.autoApprove.assistedDescription', "执行工具前先评估风险"),
 			localize('agentHost.sessionConfig.autoApprove.bypassDescription', "所有工具调用均自动批准"),
 		],
 		default: 'default',

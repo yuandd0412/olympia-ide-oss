@@ -598,7 +598,7 @@ registerAction2(class CopyChatReferenceLinkAction extends Action2 {
 			await clipboardService.writeResources([context]);
 		} else if (isChatContextMenuActionContext(context) && context.linkTarget) {
 			await clipboardService.writeText(context.linkTarget);
-			status(localize('chat.copyLink.status', "Link copied to clipboard"));
+			status(localize('chat.copyLink.status', "链接已复制到剪贴板"));
 		}
 	}
 });

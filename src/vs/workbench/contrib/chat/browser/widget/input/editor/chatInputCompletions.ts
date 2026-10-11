@@ -919,7 +919,7 @@ class BuiltinDynamicCompletions extends Disposable {
 						endColumn: range.replace.startColumn + text.length
 					};
 					return {
-						label: { label: attachment.name, description: localize('attachedContext', 'Attached context') },
+						label: { label: attachment.name, description: localize('attachedContext', "已附加上下文") },
 						filterText: match.filterText,
 						insertText: range.varWord?.endColumn === range.replace.endColumn ? `${text} ` : text,
 						range,

@@ -106,7 +106,7 @@ function getPermissionLevelMeta(level: ChatPermissionLevel): IPermissionLevelMet
 				id: 'chat.permissions.assisted',
 				label: localize('permissions.assisted', "辅助权限"),
 				shortLabel: localize('permissions.assisted.label', "辅助权限"),
-				detail: localize('permissions.assisted.subtext', "Evaluates risk before running tools"),
+				detail: localize('permissions.assisted.subtext', "执行工具前先评估风险"),
 				icon: ThemeIcon.fromId(Codicon.sparkle.id),
 				description: localize('permissions.assisted.description', "An LLM judge evaluates each tool call. Tools it doesn't approve require your approval."),
 				elevated: true,

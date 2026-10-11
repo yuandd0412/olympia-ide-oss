@@ -841,7 +841,7 @@ export class ModelPickerWidget extends Disposable {
 			: setupRequired
 				// allow-any-unicode-next-line
 				? localize('chat.modelPicker.ariaLabelSetupRequired', "模型，需登录 Copilot 后使用")
-				: localize('chat.modelPicker.ariaLabel', "Models, {0}", modelLabel);
+				: localize('chat.modelPicker.ariaLabel', "模型，{0}", modelLabel);
 		this._domNode.ariaLabel = ariaLabel;
 		this._nameButton.ariaLabel = ariaLabel;
 		this._updateMinimumWidth(nameMinimumWidth);

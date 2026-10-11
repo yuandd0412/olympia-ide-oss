@@ -154,7 +154,7 @@ export class ChatSystemNotificationContentPart extends Disposable implements ICh
 			twistie.classList.toggle('expanded', expanded);
 			header.element.ariaExpanded = String(expanded);
 			header.element.ariaLabel = expanded
-				? localize('chat.systemNotification.hideDetails', "Hide details for {0}", summaryText)
+				? localize('chat.systemNotification.hideDetails', "收起 {0} 的详情", summaryText)
 				: localize('chat.systemNotification.showDetails', "Show details for {0}", summaryText);
 		};
 		apply(false);

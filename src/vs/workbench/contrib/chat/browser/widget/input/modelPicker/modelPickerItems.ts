@@ -73,7 +73,7 @@ export function createManageModelsAction(commandService: ICommandService): IActi
 		class: ThemeIcon.asClassName(Codicon.gear),
 		// allow-any-unicode-next-line
 		tooltip: localize('chat.manageModels.tooltip', "管理语言模型"),
-		label: localize('chat.manageModels', "Manage Models..."),
+		label: localize('chat.manageModels', "管理模型…"),
 		run: () => { commandService.executeCommand(MANAGE_CHAT_COMMAND_ID); },
 	};
 }

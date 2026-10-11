@@ -24,8 +24,8 @@ export function getModelCostMetrics(metadata: ILanguageModelChatMetadata): IMode
 	return [
 		{ label: localize('models.inputCostLabel', "输入"), standard: metadata.inputCost, extended: metadata.longContextInputCost },
 		{ label: localize('models.outputCostLabel', "输出"), standard: metadata.outputCost, extended: metadata.longContextOutputCost },
-		{ label: localize('models.cacheCostLabel', "Cache Read"), standard: metadata.cacheCost, extended: metadata.longContextCacheCost },
-		{ label: localize('models.cacheWriteCostLabel', "Cache Write"), standard: metadata.cacheWriteCost, extended: metadata.longContextCacheWriteCost },
+		{ label: localize('models.cacheCostLabel', "缓存读取"), standard: metadata.cacheCost, extended: metadata.longContextCacheCost },
+		{ label: localize('models.cacheWriteCostLabel', "缓存写入"), standard: metadata.cacheWriteCost, extended: metadata.longContextCacheWriteCost },
 	].filter(metric => metric.standard !== undefined || metric.extended !== undefined);
 }
 
@@ -35,11 +35,11 @@ export function formatModelCost(cost: number | null | undefined): string {
 
 /** The unit the cost numbers are given in, stated once above them. */
 export function getCreditsPerMillionTokensLabel(): string {
-	return localize('models.creditsPerMillionTokens', "Credits per 1M tokens");
+	return localize('models.creditsPerMillionTokens', "每 100 万 token 的额度");
 }
 
 export function getMaxContextLabel(): string {
-	return localize('models.contextSize', "Max context");
+	return localize('models.contextSize', "最大上下文");
 }
 
 /** Renders a model's description markdown. The caller places and classes the element. */

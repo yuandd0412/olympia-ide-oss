@@ -117,7 +117,7 @@ export class AgentHostPermissionPickerDelegate extends Disposable implements IPe
 					icon: Codicon.key,
 				};
 			case ChatPermissionLevel.Assisted:
-				return { ...meta, detail: localize('agentHostPermissionPicker.approveWhenSafe.detail', "Evaluates risk before running tools") };
+				return { ...meta, detail: localize('agentHostPermissionPicker.approveWhenSafe.detail', "执行工具前先评估风险") };
 			case ChatPermissionLevel.AutoApprove:
 				return { ...meta, detail: localize('agentHostPermissionPicker.allowAll.detail', "所有工具调用均自动批准") };
 			case ChatPermissionLevel.Autopilot:

@@ -483,7 +483,7 @@ export class PasteTextProvider implements DocumentPasteEditProvider {
 				this.pasteTargetService,
 				{
 					inlineReference: { text: artifact.referenceText, range: referenceRange },
-					announcement: localize('chat.pastedTextAttached', "Attached pasted text as {0}", artifact.attachment.name),
+					announcement: localize('chat.pastedTextAttached', "已将粘贴内容作为 {0} 附加", artifact.attachment.name),
 				}
 			);
 			return createEditSession(edit);
