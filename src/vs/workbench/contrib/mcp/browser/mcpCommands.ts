@@ -419,7 +419,7 @@ function getAgentHostMcpServerEnablementItems(server: IAgentHostMcpServer, hasWo
 	}
 	if (scopes.includes('session')) {
 		items.push({
-			label: enablement.session ? localize('mcp.agentHost.disableSession', 'Disable (Session)') : localize('mcp.agentHost.enableSession', 'Enable (Session)'),
+			label: enablement.session ? localize('mcp.agentHost.disableSession', "禁用（本会话）") : localize('mcp.agentHost.enableSession', "启用（本会话）"),
 			action: enablement.session ? 'disableSession' : 'enableSession',
 		});
 	}
@@ -514,7 +514,7 @@ export class McpAgentHostServerOptionsCommand extends Action2 {
 		const localServer = findLocalMcpServer(mcpService, server);
 		const durableProfileDisabled = localServer !== undefined && !mcpService.enablementModel.readProfileEnabled(localServer.definition.id);
 		const isEmptyWorkbench = aiCustomizationWorkspaceService.getActiveProjectRoot() === undefined;
-		items.push({ type: 'separator', label: localize('mcp.actions.enablement', 'Enablement') });
+		items.push({ type: 'separator', label: localize('mcp.actions.enablement', "启用状态") });
 		if (pluginDisabled) {
 			items.push({
 				label: localize('mcp.agentHost.enablePlugin', "启用插件"),

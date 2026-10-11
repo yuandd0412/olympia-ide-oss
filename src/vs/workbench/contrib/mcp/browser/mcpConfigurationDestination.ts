@@ -125,18 +125,18 @@ export class McpConfigurationDestination {
 			items.push({
 				kind: WorkspaceMcpConfigKind.Root,
 				label: WORKSPACE_ROOT_MCP_CONFIG_FILE,
-				description: localize('mcp.config.root', "Workspace root"),
+				description: localize('mcp.config.root', "工作区根目录"),
 			});
 		}
 		items.push({
 			kind: WorkspaceMcpConfigKind.LegacyVscode,
 			label: WORKSPACE_STANDALONE_CONFIGURATIONS[MCP_CONFIGURATION_KEY],
-			description: adding ? localize('mcp.config.legacy.deprecated', "已弃用") : localize('mcp.config.legacy', "Olympia IDE workspace configuration"),
+			description: adding ? localize('mcp.config.legacy.deprecated', "已弃用") : localize('mcp.config.legacy', "Olympia IDE 工作区配置"),
 			detail: rootError,
 		});
 		const selected = await this.quickInputService.pick(items, {
-			title: adding ? localize('mcp.config.add', "Add MCP Server to {0}", folder.name) : localize('mcp.config.open', "Open MCP Configuration in {0}", folder.name),
-			placeHolder: rootError ? localize('mcp.config.legacyRequired', "This server requires .vscode/mcp.json") : (adding ? localize('mcp.config.add.placeholder', "Select the configuration file for the new server") : localize('mcp.config.open.placeholder', "Select the configuration file to open")),
+			title: adding ? localize('mcp.config.add', "向 {0} 添加 MCP 服务器", folder.name) : localize('mcp.config.open', "在 {0} 中打开 MCP 配置", folder.name),
+			placeHolder: rootError ? localize('mcp.config.legacyRequired', "该服务器需要 .vscode/mcp.json") : (adding ? localize('mcp.config.add.placeholder', "Select the configuration file for the new server") : localize('mcp.config.open.placeholder', "选择要打开的配置文件")),
 			ignoreFocusLost: true,
 		});
 		return selected?.kind;

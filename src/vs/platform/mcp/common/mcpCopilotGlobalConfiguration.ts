@@ -23,7 +23,7 @@ export function getCopilotGlobalMcpConfigurationError({ config, inputs }: IInsta
 		return localize('unsupportedCopilotGlobalMcpInputs', "Interactive inputs are not supported in Copilot Global MCP configuration. Use environment variable references instead.");
 	}
 	if (!isObject(config) || (config.type !== McpServerType.LOCAL && config.type !== McpServerType.REMOTE)) {
-		return localize('invalidCopilotGlobalMcpServer', "The MCP server configuration is invalid.");
+		return localize('invalidCopilotGlobalMcpServer', "MCP 服务器配置无效。");
 	}
 	const supported = config.type === McpServerType.LOCAL ? supportedLocalProperties : supportedRemoteProperties;
 	for (const [key, value] of Object.entries(config)) {
@@ -41,7 +41,7 @@ export function getCopilotGlobalMcpConfigurationError({ config, inputs }: IInsta
 		&& (config.headers === undefined || (isObject(config.headers) && Object.values(config.headers).every(value => typeof value === 'string')))
 		&& (config.oauth === undefined || (isObject(config.oauth) && Object.entries(config.oauth).every(([key, value]) => key === 'clientId' && typeof value === 'string')));
 	if (!valid) {
-		return localize('invalidCopilotGlobalMcpServer', "The MCP server configuration is invalid.");
+		return localize('invalidCopilotGlobalMcpServer', "MCP 服务器配置无效。");
 	}
 	if (JSON.stringify(config).includes('${input:')) {
 		return localize('unsupportedCopilotGlobalMcpInputVariable', "Olympia IDE input variables are not supported in Copilot Global MCP configuration. Use environment variable references instead.");

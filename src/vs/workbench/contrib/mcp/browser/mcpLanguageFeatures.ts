@@ -541,7 +541,7 @@ export class McpLanguageFeatures extends Disposable implements IWorkbenchContrib
 					range,
 					command: {
 						id: McpCommandIds.AgentHostServerOptions,
-						title: '$(account) ' + localize('server.authRequired', 'Authentication Required'),
+						title: '$(account) ' + localize('server.authRequired', "需要身份验证"),
 						arguments: [agentHostSession, server.id],
 					},
 				});
@@ -572,8 +572,8 @@ export class McpLanguageFeatures extends Disposable implements IWorkbenchContrib
 				command: {
 					id: '',
 					title: otherRunningSessionCount === 1
-						? localize('server.runningInOneOtherSession', '(Running in 1 session)')
-						: localize('server.runningInOtherSessions', '(Running in {0} sessions)', otherRunningSessionCount),
+						? localize('server.runningInOneOtherSession', "（在 1 个会话中运行）")
+						: localize('server.runningInOtherSessions', "（在 {0} 个会话中运行）", otherRunningSessionCount),
 				}
 			});
 		}

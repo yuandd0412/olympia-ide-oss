@@ -1260,8 +1260,8 @@ const agentHostMcpServerEnablementActionInfo = {
 	},
 	session: {
 		kind: CustomizationEnablementKind.Session,
-		enableLabel: () => localize('agentHostMcpServerEnableSession', "Enable (Session)"),
-		disableLabel: () => localize('agentHostMcpServerDisableSession', "Disable (Session)"),
+		enableLabel: () => localize('agentHostMcpServerEnableSession', "启用（本会话）"),
+		disableLabel: () => localize('agentHostMcpServerDisableSession', "禁用（本会话）"),
 	},
 } satisfies Record<AgentHostMcpServerEnablementScope, {
 	readonly kind: CustomizationEnablementKind;

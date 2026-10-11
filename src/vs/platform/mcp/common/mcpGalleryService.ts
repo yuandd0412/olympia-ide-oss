@@ -823,7 +823,7 @@ export class McpGalleryService extends Disposable implements IMcpGalleryService 
 		}
 		const manifest = galleryManifest ?? await this.mcpGalleryManifestService.getMcpGalleryManifest();
 		if (!manifest) {
-			throw new Error(localize('mcpGalleryNotConfigured', "The MCP gallery is not configured."));
+			throw new Error(localize('mcpGalleryNotConfigured', "未配置 MCP 图库。"));
 		}
 		const query = new Query()
 			.withPage(options.cursor ?? '', options.pageSize)
@@ -1080,7 +1080,7 @@ export class McpGalleryService extends Disposable implements IMcpGalleryService 
 		const mcpGalleryUrl = this.getMcpGalleryUrl(mcpGalleryManifest);
 		if (!mcpGalleryUrl) {
 			if (strict) {
-				throw new Error(localize('mcpGalleryNoQueryUrl', "The MCP gallery has no query endpoint."));
+				throw new Error(localize('mcpGalleryNoQueryUrl', "MCP 图库没有查询端点。"));
 			}
 			return { servers: [], metadata: { count: 0 } };
 		}
@@ -1129,7 +1129,7 @@ export class McpGalleryService extends Disposable implements IMcpGalleryService 
 		if (!isSuccess(context)) {
 			this.logService.error(`Failed to query MCP gallery: Server returned ${context.res.statusCode}`);
 			if (strict) {
-				throw new Error(localize('mcpGalleryQueryFailed', "The MCP gallery returned HTTP {0}.", context.res.statusCode));
+				throw new Error(localize('mcpGalleryQueryFailed', "MCP 图库返回 HTTP {0}。", context.res.statusCode));
 			}
 			return { servers: [], metadata: { count: 0 } };
 		}

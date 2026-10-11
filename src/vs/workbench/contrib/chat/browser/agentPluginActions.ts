@@ -227,8 +227,8 @@ export function createAgentHostEnablePluginAction(agentHostCustomizations: IAgen
 
 function createAgentHostPluginEnablementAction(agentHostCustomizations: IAgentHostCustomizationService, agentPluginService: IAgentPluginService | undefined, sessionResource: URI, customization: PluginCustomization, kind: CustomizationEnablementKind, enabled: boolean, scope: 'global' | 'workspace' | 'session'): ICustomizationItemAction {
 	const label = enabled
-		? scope === 'global' ? localize('agentHostPluginEnable', "启用") : scope === 'workspace' ? localize('agentHostPluginEnableWorkspace', "启用（工作区）") : localize('agentHostPluginEnableSession', "Enable (Session)")
-		: scope === 'global' ? localize('agentHostPluginDisable', "禁用") : scope === 'workspace' ? localize('agentHostPluginDisableWorkspace', "禁用（工作区）") : localize('agentHostPluginDisableSession', "Disable (Session)");
+		? scope === 'global' ? localize('agentHostPluginEnable', "启用") : scope === 'workspace' ? localize('agentHostPluginEnableWorkspace', "启用（工作区）") : localize('agentHostPluginEnableSession', "启用（本会话）")
+		: scope === 'global' ? localize('agentHostPluginDisable', "禁用") : scope === 'workspace' ? localize('agentHostPluginDisableWorkspace', "禁用（工作区）") : localize('agentHostPluginDisableSession', "禁用（本会话）");
 	return {
 		id: `agentPlugin.agentHost.${enabled ? 'enable' : 'disable'}.${scope}`,
 		label,

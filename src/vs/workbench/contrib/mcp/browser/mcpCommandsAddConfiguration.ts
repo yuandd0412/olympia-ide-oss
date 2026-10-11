@@ -375,7 +375,7 @@ export class McpAddConfigurationCommand {
 						{ id: 'vscode', label: localize('mcp.target.userConfigurationDeprecated', "用户配置（已弃用）"), description: this._label.getUriLabel(this._userDataProfileService.currentProfile.mcpResource) },
 					], {
 						title: localize('mcp.target.title', "添加 MCP 服务器"),
-						placeHolder: localize('mcp.target.global.placeholder', "Select the global configuration"),
+						placeHolder: localize('mcp.target.global.placeholder', "选择全局配置"),
 					});
 					if (!selected) {
 						return undefined;
