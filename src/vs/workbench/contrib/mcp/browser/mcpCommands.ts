@@ -533,7 +533,7 @@ export class McpAgentHostServerOptionsCommand extends Action2 {
 
 		if (server.enabled && server.state.kind === McpServerStatus.AuthRequired) {
 			items.push({
-				label: localize('mcp.agentHost.authenticate', 'Authenticate'),
+				label: localize('mcp.agentHost.authenticate', "验证身份"),
 				description: server.state.resource.resource,
 				action: 'authenticate',
 			});

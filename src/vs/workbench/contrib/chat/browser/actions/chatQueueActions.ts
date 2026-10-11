@@ -177,7 +177,7 @@ export class ChatAskInSideChatAction extends Action2 {
 	constructor() {
 		super({
 			id: ChatAskInSideChatAction.ID,
-			title: localize2('chat.askInSideChat', "Ask in Side Chat"),
+			title: localize2('chat.askInSideChat', "在侧边对话中提问"),
 			tooltip: localize('chat.askInSideChat.tooltip', "Ask this question in a side chat without adding it to this conversation"),
 			icon: Codicon.commentDiscussion,
 			f1: false,

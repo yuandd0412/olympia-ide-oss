@@ -39,7 +39,7 @@ export class ChatToolAuthenticationSubPart extends BaseChatToolInvocationSubPart
 				subtitle: state.server.name,
 				buttons: [
 					{
-						label: localize('chat.toolAuthentication.authenticate', "Authenticate"),
+						label: localize('chat.toolAuthentication.authenticate', "验证身份"),
 						data: async () => {
 							await customizationService.authenticateMcpServer(context.element.sessionResource, state.server.id);
 						},

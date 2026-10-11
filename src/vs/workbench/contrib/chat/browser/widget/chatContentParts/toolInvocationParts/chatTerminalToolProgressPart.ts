@@ -1624,7 +1624,7 @@ export class ChatTerminalToolOutputSection extends Disposable {
 			const rawOutput = command.getOutput();
 			if (!rawOutput || rawOutput.trim().length === 0) {
 				const emptyMessage = fullOutputAvailable
-					? localize('chatTerminalOutputPreviewUnavailable', 'A preview is not available.')
+					? localize('chatTerminalOutputPreviewUnavailable', "没有可用的预览。")
 					: localize('chat.terminalOutputEmpty', "命令未生成任何输出。");
 				return `${commandHeader}\n${emptyMessage}${fullOutputAvailability}`;
 			}
@@ -1640,7 +1640,7 @@ export class ChatTerminalToolOutputSection extends Disposable {
 		const plain = removeAnsiEscapeCodes((snapshot.text ?? ''));
 		if (!plain.trim().length) {
 			const emptyMessage = fullOutputAvailable
-				? localize('chatTerminalOutputPreviewUnavailable', 'A preview is not available.')
+				? localize('chatTerminalOutputPreviewUnavailable', "没有可用的预览。")
 				: localize('chat.terminalOutputEmpty', "命令未生成任何输出。");
 			return `${commandHeader}\n${emptyMessage}${fullOutputAvailability}`;
 		}
@@ -1859,7 +1859,7 @@ export class ChatTerminalToolOutputSection extends Disposable {
 			this._hideEmptyMessage();
 		} else {
 			this._showEmptyMessage(snapshot.truncated
-				? localize('chatTerminalOutputPreviewUnavailable', 'A preview is not available.')
+				? localize('chatTerminalOutputPreviewUnavailable', "没有可用的预览。")
 				: localize('chat.terminalOutputEmpty', "命令未生成任何输出。"));
 		}
 		const lineCount = result?.lineCount ?? snapshot.lineCount ?? 0;

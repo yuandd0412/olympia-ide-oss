@@ -120,7 +120,7 @@ class ChatOutlineAccessibility implements IListAccessibilityProvider<ChatOutline
 		return element.label;
 	}
 	getWidgetAriaLabel(): string {
-		return localize('chatOutline', "Chat Outline");
+		return localize('chatOutline', "对话大纲");
 	}
 }
 

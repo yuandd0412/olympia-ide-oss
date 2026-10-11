@@ -210,7 +210,7 @@ export class ChatGroupView extends Disposable implements ISerializableView {
 		}
 
 		this.element.setAttribute('role', 'region');
-		this.element.setAttribute('aria-label', localize('chatGroupAriaLabel', "Chat Group {0} of {1}", index + 1, count));
+		this.element.setAttribute('aria-label', localize('chatGroupAriaLabel', "对话分组 {0}/{1}", index + 1, count));
 		this._compositeBar.setAriaLabel(localize('chatGroupTabsAriaLabel', "Chats, Group {0} of {1}", index + 1, count));
 	}
 

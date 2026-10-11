@@ -250,7 +250,7 @@ export class ChatQueuePickerActionItem extends BaseActionViewItem {
 
 		const askInSideChatAction: IActionWidgetDropdownAction | undefined = this._canAskInSideChat() ? {
 			id: ChatAskInSideChatAction.ID,
-			label: localize('chat.askInSideChat', "Ask in Side Chat"),
+			label: localize('chat.askInSideChat', "在侧边对话中提问"),
 			tooltip: '',
 			enabled: true,
 			icon: Codicon.commentDiscussion,

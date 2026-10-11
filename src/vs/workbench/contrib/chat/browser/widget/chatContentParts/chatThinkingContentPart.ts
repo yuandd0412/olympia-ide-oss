@@ -271,17 +271,17 @@ const funWorkingMessages = [
 	localize('chat.working.fun.2', "正在构建样条曲线网格"),
 	localize('chat.working.fun.3', "正在拆解乱麻"),
 	localize('chat.working.fun.4', "正在与代码库通信"),
-	localize('chat.working.fun.5', "Letting it cook"),
-	localize('chat.working.fun.6', "Thanking all the fish"),
-	localize('chat.working.fun.7', "Stabilizing the wormhole"),
-	localize('chat.working.fun.8', "Baking the ideas"),
-	localize('chat.working.fun.9', "Consulting the oracle"),
-	localize('chat.working.fun.10', "Stirring the solution"),
+	localize('chat.working.fun.5', "让它再煮一会儿"),
+	localize('chat.working.fun.6', "向所有的鱼道谢"),
+	localize('chat.working.fun.7', "稳定虫洞中"),
+	localize('chat.working.fun.8', "烘焙灵感中"),
+	localize('chat.working.fun.9', "请示先知中"),
+	localize('chat.working.fun.10', "搅拌溶液中"),
 
 	// Minecraft
 	localize('chat.working.fun.minecraft.1', "正在挖钻石"),
-	localize('chat.working.fun.minecraft.2', "Digging straight down"),
-	localize('chat.working.fun.minecraft.3', "Mining at night"),
+	localize('chat.working.fun.minecraft.2', "一路往下挖"),
+	localize('chat.working.fun.minecraft.3', "连夜挖矿中"),
 
 	// Microsoft
 	localize('chat.working.fun.ms.1', "正在召唤 Clippy"),

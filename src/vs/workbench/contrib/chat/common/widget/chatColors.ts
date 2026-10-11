@@ -130,12 +130,12 @@ export const chatThinkingShimmer = registerColor(
 export const chatWorkingProgressStableIconForeground = registerColor(
 	'chat.workingProgressStableIconForeground',
 	{ dark: '#007ACC', light: '#007ACC', hcDark: activeContrastBorder, hcLight: activeContrastBorder },
-	localize('chat.workingProgressStableIconForeground', 'Foreground color of the Stable Olympia IDE icon in the chat working progress indicator.'));
+	localize('chat.workingProgressStableIconForeground', "聊天工作进度指示器中 Stable 版 Olympia IDE 图标的前景色。"));
 
 export const chatWorkingProgressInsidersIconForeground = registerColor(
 	'chat.workingProgressInsidersIconForeground',
 	{ dark: '#24BFA5', light: '#24BFA5', hcDark: activeContrastBorder, hcLight: activeContrastBorder },
-	localize('chat.workingProgressInsidersIconForeground', 'Foreground color of the Insiders Olympia IDE icon in the chat working progress indicator.'));
+	localize('chat.workingProgressInsidersIconForeground', "聊天工作进度指示器中 Insiders 版 Olympia IDE 图标的前景色。"));
 
 export const chatInputWorkingBorderColor1 = registerColor(
 	'chat.inputWorkingBorderColor1',

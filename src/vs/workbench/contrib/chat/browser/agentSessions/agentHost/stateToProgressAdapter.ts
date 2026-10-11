@@ -2665,7 +2665,7 @@ export function toolCallStateToStreamingInvocation(tc: ToolCallState, subAgentIn
 	});
 	updateStreamingToolInvocation(invocation, tc, connectionAuthority ?? '');
 	if (isAgentHostAskUserTool(tc.toolName)) {
-		invocation.invocationMessage = localize('agentHost.askUser.asking', "Asking a question...");
+		invocation.invocationMessage = localize('agentHost.askUser.asking', "正在提问…");
 		invocation.presentation = ToolInvocationPresentation.HiddenAfterComplete;
 	} else if (isRenameChatTool(tc)) {
 		invocation.presentation = ToolInvocationPresentation.Hidden;
