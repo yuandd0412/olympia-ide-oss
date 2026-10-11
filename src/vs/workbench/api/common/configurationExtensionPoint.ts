@@ -103,11 +103,11 @@ const configurationEntrySchema: IJSONSchema = {
 								type: 'string',
 								enum: ['warning', 'info'],
 								enumDescriptions: [
-									nls.localize('scope.deprecationMessageSeverity.warning', 'Shows the deprecation message using the standard warning treatment.'),
-									nls.localize('scope.deprecationMessageSeverity.info', 'Shows the deprecation message using an informational treatment.')
+									nls.localize('scope.deprecationMessageSeverity.warning', "以标准警告样式显示弃用提示。"),
+									nls.localize('scope.deprecationMessageSeverity.info', "以提示信息样式显示弃用提示。")
 								],
 								default: 'warning',
-								description: nls.localize('scope.deprecationMessageSeverity', 'Controls the severity used to display the deprecation message.')
+								description: nls.localize('scope.deprecationMessageSeverity', "控制显示弃用提示时使用的严重级别。")
 							},
 							editPresentation: {
 								type: 'string',

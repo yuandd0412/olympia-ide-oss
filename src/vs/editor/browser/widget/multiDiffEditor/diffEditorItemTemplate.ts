@@ -99,7 +99,7 @@ export class DiffEditorItemTemplate extends VirtualizedItemTemplate<DocumentDiff
 				return { maxScroll: scroll2, width: this._originalWidth.read(reader) };
 			}
 		});
-		const binaryFileChangedLabel = localize('binaryFileChanged', "Binary file changed");
+		const binaryFileChangedLabel = localize('binaryFileChanged', "二进制文件已更改");
 		this._elements = h('div.multiDiffEntry', [
 			h('div.header@header', [
 				h('div.header-content', [
@@ -153,7 +153,7 @@ export class DiffEditorItemTemplate extends VirtualizedItemTemplate<DocumentDiff
 		this._elements.binaryFilePlaceholder.tabIndex = 0;
 		if (this._workbenchUIElementFactory.openDiffEditor) {
 			this._openBinaryDiffButton = this._register(new Button(this._elements.binaryFilePlaceholderActions, { ...defaultButtonStyles, secondary: true }));
-			this._openBinaryDiffButton.label = localize('openBinaryDiff', "Open Diff");
+			this._openBinaryDiffButton.label = localize('openBinaryDiff', "打开差异视图");
 			this._register(this._openBinaryDiffButton.onDidClick(() => {
 				const item = this._viewModel.get();
 				if (item?.originalUri && item.modifiedUri) {

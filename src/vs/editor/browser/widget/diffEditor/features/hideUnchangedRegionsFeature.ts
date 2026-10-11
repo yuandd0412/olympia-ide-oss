@@ -381,8 +381,8 @@ class CollapsedCodeOverlayWidget extends ViewZoneOverlayWidget {
 
 			if (this._compactControl && !this._hide) {
 				const actionLabel = isFullyRevealed
-					? localize('diff.hiddenLines.collapse', 'Collapse unchanged lines')
-					: localize('diff.hiddenLines.expand', 'Show {0} hidden lines', this._unchangedRegion.getHiddenModifiedRange(reader).length);
+					? localize('diff.hiddenLines.collapse', "折叠未更改的行")
+					: localize('diff.hiddenLines.expand', "显示 {0} 个隐藏的行", this._unchangedRegion.getHiddenModifiedRange(reader).length);
 				this._nodes.toggle.setAttribute('aria-expanded', String(isFullyRevealed));
 				this._nodes.toggle.setAttribute('aria-label', actionLabel);
 				reset(this._nodes.lineNumberControl, ...renderLabelWithIcons(isFullyRevealed ? '$(fold)' : '$(unfold)'));
@@ -501,7 +501,7 @@ class CollapsedCodeOverlayWidget extends ViewZoneOverlayWidget {
 				const lineCount = _unchangedRegion.getHiddenModifiedRange(reader).length;
 				const linesHiddenText = localize('hiddenLines', "{0} 个隐藏的行", lineCount);
 				const span = $('span', this._compactControl ? undefined : { title: localize('diff.hiddenLines.expandAll', "双击展开") },
-					this._compactControl && isFullyRevealed ? localize('diff.hiddenLines.collapse', 'Collapse unchanged lines') : linesHiddenText);
+					this._compactControl && isFullyRevealed ? localize('diff.hiddenLines.collapse', "折叠未更改的行") : linesHiddenText);
 				if (!this._compactControl) {
 					reader.store.add(addDisposableListener(span, EventType.DBLCLICK, e => {
 						if (e.button !== 0) { return; }
