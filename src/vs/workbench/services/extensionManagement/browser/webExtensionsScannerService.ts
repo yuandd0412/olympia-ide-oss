@@ -707,7 +707,7 @@ export class WebExtensionsScannerService extends Disposable implements IWebExten
 		}
 
 		if (!this.extensionManifestPropertiesService.canExecuteOnWeb(manifest)) {
-			throw new Error(localize('not a web extension', "Cannot add '{0}' because this extension is not a web extension.", manifest.displayName || manifest.name));
+			throw new Error(localize('not a web extension', "无法添加 {0}，因为它不是 Web 扩展。", manifest.displayName || manifest.name));
 		}
 
 		if (fallbackPackageNLSUri === undefined) {

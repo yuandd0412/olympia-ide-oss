@@ -18,7 +18,7 @@ export const InstallExtensionsToolData: IToolData = {
 	canBeReferencedInPrompt: true,
 	displayName: localize('installExtensionsTool.displayName', "安装扩展"),
 	modelDescription: 'This is a tool for installing extensions in Olympia IDE. You should provide the list of extension ids to install. The identifier of an extension is \'\${ publisher }.\${ name }\' for example: \'vscode.csharp\'.',
-	userDescription: localize('installExtensionsTool.userDescription', 'Tool for installing extensions'),
+	userDescription: localize('installExtensionsTool.userDescription', "用于安装扩展的工具"),
 	source: ToolDataSource.Internal,
 	inputSchema: {
 		type: 'object',

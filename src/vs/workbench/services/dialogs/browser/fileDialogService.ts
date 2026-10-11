@@ -40,7 +40,7 @@ export class FileDialogService extends AbstractFileDialogService implements IFil
 			return super.pickFileFolderAndOpenSimplified(schema, options, false);
 		}
 
-		throw new Error(localize('pickFolderAndOpen', "Can't open folders, try adding a folder to the workspace instead."));
+		throw new Error(localize('pickFolderAndOpen', "无法打开文件夹，请改为向工作区添加一个文件夹。"));
 	}
 
 	protected override addFileSchemaIfNeeded(schema: string, isFolder: boolean): string[] {
@@ -93,7 +93,7 @@ export class FileDialogService extends AbstractFileDialogService implements IFil
 			return super.pickFolderAndOpenSimplified(schema, options);
 		}
 
-		throw new Error(localize('pickFolderAndOpen', "Can't open folders, try adding a folder to the workspace instead."));
+		throw new Error(localize('pickFolderAndOpen', "无法打开文件夹，请改为向工作区添加一个文件夹。"));
 	}
 
 	async pickWorkspaceAndOpen(options: IPickAndOpenOptions): Promise<void> {
@@ -108,7 +108,7 @@ export class FileDialogService extends AbstractFileDialogService implements IFil
 			return super.pickWorkspaceAndOpenSimplified(schema, options);
 		}
 
-		throw new Error(localize('pickWorkspaceAndOpen', "Can't open workspaces, try adding a folder to the workspace instead."));
+		throw new Error(localize('pickWorkspaceAndOpen', "无法打开工作区，请改为向工作区添加一个文件夹。"));
 	}
 
 	async pickFileToSave(defaultUri: URI, availableFileSystems?: string[]): Promise<URI | undefined> {
@@ -279,7 +279,7 @@ export class FileDialogService extends AbstractFileDialogService implements IFil
 
 		await this.dialogService.prompt({
 			type: Severity.Warning,
-			message: localize('unsupportedBrowserMessage', "Opening Local Folders is Unsupported"),
+			message: localize('unsupportedBrowserMessage', "不支持打开本地文件夹"),
 			detail: localize('unsupportedBrowserDetail', "Your browser doesn't support opening local folders.\nYou can either open single files or open a remote repository."),
 			buttons
 		});

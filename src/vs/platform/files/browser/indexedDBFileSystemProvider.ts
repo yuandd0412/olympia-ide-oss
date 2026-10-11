@@ -17,10 +17,10 @@ import { BroadcastDataChannel } from '../../../base/browser/broadcast.js';
 
 // Standard FS Errors (expected to be thrown in production when invalid FS operations are requested)
 const ERR_FILE_NOT_FOUND = createFileSystemProviderError(localize('fileNotExists', "文件不存在"), FileSystemProviderErrorCode.FileNotFound);
-const ERR_FILE_IS_DIR = createFileSystemProviderError(localize('fileIsDirectory', "File is Directory"), FileSystemProviderErrorCode.FileIsADirectory);
-const ERR_FILE_NOT_DIR = createFileSystemProviderError(localize('fileNotDirectory', "File is not a directory"), FileSystemProviderErrorCode.FileNotADirectory);
-const ERR_DIR_NOT_EMPTY = createFileSystemProviderError(localize('dirIsNotEmpty', "Directory is not empty"), FileSystemProviderErrorCode.Unknown);
-const ERR_FILE_EXCEEDS_STORAGE_QUOTA = createFileSystemProviderError(localize('fileExceedsStorageQuota', "File exceeds available storage quota"), FileSystemProviderErrorCode.FileExceedsStorageQuota);
+const ERR_FILE_IS_DIR = createFileSystemProviderError(localize('fileIsDirectory', "该路径是目录"), FileSystemProviderErrorCode.FileIsADirectory);
+const ERR_FILE_NOT_DIR = createFileSystemProviderError(localize('fileNotDirectory', "该路径不是目录"), FileSystemProviderErrorCode.FileNotADirectory);
+const ERR_DIR_NOT_EMPTY = createFileSystemProviderError(localize('dirIsNotEmpty', "目录不为空"), FileSystemProviderErrorCode.Unknown);
+const ERR_FILE_EXCEEDS_STORAGE_QUOTA = createFileSystemProviderError(localize('fileExceedsStorageQuota', "文件超出可用的存储配额"), FileSystemProviderErrorCode.FileExceedsStorageQuota);
 
 // Arbitrary Internal Errors
 const ERR_UNKNOWN_INTERNAL = (message: string) => createFileSystemProviderError(localize('internal', "Internal error occurred in IndexedDB File System Provider. ({0})", message), FileSystemProviderErrorCode.Unknown);
