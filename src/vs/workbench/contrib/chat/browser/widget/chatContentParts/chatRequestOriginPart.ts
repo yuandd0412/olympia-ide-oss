@@ -117,7 +117,7 @@ export class ChatRequestOriginPart extends Disposable {
 			this.domNode.removeAttribute('aria-label');
 			return;
 		}
-		const title = origin.sourceTitle ?? localize('chat.sideChatOrigin.originalConversation', "Original conversation");
+		const title = origin.sourceTitle ?? localize('chat.sideChatOrigin.originalConversation', "原始对话");
 		let quote: string | undefined;
 		let shouldLoadSourceSession = false;
 		if (origin.selection) {

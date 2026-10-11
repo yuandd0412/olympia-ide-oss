@@ -179,7 +179,7 @@ export class ChatPlanReviewPart extends Disposable implements IChatContentPart {
 		elements.titleLabel.textContent = review.title;
 		this._register(this._hoverService.setupDelayedHover(elements.titleLabel, { content: review.title }));
 		this._outdatedBadgeEl.textContent = localize('chat.planReview.outdated', "已过期");
-		this._outdatedBadgeEl.setAttribute('aria-label', localize('chat.planReview.outdatedAriaLabel', 'Plan summary is outdated'));
+		this._outdatedBadgeEl.setAttribute('aria-label', localize('chat.planReview.outdatedAriaLabel', "方案摘要已过期"));
 		if (!review.isOutdated) {
 			dom.hide(this._outdatedBadgeEl);
 		}
@@ -297,7 +297,7 @@ export class ChatPlanReviewPart extends Disposable implements IChatContentPart {
 		this.review.isOutdated = true;
 		dom.show(this._outdatedBadgeEl);
 		this._planChangeListeners.clear();
-		status(localize('chat.planReview.outdatedAnnouncement', 'Plan summary is outdated'));
+		status(localize('chat.planReview.outdatedAnnouncement', "方案摘要已过期"));
 	}
 
 	hasSameContent(other: IChatRendererContent, _followingContent: IChatRendererContent[], _element: ChatTreeItem): boolean {

@@ -1796,7 +1796,7 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 			const questionText = getDisplayedQuestionText(question);
 			const displayedQuestion = (typeof questionText === 'string' ? questionText : questionText.value).replace(/[:\s]+$/, '');
 			const questionPrefix = dom.$('span.chat-question-summary-prefix');
-			questionPrefix.textContent = localize('chat.questionCarousel.questionPrefix', "Question:");
+			questionPrefix.textContent = localize('chat.questionCarousel.questionPrefix', "问题：");
 			const questionTextValue = dom.$('span.chat-question-summary-question-value');
 			questionTextValue.textContent = displayedQuestion;
 			summaryStore.add(this._hoverService.setupDelayedHover(questionTextValue, { content: displayedQuestion }));

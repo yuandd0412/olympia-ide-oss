@@ -518,7 +518,7 @@ export class ChatThinkingContentPart extends ChatThinkingStyleContentPart implem
 		if (this.isToolChain) {
 			node.classList.add('chat-tool-chain');
 			node.setAttribute('role', 'group');
-			node.setAttribute('aria-label', localize('chat.toolChain', "Tool calls"));
+			node.setAttribute('aria-label', localize('chat.toolChain', "工具调用"));
 			if (this.isVerboseToolChain) {
 				this._collapseButton?.element.parentElement?.remove();
 			} else {

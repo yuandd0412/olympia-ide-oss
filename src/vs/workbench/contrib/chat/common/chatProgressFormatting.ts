@@ -82,5 +82,5 @@ export function formatChatToolError(error: string | boolean | undefined, exitCod
 	if (exitCode !== undefined && exitCode !== 0) {
 		return localize('toolExecutionFailedWithExitCode', "Tool execution failed with exit code {0}", exitCode);
 	}
-	return error ? localize('toolExecutionFailed', "Tool execution failed") : undefined;
+	return error ? localize('toolExecutionFailed', "工具执行失败") : undefined;
 }

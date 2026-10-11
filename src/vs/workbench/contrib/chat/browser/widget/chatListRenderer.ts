@@ -381,12 +381,12 @@ export function formatCompletedResponseDisclosureLabel(stepCount: number, elapse
 	const elapsed = formatChatResponseElapsedTime(elapsedMs);
 	if (stepCount === 1) {
 		return elapsed
-			? localize('chat.responseCompletedOneStepIn', "Completed 1 step in {0}", elapsed)
-			: localize('chat.responseCompletedOneStep', "Completed 1 step");
+			? localize('chat.responseCompletedOneStepIn', "已在 {0} 内完成 1 个步骤", elapsed)
+			: localize('chat.responseCompletedOneStep', "已完成 1 个步骤");
 	}
 	return elapsed
-		? localize('chat.responseCompletedStepsIn', "Completed {0} steps in {1}", stepCount, elapsed)
-		: localize('chat.responseCompletedSteps', "Completed {0} steps", stepCount);
+		? localize('chat.responseCompletedStepsIn', "已在 {1} 内完成 {0} 个步骤", stepCount, elapsed)
+		: localize('chat.responseCompletedSteps', "已完成 {0} 个步骤", stepCount);
 }
 
 export function getVisibleCompletedResponseItemCount(nodes: ReadonlyArray<Node>): number {
@@ -422,18 +422,18 @@ export function formatResponseTokenStats(modelTotals: readonly IChatUsageModelTo
 		return undefined;
 	}
 
-	const title = localize('chat.responseTokenStats.title', "Response details");
+	const title = localize('chat.responseTokenStats.title', "响应详情");
 	const markdown = new MarkdownString();
 	markdown.appendMarkdown(`**${escapeMarkdownSyntaxTokens(title)}**\n\n`);
 
 	const formatInputTokens = (count: number | string) => localize('chat.responseTokenStats.input', "输入令牌数: {0}", count);
 	const formatOutputTokens = (count: number | string) => localize('chat.responseTokenStats.output', "输出令牌数: {0}", count);
-	const formatCachedInputTokens = (count: number | string) => localize('chat.responseTokenStats.cachedInput', "Cached input tokens: {0}", count);
+	const formatCachedInputTokens = (count: number | string) => localize('chat.responseTokenStats.cachedInput', "缓存输入令牌数：{0}", count);
 	const tokenDetailsAriaParts: string[] = [];
 	const completion = formatChatRequestTimestamp(completedAt);
 	let completed: string | undefined;
 	if (completion) {
-		completed = localize('chat.responseTokenStats.completed', "Completed: {0}", completion.fullText);
+		completed = localize('chat.responseTokenStats.completed', "完成于：{0}", completion.fullText);
 		markdown.appendMarkdown(`${escapeMarkdownSyntaxTokens(completed)}\n\n`);
 	}
 
@@ -580,10 +580,10 @@ export function renderChatResponseDetails(container: HTMLElement, details: strin
 	}
 
 	const accessibleTiming = completion
-		? localize('chatResponseCompletedAt', "Completed {0}", completion.fullText)
+		? localize('chatResponseCompletedAt', "完成于 {0}", completion.fullText)
 		: undefined;
 	const accessibleElapsed = elapsed
-		? localize('chatResponseElapsed', "Elapsed time {0}", elapsed)
+		? localize('chatResponseElapsed', "耗时 {0}", elapsed)
 		: undefined;
 	container.ariaLabel = [accessibleTiming, accessibleElapsed, details, tokenStatsAriaLabel].filter(Boolean).join(', ');
 	container.classList.toggle('hidden', !responseDetails);
@@ -1368,10 +1368,10 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 					if (action.item.id === RestoreCheckpointActionId || action.item.id === StartOverActionId) {
 						const isStartOver = action.item.id === StartOverActionId;
 						const cancelLabel = isStartOver
-							? localize('chat.startOver.cancelTooltip', "Cancel starting over")
-							: localize('chat.restoreCheckpoint.cancelTooltip', "Cancel restoring this checkpoint");
+							? localize('chat.startOver.cancelTooltip', "取消重新开始")
+							: localize('chat.restoreCheckpoint.cancelTooltip', "取消恢复此检查点");
 						const confirmTooltip = isStartOver
-							? localize('chat.startOver.confirmTooltip', "Confirm starting over and discarding all edits")
+							? localize('chat.startOver.confirmTooltip', "确认重新开始并丢弃全部改动")
 							: localize('chat.restoreCheckpoint.confirmTooltip', "Confirm restoring this checkpoint and discarding later edits");
 						return this.instantiationService.createInstance(ChatRestoreCheckpointActionViewItem, action, { hoverDelegate: options.hoverDelegate }, (context: unknown) => this.discardEditsActionNeedsConfirmation(context), cancelLabel, confirmTooltip);
 					}

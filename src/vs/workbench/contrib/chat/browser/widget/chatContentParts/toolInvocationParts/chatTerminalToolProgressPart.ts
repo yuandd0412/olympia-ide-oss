@@ -102,7 +102,7 @@ const MAX_OUTPUT_CLICK_MOVEMENT = 5;
 const FULL_OUTPUT_SINGLE_CLICK_DELAY = 500;
 
 function getTerminalFullOutputLabel(runId: string): string {
-	return localize('chatTerminalFullOutputLabel', "Terminal Output · {0}", runId);
+	return localize('chatTerminalFullOutputLabel', "终端输出 · {0}", runId);
 }
 
 /**
@@ -1661,8 +1661,8 @@ export class ChatTerminalToolOutputSection extends Disposable {
 		const displayedOutput = command ? command.getOutput() : source ? source.output : output.text;
 		const showingPreview = output.fullOutputPreview !== undefined && removeAnsiEscapeCodes(displayedOutput ?? '').trim().length > 0;
 		return showingPreview
-			? localize('chatTerminalFullOutputPreview', "Showing a preview. Use Open Full Output (Read-Only) to view the captured output.")
-			: localize('chatTerminalFullOutputAvailable', "Use Open Full Output (Read-Only) to view the captured output.");
+			? localize('chatTerminalFullOutputPreview', "当前显示的是预览。请使用 Open Full Output (Read-Only) 查看已捕获的输出。")
+			: localize('chatTerminalFullOutputAvailable', "请使用 Open Full Output (Read-Only) 查看已捕获的输出。");
 	}
 
 	private _setExpanded(expanded: boolean): void {
@@ -1869,7 +1869,7 @@ export class ChatTerminalToolOutputSection extends Disposable {
 	private _setTruncationMessage(visible: boolean): void {
 		this.domNode.classList.toggle('chat-terminal-output-clickable', visible && this._canOpenFullOutput());
 		if (visible && this._canOpenFullOutput()) {
-			this._truncationElement.textContent = localize('chatTerminalOutputTruncatedClickPreview', "Output truncated. Click the output preview to view the full output.");
+			this._truncationElement.textContent = localize('chatTerminalOutputTruncatedClickPreview', "输出被截断。点击输出预览即可查看完整内容。");
 			return;
 		}
 		this._truncationElement.textContent = visible ? localize('chatTerminalOutputTruncated', "输出被截断。") : '';

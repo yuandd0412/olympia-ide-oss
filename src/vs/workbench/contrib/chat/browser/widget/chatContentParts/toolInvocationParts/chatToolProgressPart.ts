@@ -43,7 +43,7 @@ export class ChatToolProgressSubPart extends BaseChatToolInvocationSubPart {
 	private createProgressPart(): HTMLElement {
 		const error = IChatToolInvocation.resultError(this.toolInvocation);
 		if (error && !this.hasMeaningfulContent(this.toolInvocation.pastTenseMessage ?? this.toolInvocation.invocationMessage)) {
-			const message = typeof error === 'string' ? error : localize('toolExecutionFailed', "Tool execution failed");
+			const message = typeof error === 'string' ? error : localize('toolExecutionFailed', "工具执行失败");
 			const shouldAnnounce = this.toolInvocation.kind === 'toolInvocation' && this.computeShouldAnnounce(this.getAnnouncementKey('complete'));
 			return this._register(this.renderProgressContent(message, shouldAnnounce)).domNode;
 		}

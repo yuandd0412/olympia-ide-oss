@@ -51,8 +51,8 @@ export function getModifiedFilesSummaryLabel(modifiedFiles: readonly ModifiedFil
 	const allFilesCreated = modifiedFiles.length > 0 && modifiedFiles.every(isCreatedFile);
 	if (allFilesCreated) {
 		return modifiedFiles.length === 1
-			? localize('oneFileCreated', '1 file created')
-			: localize('manyFilesCreated', '{0} files created', modifiedFiles.length);
+			? localize('oneFileCreated', "已创建 1 个文件")
+			: localize('manyFilesCreated', "已创建 {0} 个文件", modifiedFiles.length);
 	}
 
 	return modifiedFiles.length === 1

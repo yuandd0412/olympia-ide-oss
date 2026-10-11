@@ -523,7 +523,7 @@ export class ChatWorkingProgressContentPart extends ChatProgressContentPart impl
 
 	private resolveWorkingContent(): IMarkdownString {
 		if (this.showingDelayedProgressMessage) {
-			return new MarkdownString().appendText(localize('persistentProgress.takingLonger', "This is taking a little longer than usual"));
+			return new MarkdownString().appendText(localize('persistentProgress.takingLonger', "这次花费的时间比平常长一些"));
 		}
 		return this.explicitContent ?? new MarkdownString().appendText(pickWorkingLabel(this.contextElement, this.workingConfigurationService, this.progressStep));
 	}
