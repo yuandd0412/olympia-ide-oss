@@ -19,10 +19,69 @@ import * as vscode from 'vscode';
 const VENDOR = 'olympia';
 const KEY_SECRET = 'olympia.coach.apiKey';
 const DEFAULT_MODELS = ['deepseek-chat', 'deepseek-reasoner'];
+const MODELS_CACHE_MS = 5 * 60 * 1000;
+const MODELS_TIMEOUT_MS = 5000;
+
+// Endpoints that answer 401 rather than 404 for `/models` (verified against api.deepseek.com on
+// 2026-10-11), but the response shape is not documented, so the parse accepts whatever an
+// OpenAI-compatible server returns instead of betting on one key name.
+const NON_CHAT_ID_HINTS = ['embedding', 'rerank', 'rewriter', 'rewrite', 'moderation', 'tts', 'whisper', 'ocr', 'translator', 'search'];
 
 interface ChatMessage { role: 'system' | 'user' | 'assistant'; content: string }
 
 interface TextPartLike { value: string }
+
+interface ModelRow { id?: unknown; model?: unknown; name?: unknown }
+
+interface ModelsPayload { data?: unknown; models?: unknown }
+
+interface ModelsCache { baseUrl: string; at: number; ids: string[] }
+
+function rowId(row: ModelRow): string | undefined {
+	const candidates = [row.id, row.model, row.name];
+	for (const candidate of candidates) {
+		if (typeof candidate === 'string' && candidate) {
+			return candidate;
+		}
+	}
+	return undefined;
+}
+
+function isChatModel(id: string): boolean {
+	const lower = id.toLowerCase();
+	return !NON_CHAT_ID_HINTS.some(hint => lower.includes(hint));
+}
+
+export function parseModelIds(json: unknown): string[] {
+	let rows: unknown[] | undefined;
+	if (Array.isArray(json)) {
+		rows = json;
+	} else if (json && typeof json === 'object') {
+		const payload = json as ModelsPayload;
+		rows = Array.isArray(payload.data) ? payload.data : Array.isArray(payload.models) ? payload.models : undefined;
+	}
+	if (!rows) {
+		return [];
+	}
+	const ids: string[] = [];
+	for (const row of rows) {
+		if (typeof row === 'string') {
+			ids.push(row);
+		} else if (row && typeof row === 'object') {
+			const id = rowId(row as ModelRow);
+			if (id) {
+				ids.push(id);
+			}
+		}
+	}
+	const unique: string[] = [];
+	for (const id of ids) {
+		if (isChatModel(id) && !unique.includes(id)) {
+			unique.push(id);
+		}
+	}
+	return unique;
+}
 
 function isTextPartLike(part: unknown): part is TextPartLike {
 	return typeof part === 'object' && part !== null && typeof (part as TextPartLike).value === 'string';
@@ -37,7 +96,12 @@ function textOf(part: unknown): string {
 
 export class OlympiaChatProvider implements vscode.LanguageModelChatProvider {
 
-	constructor(private readonly context: vscode.ExtensionContext) { }
+	constructor(
+		private readonly context: vscode.ExtensionContext,
+		private readonly log: vscode.LogOutputChannel
+	) { }
+
+	private modelsCache: ModelsCache | undefined;
 
 	private async credentials(): Promise<{ baseUrl: string; key: string } | undefined> {
 		const baseUrl = (vscode.workspace.getConfiguration('olympia.ai').get<string>('baseUrl') ?? '').replace(/\/+$/, '');
@@ -48,9 +112,68 @@ export class OlympiaChatProvider implements vscode.LanguageModelChatProvider {
 		return { baseUrl, key };
 	}
 
-	private configuredModels(): string[] {
+	// Empty means "ask the server", which is the default; a non-empty list wins outright so the
+	// coach still works with no network round-trip and with a gateway that has no /models route.
+	private explicitModels(): string[] {
 		const models = vscode.workspace.getConfiguration('olympia.ai').get<string[]>('models');
-		return Array.isArray(models) && models.length ? models : DEFAULT_MODELS;
+		return Array.isArray(models) ? models.filter(id => typeof id === 'string' && !!id) : [];
+	}
+
+	private async remoteModels(creds: { baseUrl: string; key: string }): Promise<string[]> {
+		const cached = this.modelsCache;
+		if (cached && cached.baseUrl === creds.baseUrl && Date.now() - cached.at < MODELS_CACHE_MS && cached.ids.length) {
+			this.log.info(`model list served from cache (${cached.ids.length} models, age ${Math.round((Date.now() - cached.at) / 1000)}s)`);
+			return cached.ids;
+		}
+		let ids: string[] = [];
+		try {
+			const response = await fetch(`${creds.baseUrl}/models`, {
+				method: 'GET',
+				signal: AbortSignal.timeout(MODELS_TIMEOUT_MS),
+				headers: { authorization: `Bearer ${creds.key}` }
+			});
+			if (!response.ok) {
+				this.log.warn(`GET ${creds.baseUrl}/models -> HTTP ${response.status}; using the built-in fallback list. Set olympia.ai.models to name your models explicitly.`);
+				return [];
+			}
+			ids = parseModelIds(JSON.parse(await response.text()));
+			if (!ids.length) {
+				this.log.warn(`GET ${creds.baseUrl}/models returned 200 but no usable model ids; using the built-in fallback list.`);
+				return [];
+			}
+		} catch (error) {
+			this.log.warn(`could not list models from ${creds.baseUrl}/models: ${error instanceof Error ? error.message : String(error)}; using the built-in fallback list.`);
+			return [];
+		}
+		this.modelsCache = { baseUrl: creds.baseUrl, at: Date.now(), ids };
+		this.log.info(`listed ${ids.length} models from ${creds.baseUrl}/models`);
+		return ids;
+	}
+
+	invalidateModelsCache(): void {
+		this.modelsCache = undefined;
+	}
+
+	async provideLanguageModelChatInformation(_options: vscode.PrepareLanguageModelChatModelOptions, _token: vscode.CancellationToken): Promise<vscode.LanguageModelChatInformation[]> {
+		const creds = await this.credentials();
+		if (!creds) {
+			// Silent calls happen while core warms up; prompting there would be noise.
+			return [];
+		}
+		const explicit = this.explicitModels();
+		const ids = explicit.length ? explicit : await this.remoteModels(creds);
+		return (ids.length ? ids : DEFAULT_MODELS).map(id => ({
+			vendor: VENDOR,
+			id,
+			name: id,
+			family: 'Olympia',
+			version: '1',
+			maxInputTokens: 64000,
+			maxOutputTokens: 8000,
+			capabilities: { toolCalling: false, imageInput: false },
+			tooltip: id,
+			detail: '通过 Olympia BYOK 调用'
+		}));
 	}
 
 	private toChatMessages(messages: readonly vscode.LanguageModelChatRequestMessage[]): ChatMessage[] {
@@ -64,25 +187,6 @@ export class OlympiaChatProvider implements vscode.LanguageModelChatProvider {
 			out.push({ role: message.role === 2 ? 'assistant' : 'user', content });
 		}
 		return out;
-	}
-
-	async provideLanguageModelChatInformation(_options: vscode.PrepareLanguageModelChatModelOptions, _token: vscode.CancellationToken): Promise<vscode.LanguageModelChatInformation[]> {
-		if (!await this.credentials()) {
-			// Silent calls happen while core warms up; prompting there would be noise.
-			return [];
-		}
-		return this.configuredModels().map(id => ({
-			vendor: VENDOR,
-			id,
-			name: id,
-			family: 'Olympia',
-			version: '1',
-			maxInputTokens: 64000,
-			maxOutputTokens: 8000,
-			capabilities: { toolCalling: false, imageInput: false },
-			tooltip: id,
-			detail: '通过 Olympia BYOK 调用'
-		}));
 	}
 
 	async provideLanguageModelChatResponse(model: vscode.LanguageModelChatInformation, messages: readonly vscode.LanguageModelChatRequestMessage[], _options: vscode.ProvideLanguageModelChatResponseOptions, progress: vscode.Progress<vscode.LanguageModelResponsePart>, token: vscode.CancellationToken): Promise<void> {
@@ -152,8 +256,17 @@ export class OlympiaChatProvider implements vscode.LanguageModelChatProvider {
 	}
 }
 
-export function registerProvider(context: vscode.ExtensionContext): void {
-	context.subscriptions.push(vscode.lm.registerLanguageModelChatProvider(VENDOR, new OlympiaChatProvider(context)));
+export function registerProvider(context: vscode.ExtensionContext, log: vscode.LogOutputChannel): void {
+	const provider = new OlympiaChatProvider(context, log);
+	context.subscriptions.push(vscode.lm.registerLanguageModelChatProvider(VENDOR, provider));
+
+	// A stale cache would hide a model the user just added at their provider, and a changed baseUrl
+	// must never be served the previous host's list.
+	context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(e => {
+		if (e.affectsConfiguration('olympia.ai')) {
+			provider.invalidateModelsCache();
+		}
+	}));
 
 	context.subscriptions.push(vscode.commands.registerCommand('olympia.coach.setApiKey', async () => {
 		const key = await vscode.window.showInputBox({

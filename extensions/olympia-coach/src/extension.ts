@@ -20,12 +20,15 @@ import { listModels, registerModelPicker } from './model';
 import { registerProvider } from './provider';
 
 export function activate(context: vscode.ExtensionContext): void {
-	registerProvider(context);
+	// Created before the provider registers: it logs why a model listing fell back to the built-in
+	// list, which is the only trace of a network failure the user can see.
+	// Id ends up as `<extensionId>.<label>.log`, which is the value product.json advertises.
+	const log = vscode.window.createOutputChannel('Olympia AI Coach', { log: true });
+	context.subscriptions.push(log);
+
+	registerProvider(context, log);
 	registerCoachParticipant(context);
 	registerModelPicker(context);
-
-	// Id ends up as `<extensionId>.<label>.log`, which is the value product.json advertises.
-	context.subscriptions.push(vscode.window.createOutputChannel('Olympia AI Coach', { log: true }));
 
 	context.subscriptions.push(vscode.commands.registerCommand('olympia.coach.debug.extensionState', async () => {
 		const models = await listModels();

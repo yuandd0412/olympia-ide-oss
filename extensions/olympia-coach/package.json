@@ -62,13 +62,13 @@
 				"olympia.ai.baseUrl": {
 					"type": "string",
 					"default": "",
-					"markdownDescription": "OpenAI 兼容服务的基地址（不含 `/chat/completions`），例如 `https://api.deepseek.com/v1`。留空则 AI 教练不可用。"
+					"markdownDescription": "OpenAI 兼容服务的基地址（不含 `/chat/completions`），例如 `https://api.deepseek.com/v1`。模型列表从同一地址的 `/models` 拉取。留空则 AI 教练不可用。"
 				},
 				"olympia.ai.models": {
 					"type": "array",
 					"items": { "type": "string" },
-					"default": ["deepseek-chat", "deepseek-reasoner"],
-					"description": "教练可选用的模型 ID 列表，按 ID 直接发给上面的服务。"
+					"default": [],
+					"markdownDescription": "留空（默认）即自动从 `{baseUrl}/models` 拉取模型列表，结果缓存 5 分钟；改动本组设置会立刻失效重取。填写则只用列出的 ID，用于没有 `/models` 接口的网关或离线内网。拉取失败时回落到 `deepseek-chat`、`deepseek-reasoner`，原因记录在输出面板「Olympia AI Coach」。"
 				}
 			}
 		}

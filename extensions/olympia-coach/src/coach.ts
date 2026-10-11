@@ -45,7 +45,7 @@ const NO_MODEL = [
 	'AI 教练还没有可用的模型。',
 	'',
 	'1. `Ctrl+Shift+P` → 运行「Olympia：设置 AI 教练的 API Key」，填入你自己的密钥（只存在本机 SecretStorage）。',
-	'2. 打开设置，填 `Olympia AI 教练 ▸ baseUrl`（OpenAI 兼容地址，例如 `https://api.deepseek.com/v1`）与 `models`（要用的模型 ID）。',
+	'2. 打开设置，填 `Olympia AI 教练 ▸ baseUrl`（OpenAI 兼容地址，例如 `https://api.deepseek.com/v1`）。`models` 留空即可——教练会自动读取该地址下的 `/models`；只有没有这个接口的网关才需要手动写模型 ID。',
 	'3. `Ctrl+Shift+P` → 运行「Olympia：选择 AI 教练使用的模型」指定教练用哪个。',
 	'',
 	'配置好后重新提问即可。',
