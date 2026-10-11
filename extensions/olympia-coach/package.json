@@ -17,6 +17,7 @@
 	],
 	"contributes": {
 		"chatParticipants": [
+
 			{
 				"id": "olympia.coach",
 				"name": "coach",
@@ -39,12 +40,38 @@
 				]
 			}
 		],
+		"languageModelChatProviders": [
+			{
+				"vendor": "olympia",
+				"displayName": "Olympia BYOK"
+			}
+		],
 		"commands": [
 			{
 				"command": "olympia.coach.selectModel",
 				"title": "Olympia：选择 AI 教练使用的模型"
+			},
+			{
+				"command": "olympia.coach.setApiKey",
+				"title": "Olympia：设置 AI 教练的 API Key"
 			}
-		]
+		],
+		"configuration": {
+			"title": "Olympia AI 教练",
+			"properties": {
+				"olympia.ai.baseUrl": {
+					"type": "string",
+					"default": "",
+					"markdownDescription": "OpenAI 兼容服务的基地址（不含 `/chat/completions`），例如 `https://api.deepseek.com/v1`。留空则 AI 教练不可用。"
+				},
+				"olympia.ai.models": {
+					"type": "array",
+					"items": { "type": "string" },
+					"default": ["deepseek-chat", "deepseek-reasoner"],
+					"description": "教练可选用的模型 ID 列表，按 ID 直接发给上面的服务。"
+				}
+			}
+		}
 	},
 	"scripts": {
 		"compile": "gulp compile-extension:olympia-coach",

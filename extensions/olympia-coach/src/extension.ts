@@ -17,8 +17,10 @@
 import * as vscode from 'vscode';
 import { registerCoachParticipant } from './coach';
 import { listModels, registerModelPicker } from './model';
+import { registerProvider } from './provider';
 
 export function activate(context: vscode.ExtensionContext): void {
+	registerProvider(context);
 	registerCoachParticipant(context);
 	registerModelPicker(context);
 
