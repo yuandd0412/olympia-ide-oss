@@ -114,7 +114,7 @@ export function buildUnavailableStateItems(options: IBuildModelPickerItemsOption
 		: undefined;
 	const hover = canUpgrade ? new MarkdownString('', { isTrusted: true, supportThemeIcons: true }) : undefined;
 	hover?.appendMarkdown(localize('chat.modelPicker.upgradeHover', "[Upgrade to GitHub Copilot Pro](command:workbench.action.chat.upgradePlan \" \") to use the best models."));
-	return [{
+	const noModelsItem: IActionListItem<IActionWidgetDropdownAction> = {
 		item: {
 			id: 'noModels',
 			enabled: false,
@@ -134,7 +134,25 @@ export function buildUnavailableStateItems(options: IBuildModelPickerItemsOption
 		disabled: true,
 		hideIcon: false,
 		hover: hover ? { content: hover } : undefined,
-	}];
+	};
+	if (!options.manageModelsAction) {
+		return [noModelsItem];
+	}
+	// The empty list is the normal first-run state here (nothing is configured yet), so the picker
+	// has to keep offering the entry that leads to configuration. Upstream only appends it in the
+	// setup-required branch, which left the byokOnly empty state with no action at all.
+	return [
+		noModelsItem,
+		{ kind: ActionListItemKind.Separator },
+		{
+			item: options.manageModelsAction,
+			kind: ActionListItemKind.Action,
+			label: options.manageModelsAction.label,
+			group: { title: '', icon: Codicon.blank },
+			hideIcon: false,
+			showAlways: true,
+		},
+	];
 }
 
 export function buildFlatModelItems(options: IBuildModelPickerItemsOptions): IActionListItem<IActionWidgetDropdownAction>[] {
