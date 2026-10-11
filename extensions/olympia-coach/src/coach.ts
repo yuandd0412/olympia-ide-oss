@@ -44,8 +44,9 @@ const BY_COMMAND: Record<string, string> = {
 const NO_MODEL = [
 	'AI 教练还没有可用的模型。',
 	'',
-	'1. `Ctrl+Shift+P` → 运行「聊天: 管理语言模型」，添加一个本地模型（如 Ollama）或你自己的 API 密钥。',
-	'2. `Ctrl+Shift+P` → 运行「Olympia：选择 AI 教练使用的模型」指定教练用哪个。',
+	'1. `Ctrl+Shift+P` → 运行「Olympia：设置 AI 教练的 API Key」，填入你自己的密钥（只存在本机 SecretStorage）。',
+	'2. 打开设置，填 `Olympia AI 教练 ▸ baseUrl`（OpenAI 兼容地址，例如 `https://api.deepseek.com/v1`）与 `models`（要用的模型 ID）。',
+	'3. `Ctrl+Shift+P` → 运行「Olympia：选择 AI 教练使用的模型」指定教练用哪个。',
 	'',
 	'配置好后重新提问即可。',
 ].join('\n');

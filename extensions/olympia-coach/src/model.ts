@@ -48,7 +48,7 @@ export function registerModelPicker(context: vscode.ExtensionContext): void {
 		const models = await listModels();
 		if (models.length === 0) {
 			await vscode.window.showInformationMessage(
-				'还没有可用的语言模型。请先在命令面板（Ctrl+Shift+P）运行“聊天: 管理语言模型”添加本地或自有密钥模型。');
+				'还没有可用的语言模型。请先运行「Olympia：设置 AI 教练的 API Key」，并在设置里填写 olympia.ai.baseUrl 与 olympia.ai.models。');
 			return;
 		}
 		const picked = await vscode.window.showQuickPick(
