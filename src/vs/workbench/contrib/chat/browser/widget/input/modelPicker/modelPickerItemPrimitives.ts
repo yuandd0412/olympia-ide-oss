@@ -140,7 +140,9 @@ export function createPinAction(
 	return toAction({
 		id: `pin.${modelIdentifier}`,
 		label: isPinned
+			// allow-any-unicode-next-line
 			? localize('chat.modelPicker.unpin', "取消固定模型")
+			// allow-any-unicode-next-line
 			: localize('chat.modelPicker.pin', "固定模型"),
 		class: ThemeIcon.asClassName(isPinned ? Codicon.pinned : Codicon.pin),
 		run: () => onTogglePin(modelIdentifier, !isPinned),
@@ -158,6 +160,7 @@ export function createModelAction(
 	const priceCategoryLabel = getPriceCategoryLabel(model.metadata.priceCategory);
 	const detail = suppressVendorInDetail ? undefined : model.metadata.detail;
 	const promo = ILanguageModelChatMetadata.hasPromoDiscount(model.metadata) ? model.metadata.promo : undefined;
+	// allow-any-unicode-next-line
 	const promoDetail = promo ? localize('chat.promo.discount', "{0}% 折扣", promo.discountPercent) : undefined;
 	const textParts = [detail, promoDetail, pricingForDescription].filter(Boolean);
 	const textDescription = textParts.length > 0 ? textParts.join(' · ') : undefined;
@@ -229,7 +232,8 @@ export function createUnavailableModelItem(
 	} else {
 		description = manageSettingsUrl
 			? new MarkdownString(localize('chat.modelPicker.adminLink', "[Contact your admin]({0})", manageSettingsUrl), { isTrusted: true })
-			: localize('chat.modelPicker.adminDescription', "Contact your admin");
+			// allow-any-unicode-next-line
+			: localize('chat.modelPicker.adminDescription', "请联系管理员");
 	}
 
 	let hoverContent: MarkdownString;

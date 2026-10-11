@@ -241,6 +241,7 @@ export class TabbedModelPicker extends Disposable {
 			tabs: destinations.map((destination): ITabDescriptor => {
 				// Auto can't be turned off when it's the only choice, so the tab is named after it.
 				const label = destination.id === MODEL_PICKER_BUILT_IN_DESTINATION && this._isAutoOnly(context)
+					// allow-any-unicode-next-line
 					? localize('chat.modelPicker.auto', "自动")
 					: destination.label;
 				return {
@@ -249,6 +250,7 @@ export class TabbedModelPicker extends Disposable {
 					icon: destination.icon,
 					tooltip: label,
 					toggle: destination.id === MODEL_PICKER_BUILT_IN_DESTINATION ? {
+						// allow-any-unicode-next-line
 						label: localize('chat.modelPicker.auto', "自动"),
 						ariaLabel: localize('chat.modelPicker.autoModeToggle', "Use Auto mode in {0}", destination.label),
 						getState: () => this._getAutoModeToggleState(this._context ?? context),
@@ -296,6 +298,7 @@ export class TabbedModelPicker extends Disposable {
 					tabThroughItemActions: true,
 					detailItemHeight: 64,
 					showFilter: searching,
+					// allow-any-unicode-next-line
 					filterPlaceholder: localize('chat.modelPicker.search', "搜索模型"),
 					focusFilterOnOpen: searching,
 					initialFilterValue,
@@ -450,7 +453,8 @@ export class TabbedModelPicker extends Disposable {
 			actions.push({
 				id: 'addProvider',
 				icon: Codicon.add,
-				tooltip: localize('chat.modelPicker.addProvider', "Add Models..."),
+				// allow-any-unicode-next-line
+				tooltip: localize('chat.modelPicker.addProvider', "添加模型…"),
 				run: () => {
 					this._widget.hide();
 					context.onManageModels();
@@ -511,6 +515,7 @@ export class TabbedModelPicker extends Disposable {
 			}
 		};
 
+		// allow-any-unicode-next-line
 		appendSection(localize('chat.modelPicker.pinned', "已固定"), sections.pinned);
 		// The shortlist is the default state, so it goes unlabelled.
 		appendSection(undefined, sections.suggested, sections.unavailable);
@@ -519,6 +524,7 @@ export class TabbedModelPicker extends Disposable {
 			const collapsible = hasPromotedModels(sections);
 			const section = collapsible ? OTHER_MODELS_SECTION : undefined;
 			if (collapsible) {
+				// allow-any-unicode-next-line
 				const label = localize('chat.modelPicker.otherModels', "其他模型");
 				const count = sections.other.length;
 				items.push({
@@ -559,6 +565,7 @@ export class TabbedModelPicker extends Disposable {
 		if (auto) {
 			const property = getModelConfigProperty(auto, context.configurationAccess, MODEL_CONFIG_GROUP_EFFORT);
 			if (property) {
+				// allow-any-unicode-next-line
 				const title = property.schema.title ?? localize('chat.modelPicker.optimizeFor', "优化目标");
 				items.push({
 					kind: ActionListItemKind.Separator,
@@ -589,14 +596,16 @@ export class TabbedModelPicker extends Disposable {
 		const hydra = this._hydraFusionModel(context);
 		const unavailableHydra = sections.unavailable.filter(entry => entry.id === COPILOT_HYDRA_FUSION_MODEL_ID);
 		if (hydra || unavailableHydra.length) {
-			items.push({ kind: ActionListItemKind.Separator, label: localize('chat.modelPicker.alternativeRouting', "Alternative routing") });
+			// allow-any-unicode-next-line
+			items.push({ kind: ActionListItemKind.Separator, label: localize('chat.modelPicker.alternativeRouting', "备选路由") });
 			if (hydra) {
 				const item = this._createModelItem(hydra, context);
 				const description = localize('chat.modelPicker.hydraFusionDescription', "HydraFusion picks a workflow for each task, using one or more models to draft, review, or escalate when needed.");
 				let hoverContent: ReturnType<typeof getModelHoverContent>;
 				items.push({
 					...item,
-					detail: localize('chat.modelPicker.hydraFusionDetail', "May use multiple models"),
+					// allow-any-unicode-next-line
+					detail: localize('chat.modelPicker.hydraFusionDetail', "可能同时使用多个模型"),
 					badge: item.badge ?? hydra.metadata.detail,
 					ariaDescription: [item.ariaDescription, description].filter(Boolean).join(', '),
 					tooltip: [item.tooltip, description].filter(Boolean).join(' \u00b7 '),
@@ -702,9 +711,11 @@ export class TabbedModelPicker extends Disposable {
 	private _createDetailsAction(model: ILanguageModelChatMetadataAndIdentifier, summary?: string): IAction {
 		return toAction({
 			id: MODEL_DETAILS_ACTION_ID,
+			// allow-any-unicode-next-line
 			label: summary ?? localize('chat.modelPicker.details', "详情"),
 			tooltip: summary
 				? localize('chat.modelPicker.configurationDetails', "{0} Details, {1}", model.metadata.name, summary)
+				// allow-any-unicode-next-line
 				: localize('chat.modelPicker.modelDetails', "{0} 详情", model.metadata.name),
 			run: () => this._showModelDetails(model, true),
 		});
@@ -765,8 +776,10 @@ export class TabbedModelPicker extends Disposable {
 		card.refresh();
 		this._detailsCard = card;
 		this._widget.showDetails({
+			// allow-any-unicode-next-line
 			label: localize('chat.modelPicker.modelDetails', "{0} 详情", model.metadata.name),
-			backLabel: localize('chat.modelPicker.backToModels', "Back to Models"),
+			// allow-any-unicode-next-line
+			backLabel: localize('chat.modelPicker.backToModels', "返回模型列表"),
 			renderHeader: container => {
 				container.appendChild(card.headerElement);
 				return toDisposable(() => card.headerElement.remove());
@@ -780,7 +793,8 @@ export class TabbedModelPicker extends Disposable {
 					const actions = store.add(new ActionBar(banner));
 					actions.push(toAction({
 						id: 'chat.modelPicker.dismissConfigurationHint',
-						label: localize('chat.modelPicker.dismissConfigurationHint', "Dismiss Hint"),
+						// allow-any-unicode-next-line
+						label: localize('chat.modelPicker.dismissConfigurationHint', "关闭提示"),
 						class: ThemeIcon.asClassName(Codicon.close),
 						run: () => {
 							hint.dismiss();

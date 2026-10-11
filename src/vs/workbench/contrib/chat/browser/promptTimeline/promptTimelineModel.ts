@@ -580,7 +580,8 @@ export class PromptTimelineModel extends Disposable {
 		const input = this.instantiationService.createInstance(
 			MultiDiffEditorInput,
 			source,
-			localize('promptTimeline.reviewTitle', "Changes · {0}", tick.text),
+			// allow-any-unicode-next-line
+			localize('promptTimeline.reviewTitle', "更改 · {0}", tick.text),
 			items,
 			false,
 		);

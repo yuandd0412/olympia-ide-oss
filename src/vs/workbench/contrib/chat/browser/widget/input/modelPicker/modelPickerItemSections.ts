@@ -30,7 +30,9 @@ function createSyntheticAutoItem(): IActionListItem<IActionWidgetDropdownAction>
 		enabled: true,
 		checked: true,
 		class: undefined,
+		// allow-any-unicode-next-line
 		tooltip: localize('chat.modelPicker.auto', "自动"),
+		// allow-any-unicode-next-line
 		label: localize('chat.modelPicker.auto', "自动"),
 		run: () => { },
 	});
@@ -41,7 +43,8 @@ export function buildUnavailableStateItems(options: IBuildModelPickerItemsOption
 	if (restrictedMode) {
 		const enabled = !!options.actions.onRequestTrust;
 		return [
-			{ kind: ActionListItemKind.Header, label: localize('chat.modelPicker.restrictedMode', "Models unavailable while in Restricted mode") },
+			// allow-any-unicode-next-line
+			{ kind: ActionListItemKind.Header, label: localize('chat.modelPicker.restrictedMode', "受限模式下模型不可用") },
 			{
 				item: {
 					id: RESTRICTED_MODE_TRUST_ACTION_ID,
@@ -49,10 +52,12 @@ export function buildUnavailableStateItems(options: IBuildModelPickerItemsOption
 					checked: false,
 					class: undefined,
 					tooltip: localize('chat.modelPicker.restrictedMode.trustTooltip', "Trust the workspace to enable models."),
+					// allow-any-unicode-next-line
 					label: localize('chat.modelPicker.restrictedMode.trust', "信任此工作区以启用模型..."),
 					run: () => options.actions.onRequestTrust?.(),
 				},
 				kind: ActionListItemKind.Action,
+				// allow-any-unicode-next-line
 				label: localize('chat.modelPicker.restrictedMode.trust', "信任此工作区以启用模型..."),
 				group: { title: '', icon: ThemeIcon.fromId(Codicon.workspaceTrusted.id) },
 				disabled: !enabled,
@@ -115,11 +120,14 @@ export function buildUnavailableStateItems(options: IBuildModelPickerItemsOption
 			enabled: false,
 			checked: false,
 			class: undefined,
+			// allow-any-unicode-next-line
 			tooltip: localize('chat.modelPicker.noModels', "没有可用模型"),
+			// allow-any-unicode-next-line
 			label: localize('chat.modelPicker.noModels', "没有可用模型"),
 			run: () => { },
 		},
 		kind: ActionListItemKind.Action,
+		// allow-any-unicode-next-line
 		label: localize('chat.modelPicker.noModels', "没有可用模型"),
 		description,
 		group: { title: '', icon: ThemeIcon.fromId(Codicon.blank.id) },
@@ -227,6 +235,7 @@ function appendPinnedModels(context: IGroupedContext): Set<string> {
 		return leftGroup.groupName.localeCompare(rightGroup.groupName) || left.metadata.name.localeCompare(right.metadata.name);
 	});
 	if (pinnedModels.length > 0) {
+		// allow-any-unicode-next-line
 		items.push({ kind: ActionListItemKind.Separator, label: localize('chat.modelPicker.pinned', "已固定") });
 		for (const model of pinnedModels) {
 			const groupLabel = context.showGroupLabel ? getProviderGroupForModel(model, context.modelToGroup, options.languageModelsService).groupName : undefined;
@@ -336,8 +345,10 @@ function appendOtherModels(context: IGroupedContext): boolean {
 		? [toAction({ id: options.manageModelsAction.id, label: options.manageModelsAction.tooltip ?? options.manageModelsAction.label, class: ThemeIcon.asClassName(Codicon.gear), run: () => options.manageModelsAction!.run() })]
 		: undefined;
 	items.push({
+		// allow-any-unicode-next-line
 		item: { id: 'otherModels', enabled: true, checked: false, class: undefined, tooltip: localize('chat.modelPicker.otherModels', "其他模型"), label: localize('chat.modelPicker.otherModels', "其他模型"), run: () => { } },
 		kind: ActionListItemKind.Action,
+		// allow-any-unicode-next-line
 		label: localize('chat.modelPicker.otherModels', "其他模型"),
 		group: { title: '', icon: Codicon.chevronDown },
 		hideIcon: false,

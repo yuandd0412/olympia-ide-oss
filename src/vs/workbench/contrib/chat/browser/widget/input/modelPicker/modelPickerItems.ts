@@ -71,6 +71,7 @@ export function createManageModelsAction(commandService: ICommandService): IActi
 		enabled: true,
 		checked: false,
 		class: ThemeIcon.asClassName(Codicon.gear),
+		// allow-any-unicode-next-line
 		tooltip: localize('chat.manageModels.tooltip', "管理语言模型"),
 		label: localize('chat.manageModels', "Manage Models..."),
 		run: () => { commandService.executeCommand(MANAGE_CHAT_COMMAND_ID); },
@@ -97,7 +98,8 @@ export function getModelPickerAccessibilityProvider(isSearch = false) {
 					: null;
 			}
 			const description = element.ariaDescription ?? (typeof element.description === 'string' ? element.description : element.description?.value);
-			const currentModel = isSearch && element.item?.checked ? localize('chat.modelPicker.currentModel', "Current model") : undefined;
+			// allow-any-unicode-next-line
+			const currentModel = isSearch && element.item?.checked ? localize('chat.modelPicker.currentModel', "当前模型") : undefined;
 			return [element.label, element.badge, ...(element.additionalBadges?.map(badge => badge.label) ?? []), description, currentModel].filter((part): part is string => !!part).join(', ');
 		},
 		isChecked(element: IActionListItem<IActionWidgetDropdownAction>) {

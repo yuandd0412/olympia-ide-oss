@@ -395,7 +395,9 @@ export class ModelPickerWidget extends Disposable {
 			getDefaultHoverDelegate('mouse'),
 			this._configButton,
 			() => this.isTabbedPickerEnabled()
+				// allow-any-unicode-next-line
 				? this._configButton?.ariaLabel ?? localize('chat.modelPicker.configTooltip', "配置模型")
+				// allow-any-unicode-next-line
 				: localize('chat.modelPicker.configTooltip', "配置模型")
 		));
 	}
@@ -423,6 +425,7 @@ export class ModelPickerWidget extends Disposable {
 	/** The "Learn more" header link for cache-break hints; `undefined` when the product has no URL. */
 	private getCacheBreakLearnMoreLink(): IActionListHeaderLink | undefined {
 		const url = this._productService.defaultChatAgent?.optimizeUsageDocumentationUrl;
+		// allow-any-unicode-next-line
 		return url ? { label: localize('chat.cacheBreak.learnMore', "了解更多"), uri: URI.parse(url) } : undefined;
 	}
 
@@ -477,6 +480,7 @@ export class ModelPickerWidget extends Disposable {
 			vendor: COPILOT_VENDOR_ID,
 			label: getLanguageModelProviderDisplayName(this._languageModelsService, COPILOT_VENDOR_ID),
 			message: localize('chat.modelPicker.signInMessage', "Sign in to see available models."),
+			// allow-any-unicode-next-line
 			action: { label: localize('chat.modelPicker.signIn', "登录"), run: () => this._requestSetup() },
 		}];
 	}
@@ -613,11 +617,13 @@ export class ModelPickerWidget extends Disposable {
 					this._renderLabel();
 				},
 				cacheBreakHint: showCacheBreakHint ? {
+					// allow-any-unicode-next-line
 					text: localize('chat.modelPicker.cacheBreakHint', "会话中途切换模型会重置提示缓存，可能增加费用。"),
 					link: this.getCacheBreakLearnMoreLink(),
 					dismiss: () => this.dismissCacheBreakHint(),
 				} : undefined,
 				configurationCacheBreakHint: showConfigurationCacheBreakHint ? {
+					// allow-any-unicode-next-line
 					text: localize('chat.config.cacheBreakHint', "会话中途更改这些选项会重置提示缓存，可能增加费用。"),
 					link: this.getCacheBreakLearnMoreLink(),
 					dismiss: () => this.dismissCacheBreakHint(),
@@ -684,11 +690,13 @@ export class ModelPickerWidget extends Disposable {
 		const showCacheBreakHint = this.shouldShowCacheBreakHint(/* excludeAutoModel */ true);
 		const listOptions = withChatInputPickerMotion({
 			className: 'chat-model-picker-dropdown',
+			// allow-any-unicode-next-line
 			headerText: showCacheBreakHint ? localize('chat.modelPicker.cacheBreakHint', "会话中途切换模型会重置提示缓存，可能增加费用。") : undefined,
 			headerIcon: showCacheBreakHint ? Codicon.info : undefined,
 			headerLink: showCacheBreakHint ? this.getCacheBreakLearnMoreLink() : undefined,
 			headerDismiss: showCacheBreakHint ? () => this.dismissCacheBreakHint() : undefined,
 			showFilter: !unavailable,
+			// allow-any-unicode-next-line
 			filterPlaceholder: localize('chat.modelPicker.search', "搜索模型"),
 			focusFilterOnOpen: true,
 			filterAsCombobox: !unavailable,
@@ -784,11 +792,15 @@ export class ModelPickerWidget extends Disposable {
 		// "Activating..." is transient while models load after a Trust grant; "No models available"
 		// is the genuinely empty state (e.g. an agent-host session with no Auto fallback).
 		const modelLabel = unavailable
+			// allow-any-unicode-next-line
 			? localize('chat.modelPicker.modelsLabel', "模型")
 			: activating
-				? localize('chat.modelPicker.activating', "Activating...")
+				// allow-any-unicode-next-line
+				? localize('chat.modelPicker.activating', "正在启用…")
 				: genericNoModels
+					// allow-any-unicode-next-line
 					? localize('chat.modelPicker.noModels', "没有可用模型")
+					// allow-any-unicode-next-line
 					: (name ?? localize('chat.modelPicker.auto', "自动"));
 		const showModelLabel = !compact || !modelIcon || noModelsAvailable;
 		// Fixed rather than measured: this runs from a resize-driven autorun, so reading
@@ -824,9 +836,11 @@ export class ModelPickerWidget extends Disposable {
 		// Aria — name the control "Models" to match the visible label; the comma
 		// separates the control name from its current value / state.
 		const ariaLabel = restrictedMode
-			? localize('chat.modelPicker.ariaLabelRestricted', "Models, unavailable while in Restricted mode")
+			// allow-any-unicode-next-line
+			? localize('chat.modelPicker.ariaLabelRestricted', "模型，受限模式下不可用")
 			: setupRequired
-				? localize('chat.modelPicker.ariaLabelSetupRequired', "Models, sign in to use Copilot")
+				// allow-any-unicode-next-line
+				? localize('chat.modelPicker.ariaLabelSetupRequired', "模型，需登录 Copilot 后使用")
 				: localize('chat.modelPicker.ariaLabel', "Models, {0}", modelLabel);
 		this._domNode.ariaLabel = ariaLabel;
 		this._nameButton.ariaLabel = ariaLabel;

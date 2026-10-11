@@ -245,6 +245,7 @@ export class ModelCard extends DisposableStore {
 		if (!isAuto && isUBB) {
 			this._renderCost(context);
 		} else if (!isAuto && metadata.pricing && isMultiplierPricing(model)) {
+			// allow-any-unicode-next-line
 			this._renderSection(localize('models.cost', "费用：{0}", metadata.pricing));
 		}
 	}
@@ -274,7 +275,8 @@ export class ModelCard extends DisposableStore {
 		}
 		const container = dom.append(header, dom.$('.chat-model-card-actions'));
 		const actions = this._contentDisposables.add(new ActionBar(container, {
-			ariaLabel: localize('chat.modelPicker.modelActions', "Model Actions"),
+			// allow-any-unicode-next-line
+			ariaLabel: localize('chat.modelPicker.modelActions', "模型操作"),
 		}));
 		this._headerActions = actions;
 		this._contentDisposables.add(actions.onDidRun(event => {
@@ -295,7 +297,9 @@ export class ModelCard extends DisposableStore {
 		if (this._options.onTogglePin) {
 			const pinned = !!this._options.isPinned;
 			const label = pinned
+				// allow-any-unicode-next-line
 				? localize('chat.modelPicker.unpin', "取消固定模型")
+				// allow-any-unicode-next-line
 				: localize('chat.modelPicker.pin', "固定模型");
 			const pin = this._contentDisposables.add(new Action(
 				'chat.modelPicker.pin',
@@ -342,7 +346,9 @@ export class ModelCard extends DisposableStore {
 
 	private _renderEffortSection(effort: IModelConfigProperty, isAuto: boolean): void {
 		this._renderChoiceSection(effort, MODEL_CONFIG_GROUP_EFFORT, effort.schema.title ?? (isAuto
+			// allow-any-unicode-next-line
 			? localize('models.optimizeFor', "优化目标")
+			// allow-any-unicode-next-line
 			: localize('chat.effort.header', "思考强度")));
 	}
 
@@ -352,6 +358,7 @@ export class ModelCard extends DisposableStore {
 	 * neither window is "off", and it would hide the one being chosen between.
 	 */
 	private _renderContextSection(context: IModelConfigProperty): void {
+		// allow-any-unicode-next-line
 		this._renderChoiceSection(context, MODEL_CONFIG_GROUP_CONTEXT, context.schema.title ?? localize('chat.context.header', "上下文"));
 	}
 
@@ -441,6 +448,7 @@ export class ModelCard extends DisposableStore {
 		const metrics = getModelCostMetrics(metadata);
 		if (!metrics.length) {
 			if (metadata.pricing) {
+				// allow-any-unicode-next-line
 				this._renderSection(localize('models.cost', "费用：{0}", metadata.pricing));
 			}
 			return;

@@ -48,6 +48,7 @@ export class ModelPickerConfiguration {
 		}
 
 		if (useTabbedPicker) {
+			// allow-any-unicode-next-line
 			const label = summary ?? localize('chat.modelPicker.configureLabel', "配置");
 			dom.reset(button, dom.$('span.chat-input-picker-label', undefined, label));
 			button.style.display = '';
@@ -75,13 +76,15 @@ export class ModelPickerConfiguration {
 				? tokensConfig.schema.enumItemLabels[enumIndex]
 				: formatTokenCount(Number(tokensConfig.value));
 			labelParts.push(tokensLabel);
-			ariaParts.push(localize('chat.modelPicker.tokensAriaLabel', "Context Size: {0}", tokensLabel));
+			// allow-any-unicode-next-line
+			ariaParts.push(localize('chat.modelPicker.tokensAriaLabel', "上下文长度：{0}", tokensLabel));
 		}
 
 		if (!labelParts.length) {
 			// First-party producers always supply a default, but configuration schemas can also come
 			// from third-party extensions via the LM API. Fall back to a generic label rather than
 			// hiding the button, so the configuration stays reachable.
+			// allow-any-unicode-next-line
 			const fallbackLabel = effortConfig?.schema.title ?? tokensConfig?.schema.title ?? localize('chat.modelPicker.configureLabel', "配置");
 			labelParts.push(fallbackLabel);
 			ariaParts.push(fallbackLabel);
@@ -133,6 +136,7 @@ export class ModelPickerConfiguration {
 				getWidgetRole: () => 'menu' as const,
 			},
 			withChatInputPickerMotion({
+				// allow-any-unicode-next-line
 				headerText: showCacheBreakHint ? localize('chat.config.cacheBreakHint', "会话中途更改这些选项会重置提示缓存，可能增加费用。") : undefined,
 				headerIcon: showCacheBreakHint ? Codicon.info : undefined,
 				headerLink: showCacheBreakHint ? this._host.getCacheBreakLearnMoreLink() : undefined,
@@ -161,6 +165,7 @@ export class ModelPickerConfiguration {
 
 		const configurationAccess = this._host.getConfigurationAccess();
 		const items: IActionListItem<IActionWidgetDropdownAction>[] = [];
+		// allow-any-unicode-next-line
 		const defaultLabel = localize('models.configDefault', "默认");
 		const appendConfigSection = (
 			group: string,
@@ -203,11 +208,13 @@ export class ModelPickerConfiguration {
 
 		appendConfigSection(
 			MODEL_CONFIG_GROUP_EFFORT,
+			// allow-any-unicode-next-line
 			localize('chat.effort.header', "思考强度"),
 			(value, enumLabel) => enumLabel ?? String(value),
 		);
 		appendConfigSection(
 			MODEL_CONFIG_GROUP_CONTEXT,
+			// allow-any-unicode-next-line
 			localize('chat.tokens.header', "上下文大小"),
 			(value, enumLabel) => enumLabel ?? formatTokenCount(Number(value)),
 		);

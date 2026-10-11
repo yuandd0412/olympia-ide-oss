@@ -112,6 +112,7 @@ export function getModelConfigProperty(
 /** The label an enum value is shown with, falling back to a formatted raw value. */
 export function getModelConfigValueLabel(schema: IModelConfigPropertySchema, value: unknown): string {
 	if (value === 'fast' && schema.enum?.includes('efficiency') && !schema.enum.includes('fast')) {
+		// allow-any-unicode-next-line
 		return localize('chat.modelPicker.automaticTier', "自动");
 	}
 	const index = schema.enum?.indexOf(value) ?? -1;
@@ -154,14 +155,17 @@ function getModelConfigDisplayValues(model: ILanguageModelChatMetadataAndIdentif
 		if (property?.value !== undefined && property.schema.enum?.includes(property.value)) {
 			const label = getModelConfigValueLabel(property.schema, property.value);
 			const title = property.schema.title ?? (group === MODEL_CONFIG_GROUP_EFFORT
+				// allow-any-unicode-next-line
 				? localize('chat.effort.header', "思考强度")
+				// allow-any-unicode-next-line
 				: localize('chat.context.header', "上下文"));
 			values.push({ label, description: localize('chat.modelPicker.configValue', "{0}: {1}", title, label) });
 		} else if (!property && group === MODEL_CONFIG_GROUP_CONTEXT && model && !isAutoModel(model) && !isHydraFusionModel(model)) {
 			const total = getModelContextWindowTotal(model.metadata);
 			if (Number.isFinite(total) && total > 0) {
 				const label = formatTokenCount(total);
-				values.push({ label, description: localize('chat.modelPicker.maxContext', "Max context: {0}", label) });
+				// allow-any-unicode-next-line
+				values.push({ label, description: localize('chat.modelPicker.maxContext', "最大上下文：{0}", label) });
 			}
 		}
 	}

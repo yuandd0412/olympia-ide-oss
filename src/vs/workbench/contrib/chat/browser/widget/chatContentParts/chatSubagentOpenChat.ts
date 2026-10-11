@@ -185,6 +185,7 @@ function createEditorOpenSubagentAction(action: IAction, chatWidgetService: ICha
 		const context = asOpenSubagentChatContext(rawContext);
 		const resource = context && getSubagentEditorResource(context);
 		if (!resource) {
+			// allow-any-unicode-next-line
 			notificationService.error(localize('chat.subagent.openChat.invalidResource', "无法打开子智能体对话。"));
 			return;
 		}
@@ -200,6 +201,7 @@ class OpenSubagentChatAction extends Action2 {
 	constructor() {
 		super({
 			id: CHAT_OPEN_AGENT_HOST_CHAT_COMMAND_ID,
+			// allow-any-unicode-next-line
 			title: localize2('chat.subagent.openChat', "打开子智能体"),
 			icon: Codicon.commentDiscussion,
 			f1: false,
@@ -219,6 +221,7 @@ class OpenSubagentChatAction extends Action2 {
 		}
 		const resource = getSubagentEditorResource(context);
 		if (!resource) {
+			// allow-any-unicode-next-line
 			notificationService.error(localize('chat.subagent.openChat.invalidResource', "无法打开子智能体对话。"));
 			return;
 		}
@@ -767,13 +770,15 @@ export class OpenSubagentChatActionViewItem extends BaseActionViewItem {
 			details.push(localize('chat.subagent.agentTypeTooltip', "Subagent type: {0}", this._reportedAgentType));
 		}
 		if (this._reportedModelName) {
+			// allow-any-unicode-next-line
 			details.push(localize('chat.subagent.modelTooltip', "模型：{0}", this._reportedModelName));
 		}
 		if (this._reportedCredits !== undefined && this._showCreditUsage) {
 			details.push(formatCopilotCreditsLabel(this._reportedCredits));
 		}
 		if (this._displayedToolAccessibleLabel && this._displayedActivityIsTool) {
-			details.push(localize('chat.subagent.activeToolTooltip', "Active tool: {0}", this._displayedToolAccessibleLabel));
+			// allow-any-unicode-next-line
+			details.push(localize('chat.subagent.activeToolTooltip', "当前工具：{0}", this._displayedToolAccessibleLabel));
 		}
 		return details.join('\n');
 	}
@@ -808,12 +813,14 @@ export class OpenSubagentChatActionViewItem extends BaseActionViewItem {
 		const inlineContext = asInlineSubagentDetailsContext(this._context);
 		if (inlineContext) {
 			return inlineContext.expanded
-				? localize('chat.subagent.hideDetails', "Hide subagent details: {0}", this._resolvedTitle ?? this._action.label)
+				// allow-any-unicode-next-line
+				? localize('chat.subagent.hideDetails', "收起子代理详情：{0}", this._resolvedTitle ?? this._action.label)
 				: localize('chat.subagent.showDetails', "Show subagent details: {0}", this._resolvedTitle ?? this._action.label);
 		}
 		return this._resolvedTitle
 			? this._action.enabled
 				? localize('chat.subagent.openChat.aria', "Open subagent chat: {0}", this._resolvedTitle)
+				// allow-any-unicode-next-line
 				: localize('chat.subagent.pendingChat.aria', "子智能体: {0}", this._resolvedTitle)
 			: this._action.label;
 	}
@@ -831,9 +838,11 @@ export class OpenSubagentChatActionViewItem extends BaseActionViewItem {
 					? localize('chat.subagent.status.completed', "Subagent completed")
 					: undefined;
 		const agentType = this._reportedAgentType ? localize('chat.subagent.agentTypeAria', "Subagent type {0}", this._reportedAgentType) : undefined;
-		const model = this._reportedModelName ? localize('chat.subagent.modelAria', "Model {0}", this._reportedModelName) : undefined;
+		// allow-any-unicode-next-line
+		const model = this._reportedModelName ? localize('chat.subagent.modelAria', "模型 {0}", this._reportedModelName) : undefined;
 		const activeTool = this._displayedToolAccessibleLabel && this._displayedActivityIsTool
-			? localize('chat.subagent.activeToolAria', "Active tool {0}", this._displayedToolAccessibleLabel)
+			// allow-any-unicode-next-line
+			? localize('chat.subagent.activeToolAria', "当前工具 {0}", this._displayedToolAccessibleLabel)
 			: undefined;
 		const duration = this._durationElement?.textContent;
 		const credits = this._creditsElement?.textContent;

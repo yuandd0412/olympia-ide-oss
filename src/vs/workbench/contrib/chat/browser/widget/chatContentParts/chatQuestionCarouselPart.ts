@@ -204,6 +204,7 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 		// Set up accessibility attributes for the carousel container
 		this.domNode.tabIndex = 0;
 		this.domNode.setAttribute('role', 'region');
+		// allow-any-unicode-next-line
 		this.domNode.setAttribute('aria-roledescription', localize('chat.questionCarousel.roleDescription', "聊天问题"));
 		this._updateAriaLabel();
 
@@ -250,6 +251,7 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 		this.domNode.append(this._questionContainer);
 		this._headerActionsContainer = dom.$('.chat-question-header-actions');
 
+		// allow-any-unicode-next-line
 		const collapseToggleTitle = localize('chat.questionCarousel.collapseTitle', "折叠问题");
 		const collapseButton = createChatCardIconButton(interactiveStore, this._headerActionsContainer, this._hoverService, {
 			ariaLabel: collapseToggleTitle,
@@ -260,6 +262,7 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 		// Close/skip button (X) - placed in header row, only shown when allowSkip is true
 		if (carousel.allowSkip) {
 			this._closeButtonContainer = dom.$('.chat-question-close-container');
+			// allow-any-unicode-next-line
 			const skipAllTitle = this._options.dismissLabel ?? localize('chat.questionCarousel.skipAllTitle', "跳过所有问题");
 			const skipAllButton = createChatCardIconButton(interactiveStore, this._closeButtonContainer, this._hoverService, {
 				icon: Codicon.closeSmall,
@@ -273,9 +276,11 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 		// Focus Terminal button - shown when the carousel was triggered by terminal input
 		if (carousel.terminalId) {
 			this._focusTerminalButtonContainer = dom.$('.chat-question-focus-terminal-container');
+			// allow-any-unicode-next-line
 			const focusTerminalTitle = localize('chat.questionCarousel.focusTerminalTitle', "聚焦终端");
 			const kbLabel = this._keybindingService.lookupKeybinding('workbench.action.chat.focusQuestionCarouselTerminal')?.getLabel();
 			const focusTerminalAriaLabel = kbLabel
+				// allow-any-unicode-next-line
 				? localize('chat.questionCarousel.focusTerminalAriaLabel', "聚焦终端 ({0})", kbLabel)
 				: focusTerminalTitle;
 			const focusTerminalButton = createChatCardIconButton(interactiveStore, this._focusTerminalButtonContainer, this._hoverService, {
@@ -397,7 +402,9 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 		if (this._collapseButton) {
 			const collapsed = this._isCollapsed;
 			const buttonTitle = collapsed
+				// allow-any-unicode-next-line
 				? localize('chat.questionCarousel.expandTitle', "展开问题")
+				// allow-any-unicode-next-line
 				: localize('chat.questionCarousel.collapseTitle', "折叠问题");
 			const contentId = this.domNode.id;
 			this._collapseButton.label = collapsed ? `$(${Codicon.chevronUp.id})` : `$(${Codicon.chevronDown.id})`;
@@ -476,6 +483,7 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 			const questionCount = this.carousel.questions.length;
 			const alertMessage = questionCount === 1
 				? messageContent
+				// allow-any-unicode-next-line
 				: localize('chat.questionCarousel.questionAlertMulti', "问题 {0}/{1}: {2}", this._currentIndex + 1, questionCount, messageContent);
 			this._accessibilityService.alert(alertMessage);
 		}
@@ -744,6 +752,7 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 	private _updateAriaLabel(): void {
 		const question = this.carousel.questions[this._currentIndex];
 		if (!question) {
+			// allow-any-unicode-next-line
 			this.domNode.setAttribute('aria-label', localize('chat.questionCarousel.label', "聊天问题"));
 			return;
 		}
@@ -754,8 +763,10 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 
 		let label: string;
 		if (questionCount === 1) {
+			// allow-any-unicode-next-line
 			label = localize('chat.questionCarousel.singleQuestionLabel', "聊天问题: {0}", messageContent);
 		} else {
+			// allow-any-unicode-next-line
 			label = localize('chat.questionCarousel.multiQuestionLabel', "聊天问题 {0}/{1}: {2}", this._currentIndex + 1, questionCount, messageContent);
 		}
 
@@ -763,8 +774,10 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 		if (verbose && this.carousel.terminalId) {
 			const kbLabel = this._keybindingService.lookupKeybinding('workbench.action.chat.focusQuestionCarouselTerminal')?.getLabel();
 			if (kbLabel) {
+				// allow-any-unicode-next-line
 				label = localize('chat.questionCarousel.combinedFocusTerminalHint', "{0} 使用 {1} 聚焦终端。", label, kbLabel);
 			} else {
+				// allow-any-unicode-next-line
 				label = localize('chat.questionCarousel.combinedFocusTerminalHintNoKb', "{0} 使用“从问题轮播聚焦终端”命令聚焦终端。", label);
 			}
 		}
@@ -984,10 +997,12 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 			// Left side: nav arrows + step indicator
 			const leftControls = dom.$('.chat-question-footer-left.chat-question-carousel-nav');
 			leftControls.setAttribute('role', 'navigation');
+			// allow-any-unicode-next-line
 			leftControls.setAttribute('aria-label', localize('chat.questionCarousel.navigation', "问题导航"));
 
 			const arrowsContainer = dom.$('.chat-question-nav-arrows');
 
+			// allow-any-unicode-next-line
 			const previousLabel = this.getLabelWithKeybinding(localize('previous', "上一个"), PREVIOUS_QUESTION_ACTION_ID);
 			const prevButton = createChatCardIconButton(interactiveStore, arrowsContainer, this._hoverService, {
 				icon: Codicon.chevronLeft,
@@ -999,6 +1014,7 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 			interactiveStore.add(prevButton.onDidClick(() => this.navigate(-1)));
 			this._prevButton = prevButton;
 
+			// allow-any-unicode-next-line
 			const nextLabel = this.getLabelWithKeybinding(localize('next', "下一步"), NEXT_QUESTION_ACTION_ID);
 			const nextButton = createChatCardIconButton(interactiveStore, arrowsContainer, this._hoverService, {
 				icon: Codicon.chevronRight,
@@ -1022,13 +1038,16 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 
 			const hint = dom.$('span.chat-question-submit-hint');
 			hint.textContent = isMacintosh
+				// allow-any-unicode-next-line
 				? localize('chat.questionCarousel.submitHintMac', "按 ⌘⏎ 提交")
+				// allow-any-unicode-next-line
 				: localize('chat.questionCarousel.submitHintOther', "按 Ctrl + Enter 键提交");
 			rightControls.appendChild(hint);
 			this._submitHint = hint;
 
 			const submitButton = interactiveStore.add(new Button(rightControls, { ...defaultButtonStyles }));
 			submitButton.element.classList.add('chat-question-submit-button');
+			// allow-any-unicode-next-line
 			submitButton.label = localize('submit', "提交");
 			interactiveStore.add(submitButton.onDidClick(() => this.submit()));
 			this._submitButton = submitButton;
@@ -1087,6 +1106,7 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 			// Spacer to push controls to the right
 			const leftControls = dom.$('.chat-question-footer-left.chat-question-carousel-nav');
 			leftControls.setAttribute('role', 'navigation');
+			// allow-any-unicode-next-line
 			leftControls.setAttribute('aria-label', localize('chat.questionCarousel.navigation', "问题导航"));
 			this._footerRow.appendChild(leftControls);
 
@@ -1094,13 +1114,16 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 
 			const hint = dom.$('span.chat-question-submit-hint');
 			hint.textContent = isMacintosh
+				// allow-any-unicode-next-line
 				? localize('chat.questionCarousel.submitHintMac', "按 ⌘⏎ 提交")
+				// allow-any-unicode-next-line
 				: localize('chat.questionCarousel.submitHintOther', "按 Ctrl + Enter 键提交");
 			rightControls.appendChild(hint);
 			this._submitHint = hint;
 
 			const submitButton = interactiveStore.add(new Button(rightControls, { ...defaultButtonStyles }));
 			submitButton.element.classList.add('chat-question-submit-button');
+			// allow-any-unicode-next-line
 			submitButton.label = localize('submit', "提交");
 			interactiveStore.add(submitButton.onDidClick(() => this.submit()));
 			this._submitButton = submitButton;
@@ -1150,6 +1173,7 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 
 	private renderTextInput(container: HTMLElement, question: IChatQuestion): void {
 		const inputBox = this._inputBoxes.add(new InputBox(container, undefined, {
+			// allow-any-unicode-next-line
 			placeholder: localize('chat.questionCarousel.enterText', "输入回答"),
 			inputBoxStyles: defaultInputBoxStyles,
 			validationOptions: question.validation ? {
@@ -1235,6 +1259,7 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 		orderedOptions.forEach(({ option }, index) => {
 			const listItem = dom.$('.chat-question-list-item');
 			listbox.addOption(listItem, `option-${question.id}`);
+			// allow-any-unicode-next-line
 			listItem.setAttribute('aria-label', localize('chat.questionCarousel.optionLabel', "选项 {0}：{1}", index + 1, option.label));
 
 			const number = dom.$('.chat-question-list-number');
@@ -1300,6 +1325,7 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 			freeformContainer.appendChild(freeformNumber);
 
 			freeformTextarea = dom.$<HTMLTextAreaElement>('textarea.chat-question-freeform-textarea');
+			// allow-any-unicode-next-line
 			freeformTextarea.placeholder = localize('chat.questionCarousel.enterCustomAnswer', "输入自定义答案");
 			freeformTextarea.rows = 1;
 
@@ -1427,6 +1453,7 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 			const listItem = dom.$('.chat-question-list-item.multi-select');
 			listItem.setAttribute('role', 'option');
 			listItem.setAttribute('aria-selected', String(isChecked));
+			// allow-any-unicode-next-line
 			listItem.setAttribute('aria-label', localize('chat.questionCarousel.optionLabel', "选项 {0}：{1}", index + 1, option.label));
 			listItem.id = `option-${question.id}-${index}`;
 			listItem.tabIndex = -1;
@@ -1508,6 +1535,7 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 			freeformContainer.appendChild(freeformNumber);
 
 			freeformTextarea = dom.$<HTMLTextAreaElement>('textarea.chat-question-freeform-textarea');
+			// allow-any-unicode-next-line
 			freeformTextarea.placeholder = localize('chat.questionCarousel.enterCustomAnswer', "输入自定义答案");
 			freeformTextarea.rows = 1;
 
@@ -1665,12 +1693,15 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 		const isDismissedByTerminal = this.carousel instanceof ChatQuestionCarouselData && this.carousel.dismissedByTerminalInput;
 		if (this.carousel.answeredExternally) {
 			const answeredMessage = dom.$('.chat-question-summary-answered');
-			answeredMessage.textContent = localize('chat.questionCarousel.answered', 'Answered');
+			// allow-any-unicode-next-line
+			answeredMessage.textContent = localize('chat.questionCarousel.answered', "已回答");
 			summaryContainer.appendChild(answeredMessage);
 		} else {
 			const skippedMessage = dom.$('.chat-question-summary-skipped');
 			skippedMessage.textContent = isDismissedByTerminal
+				// allow-any-unicode-next-line
 				? localize('chat.questionCarousel.deferredToTerminal', "等待用户在终端输入")
+				// allow-any-unicode-next-line
 				: localize('chat.questionCarousel.skipped', "已跳过");
 			summaryContainer.appendChild(skippedMessage);
 		}
@@ -1686,13 +1717,15 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 			if (this.carousel.answerPresentation === 'conversation') {
 				if (this.carousel.autoReply) {
 					this.renderConversationSummary({
-						answerFallback: localize('chat.questionCarousel.answeredAutomatically', "Answered automatically"),
+						// allow-any-unicode-next-line
+						answerFallback: localize('chat.questionCarousel.answeredAutomatically', "已自动回答"),
 						answerIcon: Codicon.copilotCompact,
 					});
 				} else if (this.carousel.answeredExternally) {
 					this.renderTerminalStateMessage();
 				} else if (this.carousel.isUsed) {
 					this.renderConversationSummary({
+						// allow-any-unicode-next-line
 						answerFallback: localize('chat.questionCarousel.skippedConversation', "已跳过"),
 						answerIcon: Codicon.closeCompact,
 						hideAnswerPrefix: true,
@@ -1722,16 +1755,19 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 			const questionText = getDisplayedQuestionText(question);
 			let labelText = typeof questionText === 'string' ? questionText : questionText.value;
 			labelText = labelText.replace(/[:\s]+$/, '');
+			// allow-any-unicode-next-line
 			questionRow.textContent = localize('chat.questionCarousel.summaryQuestion', "问: {0}", labelText);
 			summaryItem.appendChild(questionRow);
 
 			if (answer !== undefined) {
 				const formattedAnswer = this.formatAnswerForSummary(question, answer);
 				const answerRow = dom.$('div.chat-question-summary-answer-title');
+				// allow-any-unicode-next-line
 				answerRow.textContent = localize('chat.questionCarousel.summaryAnswer', "答: {0}", formattedAnswer);
 				summaryItem.appendChild(answerRow);
 			} else {
 				const unanswered = dom.$('div.chat-question-summary-unanswered');
+				// allow-any-unicode-next-line
 				unanswered.textContent = localize('chat.questionCarousel.notAnsweredYet', "尚未答复");
 				summaryItem.appendChild(unanswered);
 			}
@@ -1750,7 +1786,8 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 		const summaryStore = new DisposableStore();
 		this._interactiveUIStore.value = summaryStore;
 		const summaryContainer = dom.$('.chat-question-carousel-summary.chat-question-carousel-conversation-summary');
-		this.domNode.setAttribute('aria-label', localize('chat.questionCarousel.answeredQuestions', "Answered chat questions"));
+		// allow-any-unicode-next-line
+		this.domNode.setAttribute('aria-label', localize('chat.questionCarousel.answeredQuestions', "已回答的会话提问"));
 
 		for (const question of this.carousel.questions) {
 			const answer = this._answers.get(question.id);
@@ -1768,9 +1805,11 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 
 			const decision = dom.$('.chat-question-summary-decision');
 			const answerValue = answer === undefined
+				// allow-any-unicode-next-line
 				? options?.answerFallback ?? localize('chat.questionCarousel.conversationNotAnswered', "尚未答复")
 				: this.formatAnswerForSummary(question, answer);
-			const answerPrefix = options?.hideAnswerPrefix ? undefined : localize('chat.questionCarousel.answerPrefix', "Answered:");
+			// allow-any-unicode-next-line
+			const answerPrefix = options?.hideAnswerPrefix ? undefined : localize('chat.questionCarousel.answerPrefix', "已回答：");
 			const answerTitle = answerPrefix
 				? localize('chat.questionCarousel.conversationAnswer', "{0} {1}", answerPrefix, answerValue)
 				: answerValue;
@@ -1822,6 +1861,7 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 
 		const container = dom.$('.chat-question-summary-option-details.chat-used-context-list');
 		const optionsTitle = dom.$('.chat-question-summary-options-title');
+		// allow-any-unicode-next-line
 		optionsTitle.textContent = localize('chat.questionCarousel.optionsTitle', "选项");
 		container.appendChild(optionsTitle);
 
@@ -1843,9 +1883,11 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 		}
 		if (freeformValue) {
 			const customItem = dom.$('li.chat-question-summary-option.selected');
-			customItem.setAttribute('aria-label', localize('chat.questionCarousel.selectedCustomAnswerAriaLabel', "Custom answer: {0}, selected", freeformValue));
+			// allow-any-unicode-next-line
+			customItem.setAttribute('aria-label', localize('chat.questionCarousel.selectedCustomAnswerAriaLabel', "自定义回答：{0}，已选中", freeformValue));
 			const customLabel = dom.$('span.chat-question-summary-option-label');
-			customLabel.textContent = localize('chat.questionCarousel.customAnswer', "Custom answer: {0}", freeformValue);
+			// allow-any-unicode-next-line
+			customLabel.textContent = localize('chat.questionCarousel.customAnswer', "自定义回答：{0}", freeformValue);
 			customItem.append(customLabel, this.renderSelectedOptionState());
 			optionList.appendChild(customItem);
 		}
@@ -1926,6 +1968,7 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 
 		// Check required
 		if (question.required && (answer === undefined || answer === '')) {
+			// allow-any-unicode-next-line
 			this.showValidationError(localize('chat.questionCarousel.required', "此字段为必填字段"));
 			return false;
 		}
@@ -1960,6 +2003,7 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 				this._currentIndex = i;
 				this.persistDraftState();
 				this.renderCurrentQuestion(true);
+				// allow-any-unicode-next-line
 				this.showValidationError(localize('chat.questionCarousel.required', "此字段为必填字段"));
 				return false;
 			}
@@ -1976,24 +2020,34 @@ export class ChatQuestionCarouselPart extends Disposable implements IChatContent
 			case undefined:
 				return undefined;
 			case 'minLength':
+				// allow-any-unicode-next-line
 				return localize('chat.questionCarousel.validation.minLength', "最小长度为 {0}", failure.limit);
 			case 'maxLength':
+				// allow-any-unicode-next-line
 				return localize('chat.questionCarousel.validation.maxLength', "最大长度为 {0}", failure.limit);
 			case 'email':
+				// allow-any-unicode-next-line
 				return localize('chat.questionCarousel.validation.email', "请输入有效的电子邮件地址");
 			case 'uri':
+				// allow-any-unicode-next-line
 				return localize('chat.questionCarousel.validation.uri', "请输入有效的 URI");
 			case 'date':
+				// allow-any-unicode-next-line
 				return localize('chat.questionCarousel.validation.date', "请输入有效的日期(YYYY-MM-DD)");
 			case 'dateTime':
+				// allow-any-unicode-next-line
 				return localize('chat.questionCarousel.validation.dateTime', "请输入有效的日期时间");
 			case 'number':
+				// allow-any-unicode-next-line
 				return localize('chat.questionCarousel.validation.number', "请输入有效的数字");
 			case 'integer':
+				// allow-any-unicode-next-line
 				return localize('chat.questionCarousel.validation.integer', "请输入有效的整数");
 			case 'minimum':
+				// allow-any-unicode-next-line
 				return localize('chat.questionCarousel.validation.minimum', "最小值为 {0}", failure.limit);
 			case 'maximum':
+				// allow-any-unicode-next-line
 				return localize('chat.questionCarousel.validation.maximum', "最大值为 {0}", failure.limit);
 		}
 	}

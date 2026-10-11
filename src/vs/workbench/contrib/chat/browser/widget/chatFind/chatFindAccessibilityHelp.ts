@@ -40,23 +40,32 @@ class ChatFindAccessibilityHelpProvider extends Disposable implements IAccessibl
 
 	provideContent(): string {
 		const content: string[] = [];
-		content.push(localize('chatFind.header', "Accessibility Help: Chat Transcript Find"));
+		// allow-any-unicode-next-line
+		content.push(localize('chatFind.header', "辅助功能说明：聊天记录查找"));
 		content.push(localize('chatFind.context', "You are in the Find input for the chat transcript. It searches the whole conversation, including turns that are scrolled out of view, not only what is on screen. Matches are ordered newest first, starting from the turn you are looking at and working back through earlier ones."));
 		content.push('');
+		// allow-any-unicode-next-line
 		content.push(localize('chatFind.keyboardHeader', "键盘导航小结："));
-		content.push(localize('chatFind.keyEnter', "- Enter: Move to the next match."));
-		content.push(localize('chatFind.keyShiftEnter', "- Shift+Enter: Move to the previous match."));
+		// allow-any-unicode-next-line
+		content.push(localize('chatFind.keyEnter', "- Enter：跳到下一个匹配项。"));
+		// allow-any-unicode-next-line
+		content.push(localize('chatFind.keyShiftEnter', "- Shift+Enter：跳到上一个匹配项。"));
 		content.push(localize('chatFind.keyF3', "- F3 / Shift+F3: Move to the next / previous match from anywhere in the chat."));
 		content.push(localize('chatFind.keyEscape', "- Escape: Close Find and return focus to where it was before Find was opened."));
 		content.push('');
+		// allow-any-unicode-next-line
 		content.push(localize('chatFind.optionsHeader', "查找选项："));
+		// allow-any-unicode-next-line
 		content.push(localize('chatFind.optionCase', "- 区分大小写：只匹配大小写完全一致的内容。"));
+		// allow-any-unicode-next-line
 		content.push(localize('chatFind.optionWord', "- 全字匹配：只匹配完整单词。"));
+		// allow-any-unicode-next-line
 		content.push(localize('chatFind.optionRegex', "- 正则表达式：使用模式匹配进行高级搜索。"));
 		content.push('');
 		content.push(localize('chatFind.revealHeader', "Navigating to a Match:"));
 		content.push(localize('chatFind.revealDesc', "Moving to a match scrolls the transcript to it, expanding the completed-work disclosure when the match is inside it."));
 		content.push('');
+		// allow-any-unicode-next-line
 		content.push(localize('chatFind.settingsHeader', "你可以调整的设置（{0} 打开设置）：", '<keybinding:workbench.action.openSettings>'));
 		content.push(localize('chatFind.settingVerbosity', "- `accessibility.verbosity.find`: Controls whether Chat Find announces the Accessibility Help hint."));
 		return content.join('\n');
