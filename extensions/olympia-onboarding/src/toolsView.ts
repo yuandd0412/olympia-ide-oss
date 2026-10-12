@@ -15,6 +15,7 @@ import { CMD, KEYS } from './commands';
 import { activeTarget, renderFlags, targetSummary } from './ojTargets';
 import { resolveCompiler } from './toolchain';
 import { PRECHECK_SOURCE, SOURCE_FILES } from './precheck';
+import { contestSummary, isContestRunning, onContestChange } from './contestMode';
 
 interface Section {
 	readonly kind: 'section';
@@ -71,7 +72,8 @@ class OlympiaToolsProvider implements vscode.TreeDataProvider<TreeEntry> {
 		this.fire();
 	}
 
-	private fire(): void {
+	/** 只重画树，不重新探测编译器：倒计时每秒刷新走这条，别顺带 spawn g++。 */
+	fire(): void {
 		this._onDidChangeTreeData.fire(undefined);
 	}
 
@@ -128,7 +130,8 @@ class OlympiaToolsProvider implements vscode.TreeDataProvider<TreeEntry> {
 					{ kind: 'action', id: 'compile', label: '只编译', icon: 'tools', command: CMD.compile, key: KEYS.compile },
 					{ kind: 'action', id: 'judge', label: '按评测机编译（-O2）', icon: 'server-process', command: CMD.compileJudgeAccurate, key: KEYS.compileJudgeAccurate, tooltip: '打开优化并套用评测机开关，用来复现「本地过、评测机超时」之外的那类差异' },
 					{ kind: 'action', id: 'precheck', label: '提交前体检', icon: 'check', command: CMD.preSubmitCheck, key: KEYS.preSubmitCheck, tooltip: '只报会在评测机上编译失败的写法：`#pragma GCC optimize`、MSVC 保留字、C++17 起删除的设施' },
-					{ kind: 'action', id: 'stressTest', label: '对拍（正解 vs 暴力）', icon: 'sync-again', command: CMD.stressTest, key: KEYS.stressTest, tooltip: '用生成器产随机数据，同时喂给正解和暴力；输出不一致就停下，并把那组数据存进 stress-fail' }
+					{ kind: 'action', id: 'stressTest', label: '对拍（正解 vs 暴力）', icon: 'sync-again', command: CMD.stressTest, key: KEYS.stressTest, tooltip: '用生成器产随机数据，同时喂给正解和暴力；输出不一致就停下，并把那组数据存进 stress-fail' },
+					{ kind: 'action', id: 'contest', label: '比赛模式（倒计时）', icon: 'clock', command: CMD.contestMode, key: KEYS.contestMode, tooltip: '选一段时长，状态栏出现倒计时；重载窗口也接着走，点 chip 可提前结束' }
 				];
 			case 'problems':
 				return [
@@ -149,6 +152,7 @@ class OlympiaToolsProvider implements vscode.TreeDataProvider<TreeEntry> {
 	private statusEntries(): TreeEntry[] {
 		const target = activeTarget();
 		const count = precheckCount();
+		const contest = contestSummary();
 		return [
 			{
 				kind: 'state', id: 'compiler', label: '编译器', value: this.compiler.label,
@@ -164,7 +168,13 @@ class OlympiaToolsProvider implements vscode.TreeDataProvider<TreeEntry> {
 				kind: 'state', id: 'precheck', label: '提交前体检', value: count,
 				icon: count === '无问题' ? 'check' : 'error', command: CMD.showProblems,
 				tooltip: '点击打开「问题」面板查看当前文件的体检结果。'
-			}
+			},
+			// 只在比赛里出现：平时多一行状态是噪音。
+			...(contest ? [{
+				kind: 'state' as const, id: 'contest', label: '比赛', value: contest,
+				icon: isContestRunning() ? 'clock' : 'watch', command: CMD.contestMode,
+				tooltip: '点击结束或重新开始比赛模式；倒计时同时常驻状态栏。'
+			}] : [])
 		];
 	}
 }
@@ -196,5 +206,7 @@ export function registerToolsView(context: vscode.ExtensionContext): vscode.Disp
 		vscode.window.onDidChangeActiveTextEditor(() => provider.refresh()),
 		vscode.languages.onDidChangeDiagnostics(() => provider.refresh())
 	);
+	// 比赛倒计时每秒一跳，只要重画树，不要顺带重新探测编译器
+	onContestChange(() => provider.fire());
 	return view;
 }

@@ -44,11 +44,12 @@ async function problemsRoot(): Promise<string | undefined> {
 	return root;
 }
 
-async function askProblemRef(): Promise<{ id: string; platform: Platform } | undefined> {
+async function askProblemRef(initial?: string): Promise<{ id: string; platform: Platform } | undefined> {
 	const id = await vscode.window.showInputBox({
 		title: '拉取题面',
 		prompt: '输入题号，例如 P1001（洛谷）、1660C（Codeforces）、ABC123_A（AtCoder）',
 		placeHolder: 'P1001',
+		value: initial,
 		ignoreFocusOut: true,
 		validateInput: v => (v.trim() ? undefined : '请输入题号'),
 	});
@@ -145,6 +146,26 @@ async function insertTemplate(): Promise<void> {
 	vscode.window.showInformationMessage(`已插入${picked.f === 'ioi' ? ' IOI' : ' ACM'} 赛制模板。`);
 }
 
+/**
+ * 剪贴板里通常是整条链接（https://www.luogu.com.cn/problem/P1001），也可能就是裸题号。
+ * detectPlatform 认域名，而 fetch* 只认题号，所以这里把 URL 折回题号，两边才对得上。
+ */
+function refFromClipboard(raw: string): { id: string; platform: Platform } | undefined {
+	const text = raw.trim().split(/\s+/)[0];
+	const platform = detectPlatform(text);
+	if (!platform) {
+		return undefined;
+	}
+	const segments = text.replace(/^[a-z]+:\/\//i, '').split(/[?#]/)[0].split('/').filter(s => s.length > 0);
+	const last = segments[segments.length - 1] ?? text;
+	const previous = segments[segments.length - 2];
+	// Codeforces 的题号是 URL 最后两段拼出来的：/problemset/problem/1660/C → 1660C
+	if (platform === 'codeforces' && previous && /^\d+$/.test(previous) && /^[A-Za-z]{1,2}$/.test(last)) {
+		return { id: `${previous}${last.toUpperCase()}`, platform };
+	}
+	return { id: last, platform };
+}
+
 export function activate(context: vscode.ExtensionContext): void {
 	context.subscriptions.push(
 		vscode.commands.registerCommand('olympia.problem.pull', async () => {
@@ -153,16 +174,18 @@ export function activate(context: vscode.ExtensionContext): void {
 		}),
 		vscode.commands.registerCommand('olympia.problem.pullFromClipboard', async () => {
 			const clip = await vscode.env.clipboard.readText();
-			const id = (clip || '').trim().split(/\s+/)[0];
-			if (!id) {
+			if (!clip.trim()) {
 				vscode.window.showWarningMessage('剪贴板里没有内容。');
 				return;
 			}
-			const ref = await askProblemRef();
-			if (ref) { await pullProblem(ref); }
-			else if (!detectPlatform(id)) {
-				vscode.window.showWarningMessage(`无法识别剪贴板中的「${id}」，请手动输入题号。`);
+			const ref = refFromClipboard(clip);
+			if (ref) {
+				await pullProblem(ref);
+				return;
 			}
+			// 认不出来就退回输入框，但把剪贴板内容预填进去，别让人再敲一遍。
+			const typed = await askProblemRef(clip.trim().slice(0, 80));
+			if (typed) { await pullProblem(typed); }
 		}),
 		vscode.commands.registerCommand('olympia.template.insert', insertTemplate),
 		vscode.commands.registerCommand('olympia.problem.openStatement', openCached),

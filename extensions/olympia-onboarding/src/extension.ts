@@ -23,6 +23,7 @@ import { OJ_TARGETS, OJTarget, CUSTOM_TARGET_ID, activeTarget, profileId, render
 import { registerToolsView } from './toolsView';
 import { registerStatusBar } from './statusBar';
 import { registerStressTest } from './stressTest';
+import { registerContestMode } from './contestMode';
 
 const WEBSITE = 'https://olympia.dpdns.org';
 const DOCS = 'https://olympia.dpdns.org/docs';
@@ -238,6 +239,7 @@ export function activate(context: vscode.ExtensionContext): void {
 	registerToolsView(context);
 	registerStatusBar(context);
 	registerStressTest(context);
+	registerContestMode(context);
 
 	// run on save, silently: the Problems panel is the surface, not a modal
 	context.subscriptions.push(

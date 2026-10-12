@@ -54,6 +54,12 @@
 				"icon": "$(sync-again)"
 			},
 			{
+				"command": "olympia.contestMode",
+				"title": "比赛模式（倒计时）",
+				"category": "Olympia",
+				"icon": "$(clock)"
+			},
+			{
 				"command": "olympia.compile",
 				"title": "编译当前文件（按评测机参数）",
 				"category": "Olympia",
@@ -163,6 +169,11 @@
 				"command": "olympia.stressTest",
 				"key": "ctrl+alt+s",
 				"mac": "cmd+alt+s"
+			},
+			{
+				"command": "olympia.contestMode",
+				"key": "ctrl+alt+c",
+				"mac": "cmd+alt+c"
 			},
 			{
 				"command": "olympia.checkEnvironment",
