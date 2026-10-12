@@ -21,6 +21,8 @@ export const CMD = {
 	judgeSamples: 'olympia.judgeSamples',
 	stressTest: 'olympia.stressTest',
 	contestMode: 'olympia.contestMode',
+	/** 比赛模式的状态查询口：AI 教练在别的扩展里，只能靠命令问回来。 */
+	contestIsRunning: 'olympia.contest.isRunning',
 	checkEnvironment: 'olympia.checkEnvironment',
 	pickCompileProfile: 'olympia.pickCompileProfile',
 	openWebsite: 'olympia.openWebsite',

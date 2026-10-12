@@ -11,7 +11,7 @@
  *  at code it cannot see produces confident nonsense about a wrong answer.
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
-import { EXAMPLE_BASE_URL } from './constants';
+import { CONTEST_STATE_COMMAND, EXAMPLE_BASE_URL } from './constants';
 import { listModels, resolveModel } from './model';
 
 const HISTORY_TURNS = 6;
@@ -53,6 +53,22 @@ const NO_MODEL = [
 	'拉取失败的具体原因在「Olympia AI 设置」里会直接显示，也可以点「打开输出日志」查看。',
 ].join('\n');
 
+const CONTEST_LOCKED = [
+	'**比赛模式进行中，AI 教练先不出场。**',
+	'',
+	'这一局打完再问，或者按 `Ctrl+Alt+C` 退出比赛模式。',
+	'这段时间可以用「提交前体检」（`Ctrl+Alt+Enter`）和「跑样例」（`Ctrl+Alt+J`）——那是本地判定，不算外援。',
+].join('\n');
+
+/** 比赛状态在 olympia-onboarding 那边；问不到就当作没在比赛，不能把教练锁死。 */
+async function contestIsRunning(): Promise<boolean> {
+	try {
+		return (await vscode.commands.executeCommand(CONTEST_STATE_COMMAND)) === true;
+	} catch {
+		return false;
+	}
+}
+
 function editorContext(): string {
 	const editor = vscode.window.activeTextEditor;
 	if (!editor) {
@@ -88,6 +104,10 @@ async function handleRequest(
 	stream: vscode.ChatResponseStream,
 	token: vscode.CancellationToken
 ): Promise<void> {
+	if (await contestIsRunning()) {
+		stream.markdown(CONTEST_LOCKED);
+		return;
+	}
 	const models = await listModels();
 	const model = resolveModel(state, models);
 	if (!model) {

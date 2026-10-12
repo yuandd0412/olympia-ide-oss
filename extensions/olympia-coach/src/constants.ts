@@ -49,3 +49,6 @@ export const OUTPUT_CHANNEL_NAME = 'Olympia AI Coach';
 /** Name of the settings command, so other surfaces (model picker, walkthroughs) can link to it. */
 export const SETTINGS_COMMAND = 'olympia.ai.settings';
 export const SHOW_LOG_COMMAND = 'olympia.coach.showLog';
+
+/** 比赛是否进行中，由 olympia-onboarding 的这条命令回答；比赛时教练不出场。 */
+export const CONTEST_STATE_COMMAND = 'olympia.contest.isRunning';

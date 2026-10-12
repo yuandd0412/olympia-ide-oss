@@ -22,11 +22,14 @@ const CONTEST_MINUTES_MIN = 1;
 const CONTEST_MINUTES_MAX = 600;
 /** 倒计时要比编译器、运行、体检三个 chip 更靠左，所以优先级最高。 */
 const STATUS_PRIORITY = 110;
+/** 比赛进行中要把 AI 教练关掉（和老版本一致）；界面侧的 when 子句读这个键。 */
+const CONTEST_RUNNING_CONTEXT = 'olympia.contest.running';
 
 let statusItem: vscode.StatusBarItem | undefined;
 let ticker: NodeJS.Timeout | undefined;
 let endsAt: number | undefined;
 let onChange: (() => void) | undefined;
+let publishedRunning: boolean | undefined;
 
 function remainingMs(): number | undefined {
 	return endsAt === undefined ? undefined : endsAt - Date.now();
@@ -60,7 +63,18 @@ export function isContestRunning(): boolean {
 	return left !== undefined && left > 0;
 }
 
+/** 上下文键只在真的翻转时写一次，不让每秒的 tick 都敲一遍 setContext。 */
+function publishRunning(): void {
+	const running = isContestRunning();
+	if (publishedRunning === running) {
+		return;
+	}
+	publishedRunning = running;
+	void vscode.commands.executeCommand('setContext', CONTEST_RUNNING_CONTEXT, running);
+}
+
 function render(): void {
+	publishRunning();
 	if (!statusItem) {
 		return;
 	}
@@ -89,6 +103,7 @@ function stop(context: vscode.ExtensionContext, notify: boolean): void {
 	}
 	const left = remainingMs();
 	endsAt = undefined;
+	publishRunning();
 	if (statusItem) {
 		statusItem.hide();
 	}
@@ -184,5 +199,7 @@ export function registerContestMode(context: vscode.ExtensionContext): vscode.Di
 		}
 	});
 
-	return vscode.Disposable.from(statusItem, command, { dispose: () => { if (ticker) { clearInterval(ticker); } } });
+	const isRunning = vscode.commands.registerCommand(CMD.contestIsRunning, () => isContestRunning());
+
+	return vscode.Disposable.from(statusItem, command, isRunning, { dispose: () => { if (ticker) { clearInterval(ticker); } } });
 }
