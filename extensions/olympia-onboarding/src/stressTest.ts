@@ -243,11 +243,22 @@ export function registerStressTest(context: vscode.ExtensionContext): vscode.Dis
 					? '运行出错'
 					: '输出不一致';
 			channel.appendLine(`第 ${outcome.round} 轮${why}，数据与两份输出已存到 ${folder}`);
+			// 只有「两边都跑完了、输出不一样」时正解的输出才值得当期望输出写进题面
+			const actions = why === '输出不一致'
+				? ['打开这组数据', '补进题面样例', '查看输出']
+				: ['打开这组数据', '查看输出'];
 			const action = await vscode.window.showErrorMessage(
-				`对拍在第 ${outcome.round} 轮${why}。这组数据已存进 stress-fail 文件夹。`, '打开这组数据', '查看输出');
+				`对拍在第 ${outcome.round} 轮${why}。这组数据已存进 stress-fail 文件夹。`, ...actions);
 			if (action === '打开这组数据') {
 				const doc = await vscode.workspace.openTextDocument(join(folder, `round-${outcome.round}.in`));
 				await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+			} else if (action === '补进题面样例') {
+				await vscode.commands.executeCommand(CMD.appendSample, {
+					hint: basename(solution.fsPath),
+					input: mismatch.data,
+					output: mismatch.solution.stdout,
+					explain: `对拍第 ${outcome.round} 轮抓到的数据，当时正解与暴力输出不一致`,
+				});
 			} else if (action === '查看输出') {
 				channel.show(true);
 			}

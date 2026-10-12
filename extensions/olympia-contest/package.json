@@ -48,6 +48,12 @@
 				"command": "olympia.problem.openStatement",
 				"title": "打开题面库（已缓存的题面）",
 				"category": "Olympia 竞赛"
+			},
+			{
+				"command": "olympia.problem.appendSample",
+				"title": "把这一组数据补进题面样例",
+				"category": "Olympia 竞赛",
+				"enablement": "true"
 			}
 		],
 		"menus": {
@@ -67,6 +73,10 @@
 				{
 					"command": "olympia.problem.openStatement",
 					"when": "true"
+				},
+				{
+					"command": "olympia.problem.appendSample",
+					"when": "false"
 				}
 			],
 			"editor/title": [

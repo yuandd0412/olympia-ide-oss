@@ -17,6 +17,7 @@ import * as fs from 'fs';
 import { detectPlatform, fetchProblem, type Platform, type Problem } from './sources';
 import { renderStatement, templateFor, FORMAT_LABEL, PLATFORM_TEXT, platformText, type ContestFormat } from './templates';
 import { readLibrary, showStatement, toPicks } from './problemLibrary';
+import { appendSample as appendSampleTo, pickTarget } from './statementSamples';
 import { registerCppSnippets } from './snippets';
 
 function cfg() {
@@ -129,6 +130,55 @@ async function openCached(): Promise<void> {
 	await showStatement(vscode.Uri.file(picked.entry.file));
 }
 
+/** 对拍抓到不一致时传过来的参数；命令故意不进命令面板，因为没有这组数据它什么都做不了。 */
+interface AppendSampleArgs {
+	readonly hint?: string;
+	readonly input?: string;
+	readonly output?: string;
+	readonly explain?: string;
+}
+
+/**
+ * 把一组数据永久留在题面里，之后每次跑样例都会带上它。
+ * 对拍停下来的那一刻是记这组数据的最好时机——再跑一轮可能就复现不出来了。
+ */
+async function appendSample(args?: AppendSampleArgs): Promise<boolean> {
+	if (args?.input === undefined || args?.output === undefined) {
+		vscode.window.showWarningMessage('补充样例需要一组输入和期望输出：这条命令是给对拍点的，手动加样例请直接在题面 Markdown 里写。');
+		return false;
+	}
+	const root = await problemsRoot();
+	if (!root) { return false; }
+	const entries = await readLibrary(root);
+	if (!entries.length) {
+		vscode.window.showInformationMessage('题面库里还没有题面，样例没地方写。先按 Ctrl+Alt+P 拉一道题的题面。');
+		return false;
+	}
+	const target = await pickTarget(entries, args.hint, async list => {
+		const picked = await vscode.window.showQuickPick(toPicks(list, vscode.workspace.workspaceFolders?.[0]?.uri.fsPath), {
+			title: '这组样例补进哪道题',
+			placeHolder: `当前文件没有同名题面，从题面库里挑一道（缓存了 ${list.length} 道）`,
+			matchOnDescription: true,
+			matchOnDetail: true,
+			ignoreFocusOut: true,
+		});
+		return picked?.entry;
+	});
+	if (!target) { return false; }
+
+	const markdown = await fs.promises.readFile(target.file, 'utf8');
+	const added = appendSampleTo(markdown, { input: args.input, output: args.output, explain: args.explain });
+	await fs.promises.writeFile(target.file, added.markdown, 'utf8');
+	const action = await vscode.window.showInformationMessage(
+		`已把「样例 ${added.index}」写进 ${target.id} 的题面，下次跑样例会带上它。`,
+		'打开题面',
+	);
+	if (action === '打开题面') {
+		await showStatement(vscode.Uri.file(target.file));
+	}
+	return true;
+}
+
 async function insertTemplate(): Promise<void> {
 	const picked = await vscode.window.showQuickPick(
 		(Object.keys(FORMAT_LABEL) as ContestFormat[]).map(f => ({ label: FORMAT_LABEL[f], f })),
@@ -187,6 +237,7 @@ export function activate(context: vscode.ExtensionContext): void {
 		}),
 		vscode.commands.registerCommand('olympia.template.insert', insertTemplate),
 		vscode.commands.registerCommand('olympia.problem.openStatement', openCached),
+		vscode.commands.registerCommand('olympia.problem.appendSample', appendSample),
 	);
 
 	context.subscriptions.push(registerCppSnippets());

@@ -59,13 +59,23 @@ export const FORMAT_LABEL: Record<ContestFormat, string> = {
 /** sample cases rendered as a fenced block, ready to paste next to the statement */
 export function renderSamples(samples: { input: string; output: string; explain?: string }[]): string {
 	if (!samples.length) { return ''; }
-	const out: string[] = ['## 样例数据', ''];
+	const out: string[] = [SAMPLES_SECTION, ''];
 	samples.forEach((s, i) => {
-		out.push(`${SAMPLE_HEADING} ${i + 1}`, '');
-		out.push('**输入**', '', '```', s.input, '```', '');
-		out.push('**输出**', '', '```', s.output, '```', '');
-		if (s.explain) { out.push(`**说明**：${s.explain}`, ''); }
+		out.push(renderSampleBlock(i + 1, s), '');
 	});
+	return out.join('\n');
+}
+
+/**
+ * 一组样例长什么样。拉题面写样例、对拍补样例都从这里出：
+ * 跑样例那头是按同样的标记读回来的（`### 样例 N` + `**输入**` / `**输出**`），
+ * 两处各写一遍迟早会对不上。
+ */
+export function renderSampleBlock(index: number, sample: { input: string; output: string; explain?: string }): string {
+	const out: string[] = [`${SAMPLE_HEADING} ${index}`, ''];
+	out.push('**输入**', '', '```', sample.input, '```', '');
+	out.push('**输出**', '', '```', sample.output, '```', '');
+	if (sample.explain) { out.push(`**说明**：${sample.explain}`, ''); }
 	return out.join('\n');
 }
 
@@ -115,6 +125,8 @@ export const platformText = (platform: string): string => PLATFORM_TEXT[platform
  */
 export const FIELD = { source: '来源', difficulty: '难度', timeLimit: '时限', memoryLimit: '内存', tags: '标签' } as const;
 export const SAMPLE_HEADING = '### 样例';
+/** 样例区的小节标题；补样例时要找的就是它。 */
+export const SAMPLES_SECTION = '## 样例数据';
 const META_SEPARATOR = '｜';
 /** 元信息只在文件开头，多读几行给手写题面留余量。 */
 const META_SCAN_LINES = 12;

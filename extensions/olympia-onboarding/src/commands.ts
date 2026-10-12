@@ -30,6 +30,8 @@ export const CMD = {
 	problemPullFromClipboard: 'olympia.problem.pullFromClipboard',
 	/** 题面库：由 olympia-contest 注册，面板和这里只是点它一下。 */
 	problemOpenStatement: 'olympia.problem.openStatement',
+	/** 对拍抓到的那组数据写回题面；同样由 olympia-contest 实现，参数是输入与期望输出。 */
+	appendSample: 'olympia.problem.appendSample',
 	templateInsert: 'olympia.template.insert',
 	aiSettings: 'olympia.ai.settings',
 	showProblems: 'workbench.actions.view.problems'
