@@ -343,6 +343,12 @@
 					"default": true,
 					"markdownDescription": "编译时把完整的 `g++` 命令行打印到终端，方便对照评测机参数排查。"
 				},
+				"olympia.judge.memoryLimitMb": {
+					"type": "number",
+					"default": 0,
+					"minimum": 0,
+					"markdownDescription": "跑样例时判 MLE 用的内存上限（MB）。**0 表示按题面里写的内存限制判**；题面也没写就只报峰值内存、不判 MLE。采样只会少报、不会多报，所以不会出现「其实没超却判 MLE」。"
+				},
 				"olympia.debug.showEntryPoints": {
 					"type": "boolean",
 					"default": false,

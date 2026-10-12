@@ -30,7 +30,7 @@ const ROLES: readonly { role: Role; prompt: string; hint: string }[] = [
 	{ role: 'generator', prompt: '选择数据生成器', hint: '第 1 个参数是轮数，标准输出是一组数据' },
 ];
 
-interface RunResult {
+export interface RunResult {
 	readonly stdout: string;
 	readonly stderr: string;
 	readonly timedOut: boolean;

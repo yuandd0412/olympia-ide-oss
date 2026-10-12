@@ -15,6 +15,7 @@ import { basename, dirname } from 'path';
 import { isCompilable, planCompile, renderCommandLine, COMPILE_TIMEOUT_MS } from './compile';
 import { CMD } from './commands';
 import { runProcess } from './stressTest';
+import { formatMb, runSampled } from './memoryProbe';
 
 const DEFAULT_PROBLEMS_DIR = '.olympia/problems';
 const LOCAL_MARGIN = 3;
@@ -23,13 +24,34 @@ const RUN_TIMEOUT_SLACK_MS = 500;
 const TIME_LIMIT_MS_DEFAULT = 1000;
 const TIME_LIMIT_MS_MIN = 500;
 const TIME_LIMIT_MS_MAX = 10000;
+/** 内存限制：0 表示「按题面写的判」，题面也没写就只报峰值、不判 MLE。 */
+const MEMORY_LIMIT_UNSET = 0;
+const MEMORY_UNITS: ReadonlyMap<string, number> = new Map([
+	['gb', 1024], ['g', 1024], ['mb', 1], ['m', 1], ['kb', 1 / 1024], ['k', 1 / 1024], ['b', 1 / (1024 * 1024)]
+]);
 
 interface Sample {
 	readonly input: string;
 	readonly expected: string;
 }
 
-type Verdict = 'AC' | 'WA' | 'RE' | 'TLE';
+type Verdict = 'AC' | 'WA' | 'RE' | 'TLE' | 'MLE';
+
+/**
+ * 判定表，按严重程度**从低到高**排：前面的数组下标就是严重程度，总体判定取最严的一档。
+ * 顺序沿用老版本 `worse_verdict`（`frontend/src-tauri/src/runner.rs`）的 AC < WA < MLE < TLE < RE，
+ * 同一批样例在两边得出的总结论才对得上。文案也从这张表出，加一档只改一行。
+ */
+const VERDICTS: readonly { readonly code: Verdict; readonly text: string }[] = [
+	{ code: 'AC', text: '通过（AC）' },
+	{ code: 'WA', text: '答案错误（WA）' },
+	{ code: 'MLE', text: '超内存（MLE）' },
+	{ code: 'TLE', text: '超时（TLE）' },
+	{ code: 'RE', text: '运行出错（RE）' },
+];
+
+const severityOf = (verdict: Verdict): number => VERDICTS.findIndex(row => row.code === verdict);
+const verdictText = (verdict: Verdict): string => VERDICTS.find(row => row.code === verdict)?.text ?? verdict;
 
 interface CaseResult {
 	readonly index: number;
@@ -37,6 +59,7 @@ interface CaseResult {
 	readonly got: string;
 	readonly detail: string;
 	readonly ms: number;
+	readonly peakBytes?: number;
 }
 
 function normalize(text: string): string {
@@ -44,7 +67,7 @@ function normalize(text: string): string {
 }
 
 /** 从题面 Markdown 里把「### 样例 N」下面的输入 / 输出代码块读出来。 */
-export function parseSamples(markdown: string): { samples: Sample[]; timeLimitMs: number } {
+export function parseSamples(markdown: string): { samples: Sample[]; timeLimitMs: number; memoryLimitMb: number } {
 	const samples: Sample[] = [];
 	const blocks = markdown.matchAll(/###\s*样例\s*\d+([\s\S]*?)(?=\n###\s*样例|\n##\s|$)/g);
 	for (const block of blocks) {
@@ -56,7 +79,9 @@ export function parseSamples(markdown: string): { samples: Sample[]; timeLimitMs
 		}
 	}
 	const limit = /时限：\s*([\d.]+)\s*(ms|毫秒|s|秒)/i.exec(markdown);
-	return { samples, timeLimitMs: timeLimitMsOf(limit) };
+	// 题面里可能写「内存：128 MB」，也可能写「内存限制：128.00 MB」，两种都要认。
+	const memory = /内存(?:限制)?：\s*([\d.]+)\s*(GB|G|MB|M|KB|K|B)?/i.exec(markdown);
+	return { samples, timeLimitMs: timeLimitMsOf(limit), memoryLimitMb: memoryLimitMbOf(memory) };
 }
 
 /**
@@ -73,6 +98,22 @@ function timeLimitMsOf(match: RegExpExecArray | null): number {
 	}
 	const ms = match[2].toLowerCase() === 'ms' || match[2] === '毫秒' ? value : value * 1000;
 	return Math.min(Math.max(Math.round(ms), TIME_LIMIT_MS_MIN), TIME_LIMIT_MS_MAX);
+}
+
+/**
+ * 内存限制认「内存：128 MB」「内存：256.00MB」这一类写法；认不出来就返回 0，
+ * 表示「不判 MLE」。宁可少判一个 MLE，也不能凭空判学生超内存。
+ */
+function memoryLimitMbOf(match: RegExpExecArray | null): number {
+	if (!match) {
+		return MEMORY_LIMIT_UNSET;
+	}
+	const value = Number(match[1]);
+	if (!Number.isFinite(value) || value <= 0) {
+		return MEMORY_LIMIT_UNSET;
+	}
+	const unit = (match[2] ?? 'mb').toLowerCase();
+	return Math.round(value * (MEMORY_UNITS.get(unit) ?? 1));
 }
 
 async function problemFiles(): Promise<vscode.Uri[]> {
@@ -119,19 +160,10 @@ function output(): vscode.OutputChannel {
 	return channel;
 }
 
-function verdictOf(results: readonly CaseResult[]): Verdict {
-	if (results.some(r => r.verdict === 'TLE')) { return 'TLE'; }
-	if (results.some(r => r.verdict === 'RE')) { return 'RE'; }
-	if (results.some(r => r.verdict === 'WA')) { return 'WA'; }
-	return 'AC';
+/** 总体判定 = 最严的那一档；顺序见 `VERDICTS`。 */
+export function verdictOf(results: readonly CaseResult[]): Verdict {
+	return results.reduce<Verdict>((worst, r) => severityOf(r.verdict) > severityOf(worst) ? r.verdict : worst, 'AC');
 }
-
-const VERDICT_TEXT: Record<Verdict, string> = {
-	AC: '通过（AC）',
-	WA: '答案错误（WA）',
-	RE: '运行出错（RE）',
-	TLE: '超时（TLE）',
-};
 
 export function registerSampleJudge(context: vscode.ExtensionContext): vscode.Disposable {
 	const command = vscode.commands.registerCommand(CMD.judgeSamples, async () => {
@@ -147,17 +179,21 @@ export function registerSampleJudge(context: vscode.ExtensionContext): vscode.Di
 		}
 
 		const markdown = Buffer.from(await vscode.workspace.fs.readFile(statement)).toString('utf8');
-		const { samples, timeLimitMs } = parseSamples(markdown);
+		const { samples, timeLimitMs, memoryLimitMb } = parseSamples(markdown);
 		if (!samples.length) {
 			await vscode.window.showWarningMessage(`「${basename(statement.fsPath)}」里没有解析到样例数据，可能这道题的题面没抓到样例。`);
 			return;
 		}
+		// 设置里的数字优先；两边都没写就不判 MLE，只报峰值。
+		const configuredMb = vscode.workspace.getConfiguration('olympia.judge').get<number>('memoryLimitMb', MEMORY_LIMIT_UNSET);
+		const limitMb = configuredMb > 0 ? configuredMb : memoryLimitMb;
 
 		const plan = planCompile(source);
 		const log = output();
 		log.clear();
 		log.show(true);
 		log.appendLine(`题面：${vscode.workspace.asRelativePath(statement, false)} · 样例 ${samples.length} 组 · 时限 ${timeLimitMs} ms（本地按 ${LOCAL_MARGIN} 倍余量）`);
+		log.appendLine(`内存：${limitMb > 0 ? `限制 ${limitMb} MB（按峰值工作集判，采样只会少报）` : '题面没写内存限制，只报峰值不判 MLE'}`);
 		log.appendLine(`编译：${renderCommandLine(plan)}`);
 
 		const built = await runProcess(plan.program, plan.args, plan.cwd, '', COMPILE_TIMEOUT_MS);
@@ -176,15 +212,22 @@ export function registerSampleJudge(context: vscode.ExtensionContext): vscode.Di
 				for (let i = 0; i < samples.length; i++) {
 					progress.report({ message: `样例 ${i + 1} / ${samples.length}`, increment: 100 / samples.length });
 					const started = Date.now();
-					const ran = await runProcess(plan.output, [], dirname(plan.output), samples[i].input, budget);
+					const ran = await runSampled(plan.output, [], dirname(plan.output), samples[i].input, budget);
 					const ms = Date.now() - started;
-					const verdict: Verdict = ran.timedOut ? 'TLE' : ran.failed ? 'RE'
+					const overMemory = limitMb > MEMORY_LIMIT_UNSET
+						&& ran.peakBytes !== undefined
+						&& ran.peakBytes > limitMb * 1024 * 1024;
+					const verdict: Verdict = ran.timedOut ? 'TLE' : overMemory ? 'MLE' : ran.failed ? 'RE'
 						: normalize(ran.stdout) === normalize(samples[i].expected) ? 'AC' : 'WA';
-					results.push({ index: i + 1, verdict, got: ran.stdout, detail: ran.stderr, ms });
-					log.appendLine(`样例 ${i + 1}：${verdict} · ${ms} ms`);
+					results.push({ index: i + 1, verdict, got: ran.stdout, detail: ran.stderr, ms, peakBytes: ran.peakBytes });
+					const peak = ran.peakBytes === undefined ? '' : ` · 峰值内存 ${formatMb(ran.peakBytes)}`;
+					log.appendLine(`样例 ${i + 1}：${verdict} · ${ms} ms${peak}`);
 					if (verdict === 'WA') {
 						log.appendLine(`  期望：${normalize(samples[i].expected).slice(0, 200)}`);
 						log.appendLine(`  得到：${normalize(ran.stdout).slice(0, 200)}`);
+					}
+					if (verdict === 'MLE') {
+						log.appendLine(`  峰值 ${formatMb(ran.peakBytes ?? 0)}，限制 ${limitMb} MB`);
 					}
 					if (verdict === 'RE' || verdict === 'TLE') {
 						log.appendLine(`  ${ran.stderr.trim() || '（无 stderr）'}`);
@@ -196,7 +239,7 @@ export function registerSampleJudge(context: vscode.ExtensionContext): vscode.Di
 		const overall = verdictOf(results);
 		const passed = results.filter(r => r.verdict === 'AC').length;
 		log.appendLine(`--- ${overall} · ${passed}/${results.length} 组通过 ---`);
-		const message = `样例判定 ${VERDICT_TEXT[overall]}：通过 ${passed}/${results.length} 组。`;
+		const message = `样例判定 ${verdictText(overall)}：通过 ${passed}/${results.length} 组。`;
 		const action = overall === 'AC'
 			? await vscode.window.showInformationMessage(message, '继续对拍')
 			: await vscode.window.showErrorMessage(message, '查看输出', '继续对拍');
