@@ -19,6 +19,7 @@ import { Action, Separator } from '../../../../base/common/actions.js';
 import { Codicon } from '../../../../base/common/codicons.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
 import { MarkdownString } from '../../../../base/common/htmlContent.js';
+import { format } from '../../../../base/common/strings.js';
 import { KeyCode } from '../../../../base/common/keyCodes.js';
 import { DisposableStore, toDisposable } from '../../../../base/common/lifecycle.js';
 import { localize } from '../../../../nls.js';
@@ -528,15 +529,19 @@ export class IssueReporterOverlay {
 		const heading = append(page, $('h2.wizard-heading'));
 		heading.textContent = localize('describeHeading', "详细描述你的反馈");
 
-		// Issue guidance link — keep the same wording as the classic reporter.
-		if (this.markdownRendererService) {
+		// Issue guidance link — same destination the reporter submits to, and no language demand:
+		// our issue tracker is run by us and reads Chinese.
+		if (this.markdownRendererService && product.reportIssueUrl) {
 			const guidanceContainer = append(page, $('div.wizard-issue-guidance'));
-			const guidanceMd = new MarkdownString(localize(
-				{
-					key: 'reviewGuidanceLabelWizard',
-					comment: ['{Locked="https://github.com/microsoft/vscode/wiki/Submitting-Bugs-and-Suggestions"}']
-				},
-				"在此处报告问题之前，请[查看我们提供的指南](https://github.com/microsoft/vscode/wiki/Submitting-Bugs-and-Suggestions)。请使用英文填写该表单。"
+			const guidanceMd = new MarkdownString(format(
+				localize(
+					{
+						key: 'reviewGuidanceLabelWizard',
+						comment: ['{Locked="{0}"}']
+					},
+					"提交前请先[看看我们的反馈说明]({0})，写清楚怎么复现就行，用中文没问题。"
+				),
+				product.reportIssueUrl
 			), { isTrusted: true });
 			const rendered = this.markdownRendererService.render(guidanceMd, {
 				actionHandler: async (link: string) => {

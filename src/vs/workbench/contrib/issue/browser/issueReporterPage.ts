@@ -3,8 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { escape } from '../../../../base/common/strings.js';
+import { escape, format } from '../../../../base/common/strings.js';
 import { localize } from '../../../../nls.js';
+import product from '../../../../platform/product/common/product.js';
 
 const sendSystemInfoLabel = escape(localize('sendSystemInfo', "包含系统信息"));
 const sendProcessInfoLabel = escape(localize('sendProcessInfo', "包含当前运行中的进程"));
@@ -13,16 +14,21 @@ const sendExtensionsLabel = escape(localize('sendExtensions', "包含已启用�
 const sendExperimentsLabel = escape(localize('sendExperiments', "包括 A/B 试验信息"));
 const sendExtensionData = escape(localize('sendExtensionData', "包括其他扩展信息"));
 const acknowledgementsLabel = escape(localize('acknowledgements', "我确认我的 Olympia 版本未更新，并且此问题可能会关闭。"));
-const reviewGuidanceLabel = localize( // intentionally not escaped because of its embedded tags
-	{
-		key: 'reviewGuidanceLabel',
-		comment: [
-			'{Locked="<a href=\"https://github.com/microsoft/vscode/wiki/Submitting-Bugs-and-Suggestions\" target=\"_blank\">"}',
-			'{Locked="</a>"}'
-		]
-	},
-	"在此处报告问题之前，请<a href=\"https://github.com/microsoft/vscode/wiki/Submitting-Bugs-and-Suggestions\" target=\"_blank\">查看我们提供的指导</a>。请使用英文填写该表单。"
-);
+const feedbackUrl = product.reportIssueUrl;
+const reviewGuidanceLabel = feedbackUrl ? format( // intentionally not escaped because of its embedded tags
+	localize(
+		{
+			key: 'reviewGuidanceLabel',
+			comment: [
+				'{Locked="{0}"}',
+				'{Locked="<a href=\\"{0}\\" target=\\"_blank\\">"}',
+				'{Locked="</a>"}'
+			]
+		},
+		"提交前请先<a href=\"{0}\" target=\"_blank\">看看我们的反馈说明</a>，写清楚怎么复现就行，用中文没问题。"
+	),
+	escape(feedbackUrl)
+) : '';
 
 export default (): string => `
 <div id="update-banner" class="issue-reporter-update-banner hidden">
@@ -31,8 +37,6 @@ export default (): string => `
 	</span>
 </div>
 <div class="issue-reporter" id="issue-reporter">
-	<div id="english" class="input-group hidden">${escape(localize('completeInEnglish', "请使用英文进行填写。"))}</div>
-
 	<div id="review-guidance-help-text" class="input-group">${reviewGuidanceLabel}</div>
 
 	<div class="section">

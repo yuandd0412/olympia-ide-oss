@@ -11,7 +11,7 @@ import { IEditorSerializer, EditorExtensions, IEditorFactoryRegistry, GroupIdent
 import { EditorInput } from '../../../common/editor/editorInput.js';
 import { IEditorResolverService, RegisteredEditorPriority } from '../../../services/editor/common/editorResolverService.js';
 import { ProcessExplorerEditorInput } from './processExplorerEditorInput.js';
-import { Action2, MenuId, MenuRegistry, registerAction2 } from '../../../../platform/actions/common/actions.js';
+import { Action2, registerAction2 } from '../../../../platform/actions/common/actions.js';
 import { Categories } from '../../../../platform/action/common/actionCommonCategories.js';
 import { AUX_WINDOW_GROUP, IEditorService } from '../../../services/editor/common/editorService.js';
 import { IStorageService, StorageScope, StorageTarget } from '../../../../platform/storage/common/storage.js';
@@ -160,14 +160,6 @@ class OpenProcessExplorer extends Action2 {
 
 registerAction2(OpenProcessExplorer);
 
-MenuRegistry.appendMenuItem(MenuId.MenubarHelpMenu, {
-	group: '5_tools',
-	command: {
-		id: OpenProcessExplorer.ID,
-		title: localize({ key: 'miOpenProcessExplorerer', comment: ['&& denotes a mnemonic'] }, "打开进程资源管理器(&&P)")
-	},
-	when: supported,
-	order: 2
-});
+// 「进程资源管理器」是排障工具，不占帮助菜单的位置；命令面板里仍然可以打开。
 
 //#endregion

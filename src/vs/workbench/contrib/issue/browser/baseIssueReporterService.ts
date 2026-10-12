@@ -182,11 +182,6 @@ export class BaseIssueReporterService extends Disposable {
 			}
 		}
 
-		if (this.window.document.documentElement.lang !== 'en') {
-			// eslint-disable-next-line no-restricted-syntax
-			show(this.getElementById('english'));
-		}
-
 		const codiconStyleSheet = createStyleSheet();
 		codiconStyleSheet.id = 'codiconStyles';
 

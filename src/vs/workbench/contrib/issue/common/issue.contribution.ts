@@ -114,7 +114,7 @@ export class BaseIssueContribution extends Disposable implements IWorkbenchContr
 
 		const reportIssue: ICommandAction = {
 			id: OpenIssueReporterActionId,
-			title: localize2({ key: 'reportIssueInEnglish', comment: ['Translate this to "Report Issue in English" in all languages please!'] }, "报告问题…"),
+			title: localize2('reportIssue', "报告问题…"),
 			category: Categories.Help
 		};
 
@@ -124,7 +124,7 @@ export class BaseIssueContribution extends Disposable implements IWorkbenchContr
 			group: '3_feedback',
 			command: {
 				id: OpenIssueReporterActionId,
-				title: localize({ key: 'miReportIssue', comment: ['&& denotes a mnemonic', 'Translate this to "Report Issue in English" in all languages please!'] }, "使用英文报告问题(&&I)")
+				title: localize({ key: 'miReportIssue', comment: ['&& denotes a mnemonic'] }, "报告问题(&&I)")
 			},
 			order: 3
 		}));
