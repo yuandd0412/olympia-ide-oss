@@ -15,14 +15,9 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { detectPlatform, fetchProblem, type Platform, type Problem } from './sources';
-import { renderStatement, templateFor, FORMAT_LABEL, type ContestFormat } from './templates';
+import { renderStatement, templateFor, FORMAT_LABEL, PLATFORM_TEXT, platformText, type ContestFormat } from './templates';
+import { readLibrary, showStatement, toPicks } from './problemLibrary';
 import { registerCppSnippets } from './snippets';
-
-const PLATFORM_LABEL: Record<Platform, string> = {
-	luogu: '洛谷',
-	codeforces: 'Codeforces',
-	atcoder: 'AtCoder',
-};
 
 function cfg() {
 	const c = vscode.workspace.getConfiguration('olympia.problem');
@@ -59,7 +54,7 @@ async function askProblemRef(initial?: string): Promise<{ id: string; platform: 
 	let platform = detectPlatform(id);
 	if (!platform) {
 		const picked = await vscode.window.showQuickPick(
-			(Object.keys(PLATFORM_LABEL) as Platform[]).map(p => ({ label: PLATFORM_LABEL[p], p })),
+			(Object.keys(PLATFORM_TEXT) as Platform[]).map(p => ({ label: platformText(p), p })),
 			{ title: '无法从题号判断来源，请选择平台', ignoreFocusOut: true },
 		);
 		if (!picked) { return undefined; }
@@ -79,7 +74,7 @@ async function writeProblem(p: Problem): Promise<vscode.Uri | undefined> {
 async function pullProblem(ref: { id: string; platform: Platform }): Promise<void> {
 	const { timeoutMs, templateOnPull, cfMetadata } = cfg();
 	await vscode.window.withProgress(
-		{ location: vscode.ProgressLocation.Notification, title: `正在从 ${PLATFORM_LABEL[ref.platform]} 拉取题面 ${ref.id}…`, cancellable: false },
+		{ location: vscode.ProgressLocation.Notification, title: `正在从 ${platformText(ref.platform)} 拉取题面 ${ref.id}…`, cancellable: false },
 		async () => {
 			try {
 				const problem = await fetchProblem(ref.id, ref.platform, timeoutMs, cfMetadata);
@@ -98,7 +93,7 @@ async function pullProblem(ref: { id: string; platform: Platform }): Promise<voi
 
 				if (problem.metadataOnly) {
 					const open = await vscode.window.showInformationMessage(
-						`${PLATFORM_LABEL[ref.platform]} 的题面网页有人机校验，已写入题目信息。是否在浏览器中打开原题？`,
+						`${platformText(ref.platform)} 的题面网页有人机校验，已写入题目信息。是否在浏览器中打开原题？`,
 						'在浏览器中打开',
 					);
 					if (open) { await vscode.env.openExternal(vscode.Uri.parse(problem.url)); }
@@ -117,19 +112,21 @@ async function pullProblem(ref: { id: string; platform: Platform }): Promise<voi
 async function openCached(): Promise<void> {
 	const root = await problemsRoot();
 	if (!root) { return; }
-	const entries = await fs.promises.readdir(root).catch(() => [] as string[]);
-	const files = entries.filter(f => f.endsWith('.md'));
-	if (!files.length) {
-		vscode.window.showInformationMessage('还没有缓存的题面，先用「拉取题面」抓一道吧。');
+	const entries = await readLibrary(root);
+	if (!entries.length) {
+		vscode.window.showInformationMessage('还没有缓存的题面，先用「拉取题面」（Ctrl+Alt+P）抓一道吧。');
 		return;
 	}
-	const picked = await vscode.window.showQuickPick(files.map(f => ({
-		label: f.replace(/\.md$/, ''),
-		description: f,
-	})), { title: '已缓存的题面', ignoreFocusOut: true });
+	const picks = toPicks(entries, vscode.workspace.workspaceFolders?.[0]?.uri.fsPath);
+	const picked = await vscode.window.showQuickPick(picks, {
+		title: `题面库（缓存了 ${entries.length} 道题）`,
+		placeHolder: '按题号或标题搜，例如 P1001、并查集',
+		matchOnDescription: true,
+		matchOnDetail: true,
+		ignoreFocusOut: true,
+	});
 	if (!picked) { return; }
-	const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(path.join(root, picked.description)));
-	await vscode.window.showTextDocument(doc, { preview: false });
+	await showStatement(vscode.Uri.file(picked.entry.file));
 }
 
 async function insertTemplate(): Promise<void> {

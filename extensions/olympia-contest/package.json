@@ -46,7 +46,7 @@
 			},
 			{
 				"command": "olympia.problem.openStatement",
-				"title": "打开已缓存的题面",
+				"title": "打开题面库（已缓存的题面）",
 				"category": "Olympia 竞赛"
 			}
 		],

@@ -61,7 +61,7 @@ export function renderSamples(samples: { input: string; output: string; explain?
 	if (!samples.length) { return ''; }
 	const out: string[] = ['## 样例数据', ''];
 	samples.forEach((s, i) => {
-		out.push(`### 样例 ${i + 1}`, '');
+		out.push(`${SAMPLE_HEADING} ${i + 1}`, '');
 		out.push('**输入**', '', '```', s.input, '```', '');
 		out.push('**输出**', '', '```', s.output, '```', '');
 		if (s.explain) { out.push(`**说明**：${s.explain}`, ''); }
@@ -78,11 +78,11 @@ export function renderStatement(p: {
 }): string {
 	const L: string[] = [];
 	L.push(`# ${p.id} ${p.title}`, '');
-	const meta: string[] = [`来源：${p.platform}`];
-	if (p.difficulty) { meta.push(`难度：${p.difficulty}`); }
-	if (p.timeLimit) { meta.push(`时限：${p.timeLimit}`); }
-	if (p.memoryLimit) { meta.push(`内存：${p.memoryLimit}`); }
-	if (p.tags.length) { meta.push(`标签：${p.tags.join('、')}`); }
+	const meta: string[] = [`${FIELD.source}：${platformText(p.platform)}`];
+	if (p.difficulty) { meta.push(`${FIELD.difficulty}：${p.difficulty}`); }
+	if (p.timeLimit) { meta.push(`${FIELD.timeLimit}：${p.timeLimit}`); }
+	if (p.memoryLimit) { meta.push(`${FIELD.memoryLimit}：${p.memoryLimit}`); }
+	if (p.tags.length) { meta.push(`${FIELD.tags}：${p.tags.join('、')}`); }
 	L.push(`> ${meta.join(' ｜ ')}`, `> 原文链接：${p.url}`, '');
 	L.push('## 题目描述', '', p.statement || '_（未能解析出题面，请点击原文链接查看）_', '');
 
@@ -95,4 +95,69 @@ export function renderStatement(p: {
 
 	L.push('---', '', `由 Olympia 竞赛助手于 ${new Date().toLocaleString('zh-CN')} 拉取。`);
 	return L.join('\n');
+}
+
+/**
+ * 题面文件里写平台名而不是内部 id：学生打开 `.olympia/problems/P1001.md` 看到的应该是「来源：洛谷」。
+ * 这张表同时供拉题面的界面文案用，两处共用一个来源。
+ */
+export const PLATFORM_TEXT: Record<string, string> = {
+	luogu: '洛谷',
+	codeforces: 'Codeforces',
+	atcoder: 'AtCoder',
+};
+
+export const platformText = (platform: string): string => PLATFORM_TEXT[platform] ?? platform;
+
+/**
+ * 题面 Markdown 的字段名。写的人（`renderStatement`）和读的人（本地题库）共用这一张表：
+ * 改了字段名只改这里，否则题库会静默读不出标题，页面上只剩一个题号。
+ */
+export const FIELD = { source: '来源', difficulty: '难度', timeLimit: '时限', memoryLimit: '内存', tags: '标签' } as const;
+export const SAMPLE_HEADING = '### 样例';
+const META_SEPARATOR = '｜';
+/** 元信息只在文件开头，多读几行给手写题面留余量。 */
+const META_SCAN_LINES = 12;
+/** 题号长什么样：P1001 / B3001 / UVA100 / 1660C / ABC300_A。用来区分「# 题号 标题」和手写的「# 标题」。 */
+const PROBLEM_ID = /^[A-Za-z]{0,6}\d{1,8}[A-Za-z]?(_[A-Za-z0-9]{1,3})?$/;
+
+export interface ProblemMeta {
+	readonly id: string;
+	readonly title: string;
+	readonly source?: string;
+	readonly difficulty?: string;
+	readonly timeLimit?: string;
+	readonly memoryLimit?: string;
+	readonly sampleCount: number;
+}
+
+/**
+ * 从一份题面 Markdown 里读出标题与元信息。读不出来也要给出结果：
+ * 手写的、或只抓了一半的题面照样能进题库，用文件名当题号。
+ */
+export function metaOf(markdown: string, fallbackId: string): ProblemMeta {
+	// 标题行有两种：「# P1001 A+B Problem」（拉下来的）和「# 线段树练习」（手写的）。
+	// 只有第一个词看着像题号才算题号，否则整行都是标题，题号退回文件名。
+	const heading = /^#\s+(.+)$/m.exec(markdown)?.[1]?.trim() ?? '';
+	const [first, ...rest] = heading.split(/\s+/);
+	const idFromHeading = PROBLEM_ID.test(first ?? '') ? first : undefined;
+	const fields = new Map<string, string>();
+	for (const line of markdown.split(/\r?\n/, META_SCAN_LINES)) {
+		if (!line.startsWith('>')) { continue; }
+		for (const part of line.slice(1).split(META_SEPARATOR)) {
+			const index = part.indexOf('：');
+			if (index > 0) {
+				fields.set(part.slice(0, index).trim(), part.slice(index + 1).trim());
+			}
+		}
+	}
+	return {
+		id: idFromHeading || fallbackId,
+		title: idFromHeading ? rest.join(' ') : heading,
+		source: fields.get(FIELD.source),
+		difficulty: fields.get(FIELD.difficulty),
+		timeLimit: fields.get(FIELD.timeLimit),
+		memoryLimit: fields.get(FIELD.memoryLimit),
+		sampleCount: [...markdown.matchAll(new RegExp(`^${SAMPLE_HEADING}`, 'gm'))].length,
+	};
 }

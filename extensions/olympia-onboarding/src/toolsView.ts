@@ -15,7 +15,9 @@ import { CMD, KEYS } from './commands';
 import { activeTarget, renderFlags, targetSummary } from './ojTargets';
 import { resolveCompiler } from './toolchain';
 import { PRECHECK_SOURCE, SOURCE_FILES } from './precheck';
+import { statementFiles, watchStatements } from './problemFiles';
 import { contestSummary, isContestRunning, onContestChange } from './contestMode';
+import { VERDICT_CODES } from './judgeSamples';
 
 interface Section {
 	readonly kind: 'section';
@@ -46,6 +48,8 @@ interface State {
 type TreeEntry = Section | Action | State;
 
 const COMPILER_MISSING = '未检测到';
+const LIBRARY_UNKNOWN = '未统计';
+const LIBRARY_EMPTY = '还没拉过题面';
 
 /** The compiler line is the one thing here that cannot be read synchronously. */
 interface CompilerState {
@@ -59,9 +63,11 @@ class OlympiaToolsProvider implements vscode.TreeDataProvider<TreeEntry> {
 	readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
 	private compiler: CompilerState = { label: COMPILER_MISSING, icon: 'debug-disconnect' };
+	private library = LIBRARY_UNKNOWN;
 
 	constructor() {
 		void this.refreshCompiler();
+		void this.refreshLibrary();
 	}
 
 	async refreshCompiler(): Promise<void> {
@@ -72,6 +78,13 @@ class OlympiaToolsProvider implements vscode.TreeDataProvider<TreeEntry> {
 		this.fire();
 	}
 
+	/** 缓存了几份题面：读一次目录就够，不解析内容。 */
+	async refreshLibrary(): Promise<void> {
+		const count = (await statementFiles()).length;
+		this.library = count ? `${count} 份` : LIBRARY_EMPTY;
+		this.fire();
+	}
+
 	/** 只重画树，不重新探测编译器：倒计时每秒刷新走这条，别顺带 spawn g++。 */
 	fire(): void {
 		this._onDidChangeTreeData.fire(undefined);
@@ -79,6 +92,7 @@ class OlympiaToolsProvider implements vscode.TreeDataProvider<TreeEntry> {
 
 	refresh(): void {
 		void this.refreshCompiler();
+		void this.refreshLibrary();
 		this.fire();
 	}
 
@@ -130,7 +144,7 @@ class OlympiaToolsProvider implements vscode.TreeDataProvider<TreeEntry> {
 					{ kind: 'action', id: 'compile', label: '只编译', icon: 'tools', command: CMD.compile, key: KEYS.compile },
 					{ kind: 'action', id: 'judge', label: '按评测机编译（-O2）', icon: 'server-process', command: CMD.compileJudgeAccurate, key: KEYS.compileJudgeAccurate, tooltip: '打开优化并套用评测机开关，用来复现「本地过、评测机超时」之外的那类差异' },
 					{ kind: 'action', id: 'precheck', label: '提交前体检', icon: 'check', command: CMD.preSubmitCheck, key: KEYS.preSubmitCheck, tooltip: '只报会在评测机上编译失败的写法：`#pragma GCC optimize`、MSVC 保留字、C++17 起删除的设施' },
-					{ kind: 'action', id: 'judgeSamples', label: '跑样例（本地评测）', icon: 'checklist', command: CMD.judgeSamples, key: KEYS.judgeSamples, tooltip: '用拉下来的题面样例跑当前文件，按 token 比对，给出 AC / WA / RE / TLE' },
+					{ kind: 'action', id: 'judgeSamples', label: '跑样例（本地评测）', icon: 'checklist', command: CMD.judgeSamples, key: KEYS.judgeSamples, tooltip: `用拉下来的题面样例跑当前文件，按 token 比对，给出 ${VERDICT_CODES}` },
 					{ kind: 'action', id: 'stressTest', label: '对拍（正解 vs 暴力）', icon: 'sync-again', command: CMD.stressTest, key: KEYS.stressTest, tooltip: '用生成器产随机数据，同时喂给正解和暴力；输出不一致就停下，并把那组数据存进 stress-fail' },
 					{ kind: 'action', id: 'contest', label: '比赛模式（倒计时）', icon: 'clock', command: CMD.contestMode, key: KEYS.contestMode, tooltip: '选一段时长，状态栏出现倒计时；重载窗口也接着走，点 chip 可提前结束' }
 				];
@@ -138,6 +152,7 @@ class OlympiaToolsProvider implements vscode.TreeDataProvider<TreeEntry> {
 				return [
 					{ kind: 'action', id: 'pull', label: '拉取题面', icon: 'cloud-download', command: CMD.problemPull, key: KEYS.problemPull },
 					{ kind: 'action', id: 'pullClipboard', label: '从剪贴板拉取题号', icon: 'clippy', command: CMD.problemPullFromClipboard, key: KEYS.problemPullFromClipboard },
+					{ kind: 'action', id: 'openStatement', label: '打开题面库', icon: 'book', command: CMD.problemOpenStatement, key: KEYS.openStatement, tooltip: '缓存过的题面都在这里，按题号或标题搜。' },
 					{ kind: 'action', id: 'template', label: '插入赛制模板', icon: 'file-code', command: CMD.templateInsert, key: KEYS.templateInsert }
 				];
 			case 'coach':
@@ -169,6 +184,13 @@ class OlympiaToolsProvider implements vscode.TreeDataProvider<TreeEntry> {
 				kind: 'state', id: 'precheck', label: '提交前体检', value: count,
 				icon: count === '无问题' ? 'check' : 'error', command: CMD.showProblems,
 				tooltip: '点击打开「问题」面板查看当前文件的体检结果。'
+			},
+			{
+				kind: 'state', id: 'library', label: '题面库', value: this.library,
+				icon: 'book', command: this.library === LIBRARY_EMPTY ? CMD.problemPull : CMD.problemOpenStatement,
+				tooltip: this.library === LIBRARY_EMPTY
+					? '缓存目录里还没有题面，点击拉一道题的题面。'
+					: '点击打开题面库：按题号或标题搜，选中就在编辑器里打开。跑样例用的就是这些题面。'
 			},
 			// 只在比赛里出现：平时多一行状态是噪音。
 			...(contest ? [{
@@ -205,7 +227,9 @@ export function registerToolsView(context: vscode.ExtensionContext): vscode.Disp
 			}
 		}),
 		vscode.window.onDidChangeActiveTextEditor(() => provider.refresh()),
-		vscode.languages.onDidChangeDiagnostics(() => provider.refresh())
+		vscode.languages.onDidChangeDiagnostics(() => provider.refresh()),
+		// 拉完题面数字就该变，不该等学生切个文件才刷新
+		watchStatements(() => void provider.refreshLibrary())
 	);
 	// 比赛倒计时每秒一跳，只要重画树，不要顺带重新探测编译器
 	onContestChange(() => provider.fire());

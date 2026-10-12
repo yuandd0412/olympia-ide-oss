@@ -28,6 +28,8 @@ export const CMD = {
 	openWebsite: 'olympia.openWebsite',
 	problemPull: 'olympia.problem.pull',
 	problemPullFromClipboard: 'olympia.problem.pullFromClipboard',
+	/** 题面库：由 olympia-contest 注册，面板和这里只是点它一下。 */
+	problemOpenStatement: 'olympia.problem.openStatement',
 	templateInsert: 'olympia.template.insert',
 	aiSettings: 'olympia.ai.settings',
 	showProblems: 'workbench.actions.view.problems'
@@ -45,5 +47,6 @@ export const KEYS = {
 	checkEnvironment: 'Ctrl+Alt+D',
 	problemPull: 'Ctrl+Alt+P',
 	problemPullFromClipboard: 'Ctrl+Alt+V',
+	openStatement: 'Ctrl+Alt+O',
 	templateInsert: 'Ctrl+Alt+T'
 } as const;

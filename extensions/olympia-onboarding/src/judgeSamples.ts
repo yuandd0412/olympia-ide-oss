@@ -3,21 +3,22 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 /*---------------------------------------------------------------------------------------------
- *  样例评测：拿拉下来的题面里的样例数据跑当前文件，给出 AC / WA / RE / TLE。
+ *  样例评测：拿拉下来的题面里的样例数据跑当前文件，给出 AC / WA / RE / TLE / MLE。
  *
  *  「编辑 → 评测 → 对拍」里的那一环。题面由 olympia-contest 抓成 `.olympia/problems/<题号>.md`，
  *  样例就写在里面的 ``` 代码块里，所以这里只读那份 Markdown，不需要联网、也不需要账号。
- *  判定按 token 比对（和评测机一样忽略空白），时限认题面里的「时限：1.00s」或「时限：1000 ms」，本地给三倍余量。
+ *  判定按 token 比对（和评测机一样忽略空白），时限认题面里的「时限：1.00s」或「时限：1000 ms」，本地给三倍余量；
+ *  内存认「内存限制：128.00 MB」这类写法，峰值工作集由 memoryProbe 采样，只少报不多报。
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
 import { basename, dirname } from 'path';
 
 import { isCompilable, planCompile, renderCommandLine, COMPILE_TIMEOUT_MS } from './compile';
 import { CMD } from './commands';
+import { statementFiles } from './problemFiles';
 import { runProcess } from './stressTest';
 import { formatMb, runSampled } from './memoryProbe';
 
-const DEFAULT_PROBLEMS_DIR = '.olympia/problems';
 const LOCAL_MARGIN = 3;
 const RUN_TIMEOUT_SLACK_MS = 500;
 /** 题面没写时限时的默认值，也是本地判 TLE 的上下界，免得一个 1 ms 的时限把编译都算进去。 */
@@ -52,6 +53,9 @@ const VERDICTS: readonly { readonly code: Verdict; readonly text: string }[] = [
 
 const severityOf = (verdict: Verdict): number => VERDICTS.findIndex(row => row.code === verdict);
 const verdictText = (verdict: Verdict): string => VERDICTS.find(row => row.code === verdict)?.text ?? verdict;
+
+/** 面板、提示文案里那张判定清单从这张表出，别在第二个地方再抄一遍。 */
+export const VERDICT_CODES = VERDICTS.map(row => row.code).join(' / ');
 
 interface CaseResult {
 	readonly index: number;
@@ -116,25 +120,8 @@ function memoryLimitMbOf(match: RegExpExecArray | null): number {
 	return Math.round(value * (MEMORY_UNITS.get(unit) ?? 1));
 }
 
-async function problemFiles(): Promise<vscode.Uri[]> {
-	const folder = vscode.workspace.workspaceFolders?.[0];
-	if (!folder) {
-		return [];
-	}
-	const relative = vscode.workspace.getConfiguration('olympia').get<string>('problem.problemsDir', DEFAULT_PROBLEMS_DIR);
-	const dir = vscode.Uri.joinPath(folder.uri, relative);
-	try {
-		const entries = await vscode.workspace.fs.readDirectory(dir);
-		return entries
-			.filter(entry => entry[1] === vscode.FileType.File && /\.md$/i.test(entry[0]))
-			.map(entry => vscode.Uri.joinPath(dir, entry[0]));
-	} catch {
-		return [];
-	}
-}
-
 async function pickProblemFile(sourceUri: vscode.Uri): Promise<vscode.Uri | undefined> {
-	const files = await problemFiles();
+	const files = await statementFiles();
 	if (!files.length) {
 		await vscode.window.showInformationMessage('还没有拉取过题面，无法跑样例。先用「拉取题面」（Ctrl+Alt+P）抓一道题的样例。');
 		return undefined;
