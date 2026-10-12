@@ -254,7 +254,13 @@ if (isMacintosh) {
 
 // Editor Title Menu's "Run/Debug" dropdown item
 
-MenuRegistry.appendMenuItem(MenuId.EditorTitle, { submenu: MenuId.EditorTitleRun, isSplitButton: { togglePrimaryAction: true }, title: nls.localize2('run', "运行或调试..."), icon: icons.debugRun, group: 'navigation', order: -1 });
+/**
+ * Olympia 的运行入口是 F9 + 内置编译，产品也不随包调试器，所以「运行或调试」按钮和「运行」菜单
+ * 默认收起。把 olympia.debug.showEntryPoints 打开即可回到 VS Code 原样。
+ */
+const SHOW_DEBUG_ENTRY_POINTS = ContextKeyExpr.equals('config.olympia.debug.showEntryPoints', true);
+
+MenuRegistry.appendMenuItem(MenuId.EditorTitle, { submenu: MenuId.EditorTitleRun, isSplitButton: { togglePrimaryAction: true }, title: nls.localize2('run', "运行或调试..."), icon: icons.debugRun, group: 'navigation', order: -1, when: SHOW_DEBUG_ENTRY_POINTS });
 
 // Debug menu
 
@@ -265,7 +271,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarMainMenu, {
 		mnemonicTitle: nls.localize({ key: 'mRun', comment: ['&& denotes a mnemonic'] }, "&&运行")
 	},
 	order: 6,
-	when: IsSessionsWindowContext.negate()
+	when: ContextKeyExpr.and(IsSessionsWindowContext.negate(), SHOW_DEBUG_ENTRY_POINTS)
 });
 
 MenuRegistry.appendMenuItem(MenuId.MenubarDebugMenu, {

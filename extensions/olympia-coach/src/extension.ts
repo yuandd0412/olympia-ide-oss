@@ -18,6 +18,7 @@ import * as vscode from 'vscode';
 import { registerCoachParticipant } from './coach';
 import { listModels, registerModelPicker } from './model';
 import { registerProvider } from './provider';
+import { registerSettingsPanel } from './settingsPanel';
 
 export function activate(context: vscode.ExtensionContext): void {
 	// Created before the provider registers: it logs why a model listing fell back to the built-in
@@ -27,6 +28,7 @@ export function activate(context: vscode.ExtensionContext): void {
 	context.subscriptions.push(log);
 
 	registerProvider(context, log);
+	registerSettingsPanel(context, log);
 	registerCoachParticipant(context);
 	registerModelPicker(context);
 

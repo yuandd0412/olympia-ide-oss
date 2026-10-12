@@ -11,6 +11,7 @@
  *  at code it cannot see produces confident nonsense about a wrong answer.
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
+import { EXAMPLE_BASE_URL } from './constants';
 import { listModels, resolveModel } from './model';
 
 const HISTORY_TURNS = 6;
@@ -44,11 +45,12 @@ const BY_COMMAND: Record<string, string> = {
 const NO_MODEL = [
 	'AI 教练还没有可用的模型。',
 	'',
-	'1. `Ctrl+Shift+P` → 运行「Olympia：设置 AI 教练的 API Key」，填入你自己的密钥（只存在本机 SecretStorage）。',
-	'2. 打开设置，填 `Olympia AI 教练 ▸ baseUrl`（OpenAI 兼容地址，例如 `https://api.deepseek.com/v1`）。`models` 留空即可——教练会自动读取该地址下的 `/models`；只有没有这个接口的网关才需要手动写模型 ID。',
-	'3. `Ctrl+Shift+P` → 运行「Olympia：选择 AI 教练使用的模型」指定教练用哪个。',
+	'打开「Olympia AI 设置」（`Ctrl+Shift+P` 输入 olympia ai 设置），在一页里填好三件事：',
+	`1. 服务地址：OpenAI 兼容地址，例如 \`${EXAMPLE_BASE_URL}\`（不含 \`/chat/completions\`）。`,
+	'2. API 密钥：只存在本机 SecretStorage，页面上读不回原文。',
+	'3. 模型：默认自动读取该地址的 `/models`；没有这个接口的网关再手动指定。',
 	'',
-	'配置好后重新提问即可。',
+	'拉取失败的具体原因在「Olympia AI 设置」里会直接显示，也可以点「打开输出日志」查看。',
 ].join('\n');
 
 function editorContext(): string {

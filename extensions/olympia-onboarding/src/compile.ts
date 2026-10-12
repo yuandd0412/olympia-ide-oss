@@ -22,62 +22,23 @@ import * as vscode from 'vscode';
 import { execFile } from 'child_process';
 import { dirname, basename, join } from 'path';
 import { locateCompiler } from './toolchain';
+import { OJTarget, CUSTOM_TARGET_ID, findTarget, profileId } from './ojTargets';
 
 export const TASK_TYPE = 'olympia-compile';
 
-export interface OJFlags {
-	readonly id: string;
-	readonly label: string;
-	readonly std: string;
-	readonly onlineJudge: string;
-	readonly flags: readonly string[];
-}
-
-/**
- * Switch sets transcribed from the judges' own documentation.
- *
- * Luogu, https://help.luogu.com.cn/manual/luogu/problem/judging :
- *   g++ -x c++ -std=$version -fPIC -DONLINE_JUDGE -Wall -fno-asm -lm -march=native
- *   "# O2 优化开关为 -O2"
- *
- * Two details that are easy to get wrong and cause real failures:
- *   - ONLINE_JUDGE is defined WITHOUT a value. `ONLINE_JUDGE=luogu` is the judge's
- *     *environment variable*, a separate thing from the -D macro.
- *   - Luogu modifies GCC so that opening an optimization pragma/attribute fails the build.
- *     Their default submission language is the NOI variant: GCC 9.3.0 with -std=c++14.
- */
-export const OJ_PROFILES: readonly OJFlags[] = [
-	{
-		id: 'luogu',
-		label: '洛谷',
-		std: 'c++23',
-		onlineJudge: 'luogu',
-		flags: ['-x', 'c++', '-fPIC', '-DONLINE_JUDGE', '-Wall', '-fno-asm', '-lm', '-march=native']
-	},
-	{
-		id: 'noi',
-		label: 'NOI / 洛谷默认',
-		std: 'c++14',
-		onlineJudge: 'noi',
-		flags: ['-x', 'c++', '-fPIC', '-DONLINE_JUDGE', '-Wall', '-fno-asm', '-lm', '-march=native']
-	}
-];
-
-export const CUSTOM_PROFILE: OJFlags = {
-	id: 'custom',
+/** The profile the user wrote themselves: no `-x`, no `-std=`, nothing invented for it. */
+export const CUSTOM_TARGET: OJTarget = {
+	id: CUSTOM_TARGET_ID,
 	label: '自定义',
+	gcc: '',
 	std: '',
-	onlineJudge: '',
-	flags: []
+	onlineJudgeEnv: '',
+	baseFlags: []
 };
 
-export function activeProfile(): OJFlags {
-	const config = vscode.workspace.getConfiguration('olympia');
-	const id = config.get<string>('compiler.profile', 'luogu');
-	if (id === 'custom') {
-		return CUSTOM_PROFILE;
-	}
-	return OJ_PROFILES.find(p => p.id === id) ?? OJ_PROFILES[0];
+export function activeProfile(): OJTarget {
+	const id = profileId();
+	return id === CUSTOM_TARGET_ID ? CUSTOM_TARGET : (findTarget(id) ?? CUSTOM_TARGET);
 }
 
 export function compilerBinary(): string {
@@ -92,7 +53,7 @@ export interface CompilePlan {
 	readonly args: string[];
 	readonly cwd: string;
 	readonly output: string;
-	readonly profile: OJFlags;
+	readonly profile: OJTarget;
 	readonly optimized: boolean;
 }
 
@@ -124,24 +85,21 @@ export function planCompile(source: vscode.Uri, overrideOptimization?: string): 
 	const optSwitch = optimizationSwitch(level);
 	const optimized = optSwitch !== undefined;
 
-	const useProfileFlags = profile.id !== 'custom';
-	const profileFlags = useProfileFlags
-		? profile.flags
-		: splitFlags(config.get<string>('compiler.customFlags', ''));
-
-	// -std is implicit for custom profiles: the user's own flags decide the standard
-	const stdFlag = useProfileFlags ? `-std=${profile.std}` : '';
+	const isCustomProfile = profile.id === CUSTOM_TARGET_ID;
+	// in the order the judge documents: -x c++, then -std=, then their published switches.
+	// A custom profile supplies all of it, so nothing is invented around the user's own flags.
+	const judgeFlags = isCustomProfile
+		? splitFlags(config.get<string>('compiler.customFlags', ''))
+		: ['-x', 'c++', `-std=${profile.std}`, ...profile.baseFlags];
 	const exeName = basename(source.fsPath).replace(/\.[^.]+$/, '') + (process.platform === 'win32' ? '.exe' : '');
 
-	// exactly the judge's published order, with -O2 appended as their docs show
 	const args = [
-		stdFlag,
-		...profileFlags,
+		...judgeFlags,
 		...(optSwitch ? [optSwitch] : []),
 		'-o',
 		exeName,
 		source.fsPath
-	].filter(token => token !== '');
+	];
 
 	return {
 		program: compilerBinary(),
@@ -170,7 +128,7 @@ function formatSwitch(source: vscode.Uri | undefined): vscode.Task | undefined {
 		.get<boolean>('compiler.showCompileCommand', true);
 
 	const definition: vscode.TaskDefinition = { type: TASK_TYPE, source: source.fsPath };
-	const name = plan.profile.id === 'custom'
+	const name = plan.profile.id === CUSTOM_TARGET_ID
 		? 'Olympia 自定义编译'
 		: `Olympia 编译（${plan.profile.label}）`;
 	const command = new vscode.Task(

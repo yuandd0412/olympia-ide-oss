@@ -5,14 +5,20 @@
 
 import { escape } from '../../../../../base/common/strings.js';
 import { localize } from '../../../../../nls.js';
+import product from '../../../../../platform/product/common/product.js';
 import { ThemeSettingDefaults } from '../../../../services/themes/common/workbenchThemeService.js';
+
+const PRODUCT_DARK = ThemeSettingDefaults.COLOR_THEME_PRODUCT_DARK;
+const PRODUCT_DARK_LABEL = product.defaultColorTheme
+	? localize('productDark', "Olympia 默认 · {0}", product.defaultColorTheme)
+	: localize('dark', "深色现代");
 
 export default () => `
 <checklist>
 	<div class="theme-picker-row">
-		<checkbox when-checked="setTheme:${ThemeSettingDefaults.COLOR_THEME_DARK}" checked-on="config.workbench.colorTheme == '${ThemeSettingDefaults.COLOR_THEME_DARK}'">
+		<checkbox when-checked="setTheme:${PRODUCT_DARK}" checked-on="config.workbench.colorTheme == '${PRODUCT_DARK}'">
 			<img width="150" src="./dark.png"/>
-			${escape(localize('dark', "深色现代"))}
+			${escape(PRODUCT_DARK_LABEL)}
 		</checkbox>
 		<checkbox when-checked="setTheme:${ThemeSettingDefaults.COLOR_THEME_LIGHT}" checked-on="config.workbench.colorTheme == '${ThemeSettingDefaults.COLOR_THEME_LIGHT}'">
 			<img width="150" src="./light.png"/>

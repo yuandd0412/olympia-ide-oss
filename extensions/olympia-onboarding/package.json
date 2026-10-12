@@ -44,24 +44,90 @@
 			{
 				"command": "olympia.preSubmitCheck",
 				"title": "提交前体检",
-				"category": "Olympia"
+				"category": "Olympia",
+				"icon": "$(check)"
 			},
 			{
 				"command": "olympia.compile",
 				"title": "编译当前文件（按评测机参数）",
-				"category": "Olympia"
+				"category": "Olympia",
+				"icon": "$(tools)"
 			},
 			{
 				"command": "olympia.compileJudgeAccurate",
 				"title": "按评测机编译（强制 -O2）",
-				"category": "Olympia"
+				"category": "Olympia",
+				"icon": "$(server-process)"
 			},
 			{
 				"command": "olympia.compileAndRun",
 				"title": "编译并运行（本地样例测试）",
-				"category": "Olympia"
+				"category": "Olympia",
+				"icon": "$(play)"
+			},
+			{
+				"command": "olympia.tools.refresh",
+				"title": "刷新 Olympia 工具面板",
+				"category": "Olympia",
+				"icon": "$(refresh)"
 			}
 		],
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "olympia",
+					"title": "Olympia",
+					"icon": "media/olympia-tools.svg"
+				}
+			]
+		},
+		"views": {
+			"olympia": [
+				{
+					"id": "olympia.tools",
+					"name": "竞赛工具",
+					"type": "tree",
+					"visibility": "visible"
+				}
+			]
+		},
+		"menus": {
+			"editor/title": [
+				{
+					"command": "olympia.compileAndRun",
+					"group": "navigation@1",
+					"when": "resourceLangId == cpp || resourceLangId == c"
+				},
+				{
+					"command": "olympia.compile",
+					"group": "navigation@2",
+					"when": "resourceLangId == cpp || resourceLangId == c"
+				},
+				{
+					"command": "olympia.compileJudgeAccurate",
+					"group": "navigation@3",
+					"when": "resourceLangId == cpp || resourceLangId == c"
+				},
+				{
+					"command": "olympia.preSubmitCheck",
+					"group": "navigation@4",
+					"when": "resourceLangId == cpp || resourceLangId == c"
+				}
+			],
+			"view/title": [
+				{
+					"command": "olympia.tools.refresh",
+					"group": "navigation",
+					"when": "view == olympia.tools"
+				}
+			],
+			"commandPalette": [
+				{
+					"command": "olympia.tools.refresh",
+					"when": "false"
+				}
+			]
+		},
 		"keybindings": [
 			{
 				"command": "olympia.compileAndRun",
@@ -91,22 +157,6 @@
 				"command": "olympia.checkEnvironment",
 				"key": "ctrl+alt+d",
 				"mac": "cmd+alt+d"
-			}
-		],
-		"startEntries": [
-			{
-				"id": "olympia.newContestProject",
-				"title": "新建竞赛工程...",
-				"description": "用内置模板创建标准 C++ 竞赛工程",
-				"command": "olympia.template.insert",
-				"category": "file"
-			},
-			{
-				"id": "olympia.checkEnvironmentEntry",
-				"title": "环境自检...",
-				"description": "检测编译器是否就绪，并对比评测机版本",
-				"command": "olympia.checkEnvironment",
-				"category": "file"
 			}
 		],
 		"walkthroughs": [
@@ -247,55 +297,35 @@
 					"default": true,
 					"markdownDescription": "编译时把完整的 `g++` 命令行打印到终端，方便对照评测机参数排查。"
 				},
+				"olympia.debug.showEntryPoints": {
+					"type": "boolean",
+					"default": false,
+					"markdownDescription": "显示 VS Code 自带的「运行或调试」按钮和「运行」菜单。Olympia 默认关闭：F9 走内置编译运行，安装包里没有调试器。需要单步调试时再打开。"
+				},
 				"olympia.check.enabled": {
 					"type": "boolean",
 					"default": true,
-					"markdownDescription": "启用提交前体检。保存 `.cpp` / `.c` / `.h` 时扫描常见提交雷区并给出提示。"
+					"markdownDescription": "启用提交前体检：只报**会在评测机上编译失败**的写法，不当代码风格老师。"
 				},
 				"olympia.check.onSave": {
 					"type": "boolean",
 					"default": true,
 					"markdownDescription": "保存时自动运行体检。关闭后只能手动执行「提交前体检」命令。"
 				},
-				"olympia.check.rules.crlf": {
-					"type": "boolean",
-					"default": true,
-					"markdownDescription": "检查行尾符：评测机是 Linux，CRLF 行尾可能直接导致 Presentation Error。"
-				},
 				"olympia.check.rules.pragmaOptimize": {
 					"type": "boolean",
 					"default": true,
-					"markdownDescription": "检查 `#pragma GCC optimize` / `__attribute__((optimize))`——带优化属性的代码在评测机上可能编译失败。"
-				},
-				"olympia.check.rules.onlineJudge": {
-					"type": "boolean",
-					"default": true,
-					"markdownDescription": "检查是否用 `ONLINE_JUDGE` 宏区分评测环境（洛谷为 `luogu`）。"
-				},
-				"olympia.check.rules.memoryLeak": {
-					"type": "boolean",
-					"default": true,
-					"markdownDescription": "检查 `new` / `malloc` 是否有对应的 `delete` / `free`——评测机按峰值内存计分，泄漏会 MLE。"
+					"markdownDescription": "检查 `#pragma GCC optimize` / `__attribute__((optimize))`——洛谷改过的 GCC 在开启优化时会直接拒绝这类写法。"
 				},
 				"olympia.check.rules.reservedWord": {
 					"type": "boolean",
 					"default": true,
-					"markdownDescription": "检查 Linux 保留字（`asm`、`bool`、`true`、`false` 等）被误用作变量名的问题。"
+					"markdownDescription": "检查 MSVC 允许当变量名、GNU C++ 却是关键字的名字：`asm` 与 `and`、`or`、`not`、`xor` 等替代运算符。"
 				},
-				"olympia.check.rules.freopen": {
+				"olympia.check.rules.removedCpp": {
 					"type": "boolean",
 					"default": true,
-					"markdownDescription": "检查本地调试用的 `freopen` 是否会在评测机上吞掉输入。"
-				},
-				"olympia.startPage.enabled": {
-					"type": "boolean",
-					"default": true,
-					"markdownDescription": "启动时显示 Olympia 起始页。"
-				},
-				"olympia.startPage.recentContest": {
-					"type": "string",
-					"default": "",
-					"markdownDescription": "最近一次比赛的名称，用于在起始页提示比赛倒计时。留空则不提示。"
+					"markdownDescription": "检查已被 C++ 标准移除的写法：`gets`、`random_shuffle`、`register`。"
 				}
 			}
 		}

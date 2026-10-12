@@ -48,27 +48,47 @@
 		],
 		"commands": [
 			{
+				"command": "olympia.ai.settings",
+				"title": "AI 设置（地址 / 密钥 / 模型）",
+				"category": "Olympia"
+			},
+			{
 				"command": "olympia.coach.selectModel",
-				"title": "Olympia：选择 AI 教练使用的模型"
+				"title": "选择 AI 教练使用的模型",
+				"category": "Olympia"
 			},
 			{
 				"command": "olympia.coach.setApiKey",
-				"title": "Olympia：设置 AI 教练的 API Key"
+				"title": "设置 AI 教练的 API Key",
+				"category": "Olympia"
+			},
+			{
+				"command": "olympia.coach.showLog",
+				"title": "显示 AI 教练日志",
+				"category": "Olympia"
 			}
 		],
+		"menus": {
+			"commandPalette": [
+				{
+					"command": "olympia.coach.showLog",
+					"when": "false"
+				}
+			]
+		},
 		"configuration": {
 			"title": "Olympia AI 教练",
 			"properties": {
 				"olympia.ai.baseUrl": {
 					"type": "string",
 					"default": "",
-					"markdownDescription": "OpenAI 兼容服务的基地址（不含 `/chat/completions`），例如 `https://api.deepseek.com/v1`。模型列表从同一地址的 `/models` 拉取。留空则 AI 教练不可用。"
+					"markdownDescription": "OpenAI 兼容服务的基地址（不含 `/chat/completions`），例如 `https://api.deepseek.com/v1`。模型列表从同一地址的 `/models` 拉取。留空则 AI 教练不可用。建议直接在命令「Olympia：AI 设置」里填。"
 				},
 				"olympia.ai.models": {
 					"type": "array",
 					"items": { "type": "string" },
 					"default": [],
-					"markdownDescription": "留空（默认）即自动从 `{baseUrl}/models` 拉取模型列表，结果缓存 5 分钟；改动本组设置会立刻失效重取。填写则只用列出的 ID，用于没有 `/models` 接口的网关或离线内网。拉取失败时回落到 `deepseek-chat`、`deepseek-reasoner`，原因记录在输出面板「Olympia AI Coach」。"
+					"markdownDescription": "留空（默认）即自动从 `{baseUrl}/models` 拉取模型列表，结果缓存 5 分钟；改动本组设置会立刻失效重取。填写则只用列出的 ID，用于没有 `/models` 接口的网关或离线内网。拉取失败时回落到 `deepseek-chat`、`deepseek-reasoner`，原因记录在输出面板「Olympia AI Coach」。建议直接在命令「Olympia：AI 设置」里改。"
 				}
 			}
 		}

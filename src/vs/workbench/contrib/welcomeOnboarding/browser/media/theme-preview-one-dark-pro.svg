@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 82" fill="none">
+	<rect width="280" height="82" rx="4" fill="#282C34"/>
+	<rect width="22" height="82" fill="#21252B"/>
+	<rect x="5" y="5" width="12" height="12" rx="2" fill="#ABB2BF" opacity="0.35"/>
+	<rect x="5" y="21" width="12" height="12" rx="2" fill="#ABB2BF" opacity="0.35"/>
+	<rect x="5" y="37" width="12" height="12" rx="2" fill="#ABB2BF" opacity="0.35"/>
+	<rect x="22" y="0" width="258" height="18" fill="#21252B"/>
+	<line x1="22" y1="18" x2="280" y2="18" stroke="#ABB2BF" stroke-opacity="0.25"/>
+	<text x="30" y="12" font-family="monospace" font-size="7" fill="#ABB2BF">main.cpp</text>
+	<line x1="30" y1="16" x2="64" y2="16" stroke="#61AFEF" stroke-width="1.5"/>
+	<text x="70" y="12" font-family="monospace" font-size="7" fill="#ABB2BF" opacity="0.4">sum.cpp</text>
+	<text x="28" y="32" font-family="monospace" font-size="9"><tspan fill="#C678DD">int </tspan><tspan fill="#61AFEF">main</tspan><tspan fill="#ABB2BF">() {</tspan></text>
+	<text x="39" y="45" font-family="monospace" font-size="9"><tspan fill="#5C6370">// hello</tspan></text>
+	<text x="39" y="58" font-family="monospace" font-size="9"><tspan fill="#C678DD">return </tspan><tspan fill="#98C379">0</tspan></text>
+	<text x="28" y="71" font-family="monospace" font-size="9" fill="#ABB2BF">}</text>
+</svg>

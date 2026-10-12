@@ -487,3 +487,6 @@ import './contrib/editTelemetry/browser/editTelemetry.contribution.js';
 import './contrib/opener/browser/opener.contribution.js';
 
 //#endregion
+
+// Olympia 产品裁剪：放在最后，它要把上面已经注册好的视图容器摘掉。
+import './contrib/olympia/browser/olympiaActivityBar.js';

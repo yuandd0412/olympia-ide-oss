@@ -125,6 +125,12 @@ export interface IProductConfiguration {
 	readonly walkthroughMetadata?: IProductWalkthrough[];
 	readonly featuredExtensions?: IFeaturedExtension[];
 
+	/**
+	 * settingsId of the colour theme a profile with no stored choice starts on. Left unset, the
+	 * workbench falls back to its own built-in default dark theme.
+	 */
+	readonly defaultColorTheme?: string;
+
 	readonly downloadUrl?: string;
 	readonly updateUrl?: string;
 	readonly webUrl?: string;

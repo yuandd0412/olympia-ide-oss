@@ -5,30 +5,25 @@
 /*---------------------------------------------------------------------------------------------
  *  Olympia IDE - submission pre-flight check ("提交前体检").
  *
- *  Scans a C/C++ translation unit for the failure modes that make a solution pass locally and
- *  fail on the judge. Every rule below corresponds to a real, documented cause rather than a
- *  generic style nit:
+ *  A live syntax check for the one thing that ends a submission: the judge's compiler rejecting
+ *  code that MSVC accepts. Every rule below therefore reports a *compile error*, not a style
+ *  opinion — findings that merely made a program score worse (freopen, mixed IO, leaks, CRLF)
+ *  were removed, because a checker that cries warning on correct code teaches students to
+ *  ignore the one signal that matters.
  *
- *    - the judge runs Linux; CRLF line endings can turn a correct answer into a PE
  *    - optimized builds reject `#pragma GCC optimize` / `__attribute__((optimize))`
- *    - the judge defines ONLINE_JUDGE, and code that assumes it is always defined misbehaves
- *    - the judge scores by peak memory, so an unbalanced allocation means MLE not WA
- *    - `asm` / `bool` / `true` are valid identifiers on MSVC but keywords in GNU C++
- *    - local `freopen` debugging shims swallow stdin on the judge
- *    - mixing cin/cout with scanf/printf desynchronises unless sync_with_stdio is disabled
+ *    - `asm` and the alternative operator names are identifiers on MSVC but keywords in GNU C++
  *    - `gets`, `random_shuffle` and `register` were removed from the C++ standard
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
 
+/** The diagnostic source every rule writes, so the bars can tell our findings from the compiler's. */
+export const PRECHECK_SOURCE = '提交前体检';
+
 export type RuleId =
-	| 'crlf'
 	| 'pragmaOptimize'
-	| 'onlineJudge'
-	| 'memoryLeak'
 	| 'reservedWord'
-	| 'freopen'
-	| 'ioMix'
 	| 'removedCpp';
 
 export interface Finding {
@@ -43,7 +38,6 @@ export interface Finding {
 
 interface RuleContext {
 	readonly text: string;
-	readonly profile: string;
 }
 
 function config(): vscode.WorkspaceConfiguration {
@@ -84,23 +78,6 @@ function finding(ctx: RuleContext, rule: RuleId, severity: vscode.DiagnosticSeve
 // individual rules
 // ---------------------------------------------------------------------------------------------
 
-function checkCrlf(ctx: RuleContext): Finding | undefined {
-	const idx = ctx.text.indexOf('\r\n');
-	if (idx < 0) {
-		return undefined;
-	}
-	const { line, character } = positionOf(ctx.text, idx);
-	return {
-		rule: 'crlf',
-		severity: vscode.DiagnosticSeverity.Error,
-		message: '文件使用了 CRLF 行尾符。评测机是 Linux，建议在提交前转为 LF。',
-		line,
-		character,
-		length: 2,
-		detail: '把 "files.eol" 设为 "\\n"，或用「文件 -> 更改行尾符序列 -> LF」保存一次。'
-	};
-}
-
 function checkPragmaOptimize(ctx: RuleContext): Finding | undefined {
 	// only flag when the build is actually optimized, otherwise it is legal
 	if (config().get<string>('compiler.optimization', 'none') === 'none') {
@@ -114,59 +91,12 @@ function checkPragmaOptimize(ctx: RuleContext): Finding | undefined {
 	);
 }
 
-function checkOnlineJudge(ctx: RuleContext): Finding | undefined {
-	if (ctx.profile === 'custom') {
-		return undefined;
-	}
-	if (/#\s*ifdef\s+ONLINE_JUDGE|defined\s*\(\s*ONLINE_JUDGE\s*\)|#\s*ifndef\s+ONLINE_JUDGE/.test(ctx.text)) {
-		return undefined;
-	}
-	// only worth mentioning when the file actually contains debug scaffolding
-	if (!/freopen\s*\(|getchar\s*\(\s*\)|system\s*\(\s*"pause"|puts\s*\(\s*"Press/.test(ctx.text)) {
-		return undefined;
-	}
-	return {
-		rule: 'onlineJudge',
-		severity: vscode.DiagnosticSeverity.Information,
-		message: '文件里有本地调试代码，但没有用 ONLINE_JUDGE 宏区分环境。',
-		line: 0,
-		character: 0,
-		length: 1,
-		detail: '评测机会定义 ONLINE_JUDGE（洛谷为 luogu）。建议写成 #ifdef ONLINE_JUDGE 跳过调试分支。'
-	};
-}
-
-function checkMemoryLeak(ctx: RuleContext): Finding | undefined {
-	const text = stripCommentsAndStrings(ctx.text);
-	const allocs =
-		countAll(text, /\bnew\s+(?!\[)[A-Za-z_]/g) +
-		countAll(text, /\bnew\s*\[/g) +
-		countAll(text, /\bmalloc\s*\(/g) +
-		countAll(text, /\bcalloc\s*\(/g) +
-		countAll(text, /\brealloc\s*\(/g);
-	if (allocs === 0) {
-		return undefined;
-	}
-	const frees =
-		countAll(text, /\bdelete\b/g) + countAll(text, /\bfree\s*\(/g);
-	if (frees >= allocs) {
-		return undefined;
-	}
-	const idx = indexOf(/\b(?:new\s+|malloc\s*\(|calloc\s*\(|realloc\s*\()/, text);
-	const { line, character } = positionOf(ctx.text, idx < 0 ? 0 : idx);
-	return {
-		rule: 'memoryLeak',
-		severity: vscode.DiagnosticSeverity.Warning,
-		message: `分配了 ${allocs} 处，但只看到 ${frees} 处释放。评测机按峰值内存计分，可能 MLE。`,
-		line,
-		character,
-		length: 1,
-		detail: '确认每条分配路径都有对应的 delete / free；循环内分配尤其容易漏。'
-	};
-}
-
-/** Keywords that MSVC accepts as identifiers but GNU C++ does not. */
-const RESERVED = /\b(?:int|char|short|long|float|double|bool|auto|unsigned|signed|size_t|int\d*_t)\s+\**\s*(asm|bool|true|false|this|new|delete|template|typename|namespace|operator|explicit|export|friend|mutable|virtual|using)\b/g;
+/** Keywords that MSVC accepts as identifiers but GNU C++ does not: the alternative operator
+ *  names, which GNU always reserves and MSVC only reserves in conformance mode, plus `asm`.
+ *  The gap between a type and the name must stay on one line, otherwise `#define int long long`
+ *  followed by `using namespace std;` reads as a declaration and the rule invents an error.
+ */
+const RESERVED = /\b(?:unsigned|signed|short|long|float|double|void|int|char|bool|auto|size_t|int\d*_t)[ \t]+\**[ \t]*(asm|and|and_eq|bitand|bitor|compl|not|not_eq|or|or_eq|xor|xor_eq)\b[ \t]*(?![ \t]*(?:\(|::))/g;
 
 function checkReservedWord(ctx: RuleContext): Finding | undefined {
 	const text = stripCommentsAndStrings(ctx.text);
@@ -183,35 +113,8 @@ function checkReservedWord(ctx: RuleContext): Finding | undefined {
 		line,
 		character,
 		length: m[1].length,
-		detail: 'Windows 的 MSVC 允许把它当变量名，GNU 编译器不允许。这是典型的「本地 AC、赛场 CE」。'
+		detail: 'MSVC 允许把它当变量名，GNU 编译器不允许。这是典型的「本地 AC、赛场 CE」。'
 	};
-}
-
-function checkFreopen(ctx: RuleContext): Finding | undefined {
-	return finding(
-		ctx, 'freopen', vscode.DiagnosticSeverity.Warning,
-		/\bfreopen\s*\(/,
-		'检测到 freopen。评测机上没有这些本地文件，freopen 失败会让 stdin/stdout 变成空流。',
-		'把本地调试用的 freopen 放进 #ifdef ONLINE_JUDGE 的反面分支，或提交前注释掉。'
-	);
-}
-
-function checkIoMix(ctx: RuleContext): Finding | undefined {
-	const text = stripCommentsAndStrings(ctx.text);
-	const usesStream = /\b(?:cin|cout)\b/.test(text);
-	const usesCstdio = /\b(?:scanf|printf|fprintf|sprintf|sscanf|fgets|puts)\s*\(/.test(text);
-	if (!usesStream || !usesCstdio) {
-		return undefined;
-	}
-	if (/sync_with_stdio\s*\(\s*false\s*\)/.test(text)) {
-		return undefined;
-	}
-	return finding(
-		ctx, 'ioMix', vscode.DiagnosticSeverity.Warning,
-		/\b(?:cin|cout)\b/,
-		'同时使用了 cin/cout 和 scanf/printf，但没有关闭同步，输出很容易乱序。',
-		'在 main 开头加 ios::sync_with_stdio(false); cin.tie(nullptr); 或者干脆只用一种 IO。'
-	);
 }
 
 const REMOVED: ReadonlyArray<{ re: RegExp; what: string }> = [
@@ -248,15 +151,6 @@ function checkRemovedCpp(ctx: RuleContext): Finding | undefined {
 // ---------------------------------------------------------------------------------------------
 // helpers
 // ---------------------------------------------------------------------------------------------
-
-function countAll(text: string, re: RegExp): number {
-	re.lastIndex = 0;
-	let n = 0;
-	while (re.exec(text) !== null) {
-		n++;
-	}
-	return n;
-}
 
 /**
  * Removes comments and string literals so that rule matching never fires on text that only
@@ -318,18 +212,13 @@ const CHECKERS: ReadonlyArray<{
 	readonly defaultOn: boolean;
 	readonly run: (ctx: RuleContext) => Finding | undefined;
 }> = [
-		{ id: 'crlf', defaultOn: true, run: checkCrlf },
 		{ id: 'pragmaOptimize', defaultOn: true, run: checkPragmaOptimize },
-		{ id: 'onlineJudge', defaultOn: true, run: checkOnlineJudge },
-		{ id: 'memoryLeak', defaultOn: true, run: checkMemoryLeak },
 		{ id: 'reservedWord', defaultOn: true, run: checkReservedWord },
-		{ id: 'freopen', defaultOn: true, run: checkFreopen },
-		{ id: 'ioMix', defaultOn: true, run: checkIoMix },
 		{ id: 'removedCpp', defaultOn: true, run: checkRemovedCpp },
 	];
 
-export function analyse(text: string, profile: string): Finding[] {
-	const ctx: RuleContext = { text, profile };
+export function analyse(text: string): Finding[] {
+	const ctx: RuleContext = { text };
 	const findings: Finding[] = [];
 	for (const checker of CHECKERS) {
 		if (!ruleEnabled(checker.id, checker.defaultOn)) {
@@ -349,7 +238,7 @@ export function toDiagnostic(finding: Finding): vscode.Diagnostic {
 		new vscode.Position(finding.line, finding.character + Math.max(1, finding.length))
 	);
 	const diagnostic = new vscode.Diagnostic(range, finding.message, finding.severity);
-	diagnostic.source = '提交前体检';
+	diagnostic.source = PRECHECK_SOURCE;
 	if (finding.detail) {
 		diagnostic.code = finding.detail;
 	}

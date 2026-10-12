@@ -35,7 +35,7 @@ export const COLOR_THEME_CONFIGURATION_SETTINGS_TAG = 'colorThemeConfiguration';
 const colorThemeSettingSchema: IConfigurationPropertySchema = {
 	type: 'string',
 	markdownDescription: nls.localize({ key: 'colorTheme', comment: ['{0} will become a link to another setting.'] }, "指定未启用 {0} 时在工作台中使用颜色主题。", formatSettingAsLink(ThemeSettings.DETECT_COLOR_SCHEME)),
-	default: isWeb ? ThemeSettingDefaults.COLOR_THEME_LIGHT : ThemeSettingDefaults.COLOR_THEME_DARK,
+	default: isWeb ? ThemeSettingDefaults.COLOR_THEME_LIGHT : ThemeSettingDefaults.COLOR_THEME_PRODUCT_DARK,
 	tags: [COLOR_THEME_CONFIGURATION_SETTINGS_TAG],
 	enum: colorThemeSettingEnum,
 	enumDescriptions: colorThemeSettingEnumDescriptions,
@@ -45,7 +45,7 @@ const colorThemeSettingSchema: IConfigurationPropertySchema = {
 const preferredDarkThemeSettingSchema: IConfigurationPropertySchema = {
 	type: 'string', //
 	markdownDescription: nls.localize({ key: 'preferredDarkColorTheme', comment: ['{0} will become a link to another setting.'] }, "指定当系统颜色模式为深色并启用 {0} 时的颜色主题。", formatSettingAsLink(ThemeSettings.DETECT_COLOR_SCHEME)),
-	default: ThemeSettingDefaults.COLOR_THEME_DARK,
+	default: ThemeSettingDefaults.COLOR_THEME_PRODUCT_DARK,
 	tags: [COLOR_THEME_CONFIGURATION_SETTINGS_TAG],
 	enum: colorThemeSettingEnum,
 	enumDescriptions: colorThemeSettingEnumDescriptions,

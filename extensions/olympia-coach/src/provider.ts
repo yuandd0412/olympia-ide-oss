@@ -13,14 +13,16 @@
 //
 // The key lives in SecretStorage only — never settings.json (plaintext, synced) and never
 // globalState — and the entry box is a password field.
+//
+// Listing models is factored into probeModels() so the provider and the settings UI ask the
+// same question and get the same answer, including why a listing failed.
 
 import * as vscode from 'vscode';
-
-const VENDOR = 'olympia';
-const KEY_SECRET = 'olympia.coach.apiKey';
-const DEFAULT_MODELS = ['deepseek-chat', 'deepseek-reasoner'];
-const MODELS_CACHE_MS = 5 * 60 * 1000;
-const MODELS_TIMEOUT_MS = 5000;
+import {
+	CONFIG_SECTION, BASE_URL_SETTING, MODELS_SETTING, KEY_SECRET, VENDOR, VENDOR_LABEL,
+	FALLBACK_CHAT_MODELS, MODELS_CACHE_MS, MODELS_TIMEOUT_MS, MAX_INPUT_TOKENS, MAX_OUTPUT_TOKENS,
+	ERROR_SNIPPET_LEN, LATIN_CHARS_PER_TOKEN
+} from './constants';
 
 // Endpoints that answer 401 rather than 404 for `/models` (verified against api.deepseek.com on
 // 2026-10-11), but the response shape is not documented, so the parse accepts whatever an
@@ -36,6 +38,18 @@ interface ModelRow { id?: unknown; model?: unknown; name?: unknown }
 interface ModelsPayload { data?: unknown; models?: unknown }
 
 interface ModelsCache { baseUrl: string; at: number; ids: string[] }
+
+/** Where the model list currently comes from, and what went wrong when it does not. */
+export interface ModelProbe {
+	ok: boolean;
+	source: 'manual' | 'remote' | 'cache' | 'none';
+	baseUrl: string;
+	hasKey: boolean;
+	ids: string[];
+	status?: number;
+	error?: string;
+	cacheAgeSeconds?: number;
+}
 
 function rowId(row: ModelRow): string | undefined {
 	const candidates = [row.id, row.model, row.name];
@@ -83,15 +97,83 @@ export function parseModelIds(json: unknown): string[] {
 	return unique;
 }
 
-function isTextPartLike(part: unknown): part is TextPartLike {
-	return typeof part === 'object' && part !== null && typeof (part as TextPartLike).value === 'string';
-}
-
 function textOf(part: unknown): string {
 	if (typeof part === 'string') {
 		return part;
 	}
 	return isTextPartLike(part) ? part.value : '';
+}
+
+function isTextPartLike(part: unknown): part is TextPartLike {
+	return typeof part === 'object' && part !== null && typeof (part as TextPartLike).value === 'string';
+}
+
+export function readBaseUrl(): string {
+	return (vscode.workspace.getConfiguration(CONFIG_SECTION).get<string>(BASE_URL_SETTING) ?? '').trim().replace(/\/+$/, '');
+}
+
+// Empty means "ask the server", which is the default; a non-empty list wins outright so the
+// coach still works with no network round-trip and with a gateway that has no /models route.
+export function readManualModels(): string[] {
+	const models = vscode.workspace.getConfiguration(CONFIG_SECTION).get<string[]>(MODELS_SETTING);
+	return Array.isArray(models) ? models.filter(id => typeof id === 'string' && !!id.trim()) : [];
+}
+
+async function readKey(context: vscode.ExtensionContext): Promise<string> {
+	return (await context.secrets.get(KEY_SECRET)) ?? '';
+}
+
+let modelsCache: ModelsCache | undefined;
+
+/** Drops the cached listing so the next ask goes back to the server. */
+export function invalidateModelsCache(): void {
+	modelsCache = undefined;
+}
+
+/**
+ * Asks the configured endpoint what models exist, without guessing on the user's behalf: an
+ * unconfigured or unreachable service is reported, never papered over with a made-up model.
+ * The caller shows or logs `error`; nothing here pops a prompt, because core warms up silently.
+ */
+export async function probeModels(context: vscode.ExtensionContext, options?: { force?: boolean }): Promise<ModelProbe> {
+	const baseUrl = readBaseUrl();
+	const key = await readKey(context);
+	const manual = readManualModels();
+	if (manual.length) {
+		return { ok: true, source: 'manual', baseUrl, hasKey: !!key, ids: manual };
+	}
+	if (!baseUrl) {
+		return { ok: false, source: 'none', baseUrl, hasKey: !!key, ids: [], error: '还没有填写服务地址（baseUrl）' };
+	}
+	const cached = modelsCache;
+	const cacheAgeSeconds = cached && cached.baseUrl === baseUrl ? Math.round((Date.now() - cached.at) / 1000) : undefined;
+	if (!options?.force && cached && cached.baseUrl === baseUrl && (cacheAgeSeconds ?? 0) * 1000 < MODELS_CACHE_MS && cached.ids.length) {
+		return { ok: true, source: 'cache', baseUrl, hasKey: !!key, ids: cached.ids, cacheAgeSeconds };
+	}
+	const headers: Record<string, string> = key ? { authorization: `Bearer ${key}` } : {};
+	let response: Response;
+	try {
+		response = await fetch(`${baseUrl}/models`, { method: 'GET', signal: AbortSignal.timeout(MODELS_TIMEOUT_MS), headers });
+	} catch (error) {
+		return { ok: false, source: 'none', baseUrl, hasKey: !!key, ids: [], error: `连不上：${error instanceof Error ? error.message : String(error)}` };
+	}
+	if (!response.ok) {
+		return {
+			ok: false, source: 'none', baseUrl, hasKey: !!key, ids: [], status: response.status,
+			error: `服务返回 HTTP ${response.status}${response.status === 401 ? '（密钥无效或未发送）' : ''}`
+		};
+	}
+	let ids: string[];
+	try {
+		ids = parseModelIds(JSON.parse(await response.text()));
+	} catch {
+		return { ok: false, source: 'none', baseUrl, hasKey: !!key, ids: [], status: response.status, error: '返回的内容不是 JSON，无法解析模型列表' };
+	}
+	if (!ids.length) {
+		return { ok: false, source: 'none', baseUrl, hasKey: !!key, ids: [], status: response.status, error: '返回 200，但里面没有可用的模型 id（可能是网关只支持 /chat/completions）' };
+	}
+	modelsCache = { baseUrl, at: Date.now(), ids };
+	return { ok: true, source: 'remote', baseUrl, hasKey: !!key, ids };
 }
 
 export class OlympiaChatProvider implements vscode.LanguageModelChatProvider {
@@ -101,78 +183,31 @@ export class OlympiaChatProvider implements vscode.LanguageModelChatProvider {
 		private readonly log: vscode.LogOutputChannel
 	) { }
 
-	private modelsCache: ModelsCache | undefined;
-
-	private async credentials(): Promise<{ baseUrl: string; key: string } | undefined> {
-		const baseUrl = (vscode.workspace.getConfiguration('olympia.ai').get<string>('baseUrl') ?? '').replace(/\/+$/, '');
-		const key = (await this.context.secrets.get(KEY_SECRET)) ?? '';
-		if (!baseUrl || !key) {
-			return undefined;
-		}
-		return { baseUrl, key };
-	}
-
-	// Empty means "ask the server", which is the default; a non-empty list wins outright so the
-	// coach still works with no network round-trip and with a gateway that has no /models route.
-	private explicitModels(): string[] {
-		const models = vscode.workspace.getConfiguration('olympia.ai').get<string[]>('models');
-		return Array.isArray(models) ? models.filter(id => typeof id === 'string' && !!id) : [];
-	}
-
-	private async remoteModels(creds: { baseUrl: string; key: string }): Promise<string[]> {
-		const cached = this.modelsCache;
-		if (cached && cached.baseUrl === creds.baseUrl && Date.now() - cached.at < MODELS_CACHE_MS && cached.ids.length) {
-			this.log.info(`model list served from cache (${cached.ids.length} models, age ${Math.round((Date.now() - cached.at) / 1000)}s)`);
-			return cached.ids;
-		}
-		let ids: string[] = [];
-		try {
-			const response = await fetch(`${creds.baseUrl}/models`, {
-				method: 'GET',
-				signal: AbortSignal.timeout(MODELS_TIMEOUT_MS),
-				headers: { authorization: `Bearer ${creds.key}` }
-			});
-			if (!response.ok) {
-				this.log.warn(`GET ${creds.baseUrl}/models -> HTTP ${response.status}; using the built-in fallback list. Set olympia.ai.models to name your models explicitly.`);
-				return [];
-			}
-			ids = parseModelIds(JSON.parse(await response.text()));
-			if (!ids.length) {
-				this.log.warn(`GET ${creds.baseUrl}/models returned 200 but no usable model ids; using the built-in fallback list.`);
-				return [];
-			}
-		} catch (error) {
-			this.log.warn(`could not list models from ${creds.baseUrl}/models: ${error instanceof Error ? error.message : String(error)}; using the built-in fallback list.`);
-			return [];
-		}
-		this.modelsCache = { baseUrl: creds.baseUrl, at: Date.now(), ids };
-		this.log.info(`listed ${ids.length} models from ${creds.baseUrl}/models`);
-		return ids;
-	}
-
-	invalidateModelsCache(): void {
-		this.modelsCache = undefined;
-	}
-
 	async provideLanguageModelChatInformation(_options: vscode.PrepareLanguageModelChatModelOptions, _token: vscode.CancellationToken): Promise<vscode.LanguageModelChatInformation[]> {
-		const creds = await this.credentials();
-		if (!creds) {
+		const baseUrl = readBaseUrl();
+		const key = await readKey(this.context);
+		if (!baseUrl || !key) {
 			// Silent calls happen while core warms up; prompting there would be noise.
 			return [];
 		}
-		const explicit = this.explicitModels();
-		const ids = explicit.length ? explicit : await this.remoteModels(creds);
-		return (ids.length ? ids : DEFAULT_MODELS).map(id => ({
+		const probe = await probeModels(this.context);
+		if (!probe.ok) {
+			this.log.warn(`${probe.error ?? '未知原因'}；回落到内置模型列表，可在 Olympia AI 设置里手动指定。`);
+		} else if (probe.source === 'remote') {
+			this.log.info(`已从 ${probe.baseUrl}/models 读到 ${probe.ids.length} 个模型`);
+		}
+		const ids = probe.ids.length ? probe.ids : [...FALLBACK_CHAT_MODELS];
+		return ids.map(id => ({
 			vendor: VENDOR,
 			id,
 			name: id,
 			family: 'Olympia',
 			version: '1',
-			maxInputTokens: 64000,
-			maxOutputTokens: 8000,
+			maxInputTokens: MAX_INPUT_TOKENS,
+			maxOutputTokens: MAX_OUTPUT_TOKENS,
 			capabilities: { toolCalling: false, imageInput: false },
 			tooltip: id,
-			detail: '通过 Olympia BYOK 调用'
+			detail: `通过 ${VENDOR_LABEL} 调用`
 		}));
 	}
 
@@ -190,22 +225,23 @@ export class OlympiaChatProvider implements vscode.LanguageModelChatProvider {
 	}
 
 	async provideLanguageModelChatResponse(model: vscode.LanguageModelChatInformation, messages: readonly vscode.LanguageModelChatRequestMessage[], _options: vscode.ProvideLanguageModelChatResponseOptions, progress: vscode.Progress<vscode.LanguageModelResponsePart>, token: vscode.CancellationToken): Promise<void> {
-		const creds = await this.credentials();
-		if (!creds) {
-			throw new Error('Olympia BYOK: 缺少 baseUrl 或 API Key');
+		const baseUrl = readBaseUrl();
+		const key = await readKey(this.context);
+		if (!baseUrl || !key) {
+			throw new Error(`${VENDOR_LABEL}: 缺少 baseUrl 或 API Key，请在 Olympia AI 设置里填写`);
 		}
 		const abort = new AbortController();
 		const subscription = token.onCancellationRequested(() => abort.abort());
 		try {
-			const response = await fetch(`${creds.baseUrl}/chat/completions`, {
+			const response = await fetch(`${baseUrl}/chat/completions`, {
 				method: 'POST',
 				signal: abort.signal,
-				headers: { 'content-type': 'application/json', authorization: `Bearer ${creds.key}` },
+				headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
 				body: JSON.stringify({ model: model.id, stream: true, messages: this.toChatMessages(messages) })
 			});
 			if (!response.ok || !response.body) {
-				const snippet = (await response.text()).slice(0, 200);
-				throw new Error(`Olympia BYOK: HTTP ${response.status} ${snippet}`);
+				const snippet = (await response.text()).slice(0, ERROR_SNIPPET_LEN);
+				throw new Error(`${VENDOR_LABEL}: HTTP ${response.status} ${snippet}`);
 			}
 			// Server-Sent Events: `data: {json}` lines, terminated by `data: [DONE]`.
 			const reader = response.body.getReader();
@@ -252,8 +288,23 @@ export class OlympiaChatProvider implements vscode.LanguageModelChatProvider {
 		// only feeds context-budget estimates.
 		const cjk = (raw.match(/[㐀-鿿]/g) ?? []).length;
 		const other = raw.length - cjk;
-		return Math.max(1, Math.round(cjk + other / 4));
+		return Math.max(1, Math.round(cjk + other / LATIN_CHARS_PER_TOKEN));
 	}
+}
+
+export async function setApiKey(context: vscode.ExtensionContext, key: string): Promise<void> {
+	if (key) {
+		await context.secrets.store(KEY_SECRET, key);
+	} else {
+		await context.secrets.delete(KEY_SECRET);
+	}
+	invalidateModelsCache();
+}
+
+/** Last few characters, safe to show; the key itself never leaves SecretStorage. */
+export async function apiKeyTail(context: vscode.ExtensionContext): Promise<string> {
+	const key = (await context.secrets.get(KEY_SECRET)) ?? '';
+	return key.length <= 4 ? '' : key.slice(-4);
 }
 
 export function registerProvider(context: vscode.ExtensionContext, log: vscode.LogOutputChannel): void {
@@ -263,29 +314,8 @@ export function registerProvider(context: vscode.ExtensionContext, log: vscode.L
 	// A stale cache would hide a model the user just added at their provider, and a changed baseUrl
 	// must never be served the previous host's list.
 	context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(e => {
-		if (e.affectsConfiguration('olympia.ai')) {
-			provider.invalidateModelsCache();
+		if (e.affectsConfiguration(CONFIG_SECTION)) {
+			invalidateModelsCache();
 		}
-	}));
-
-	context.subscriptions.push(vscode.commands.registerCommand('olympia.coach.setApiKey', async () => {
-		const key = await vscode.window.showInputBox({
-			title: '设置 Olympia AI 教练的 API Key',
-			placeHolder: 'sk-…',
-			password: true,
-			ignoreFocusOut: true,
-			prompt: '密钥保存在本机 SecretStorage 中，不会写进 settings.json，也不会同步或上传。留空表示清除。'
-		});
-		if (key === undefined) {
-			return;
-		}
-		if (key === '') {
-			await context.secrets.delete(KEY_SECRET);
-			await vscode.window.showInformationMessage('已清除 API Key。');
-			return;
-		}
-		await context.secrets.store(KEY_SECRET, key);
-		const baseUrl = vscode.workspace.getConfiguration('olympia.ai').get<string>('baseUrl') ?? '(未设置)';
-		await vscode.window.showInformationMessage(`API Key 已保存。请确认 baseUrl 正确：${baseUrl}`);
 	}));
 }

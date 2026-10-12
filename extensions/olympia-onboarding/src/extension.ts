@@ -19,42 +19,12 @@ import {
 	registerCompileTaskProvider, compileCurrentFile, compileJudgeAccurate, compileAndRun
 } from './compile';
 import { resolveCompiler, type ResolvedCompiler, type CompilerSource } from './toolchain';
+import { OJ_TARGETS, OJTarget, CUSTOM_TARGET_ID, activeTarget, profileId, renderFlags } from './ojTargets';
+import { registerToolsView } from './toolsView';
+import { registerStatusBar } from './statusBar';
 
 const WEBSITE = 'https://olympia.dpdns.org';
 const DOCS = 'https://olympia.dpdns.org/docs';
-
-/** A judge environment we know how to reproduce locally. */
-export interface OJTarget {
-	readonly id: string;
-	readonly label: string;
-	/** GCC version the judge runs. */
-	readonly gcc: string;
-	/** C++ standard the judge accepts. */
-	readonly std: string;
-	/** Environment variable the judge defines. */
-	readonly onlineJudge: string;
-	/** Exact switch set published by the judge. */
-	readonly flags: string;
-}
-
-const OJ_TARGETS: readonly OJTarget[] = [
-	{
-		id: 'luogu',
-		label: '洛谷',
-		gcc: '15.1.0',
-		std: 'c++23',
-		onlineJudge: 'ONLINE_JUDGE=luogu',
-		flags: '-x c++ -std=c++23 -fPIC -DONLINE_JUDGE -Wall -fno-asm -lm -march=native'
-	},
-	{
-		id: 'noi',
-		label: 'NOI Linux 2.0',
-		gcc: '9.3.0',
-		std: 'c++14',
-		onlineJudge: 'ONLINE_JUDGE=noi',
-		flags: '-x c++ -std=c++14 -fPIC -DONLINE_JUDGE -Wall -fno-asm -lm -march=native'
-	}
-];
 
 export interface TargetMatch {
 	readonly target: OJTarget;
@@ -165,17 +135,15 @@ interface ProfileItem {
 }
 
 async function pickCompileProfile(): Promise<void> {
-	const current = vscode.workspace
-		.getConfiguration('olympia')
-		.get<string>('compiler.profile', 'luogu');
+	const current = profileId();
 
 	const items: ProfileItem[] = OJ_TARGETS.map(target => ({
 		id: target.id,
 		label: target.label,
 		description: `GCC ${target.gcc} · ${target.std.toUpperCase()}`,
-		detail: target.flags
+		detail: renderFlags(target)
 	}));
-	items.push({ id: 'custom', label: '自定义', description: '自己指定编译参数' });
+	items.push({ id: CUSTOM_TARGET_ID, label: '自定义', description: '自己指定编译参数' });
 
 	// QuickPickOptions.currentItem no longer exists in the 1.140 extension API,
 	// so the active profile is surfaced by ordering it first instead.
@@ -200,12 +168,10 @@ async function pickCompileProfile(): Promise<void> {
 /** The full g++ command line Olympia would use for the active profile. */
 export function currentCompileFlags(): string {
 	const config = vscode.workspace.getConfiguration('olympia');
-	const profile = config.get<string>('compiler.profile', 'luogu');
-	if (profile === 'custom') {
+	if (profileId() === CUSTOM_TARGET_ID) {
 		return config.get<string>('compiler.customFlags', '').trim();
 	}
-	const target = OJ_TARGETS.find(item => item.id === profile);
-	return target ? target.flags : OJ_TARGETS[0].flags;
+	return renderFlags(activeTarget());
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -218,19 +184,15 @@ function runCheck(document: vscode.TextDocument, surface: 'problems' | 'quiet'):
 	if (!diagnostics || !SOURCE_FILES.test(document.fileName)) {
 		return;
 	}
-	const profile = vscode.workspace.getConfiguration('olympia').get<string>('compiler.profile', 'luogu');
-	const findings = analyse(document.getText(), profile);
+	const findings = analyse(document.getText());
 	diagnostics.set(document.uri, findings.map(toDiagnostic));
 
 	if (surface === 'quiet' || findings.length === 0) {
 		return;
 	}
-	const errors = findings.filter(f => f.severity === vscode.DiagnosticSeverity.Error).length;
-	const warnings = findings.length - errors;
-	const summary = errors > 0
-		? `提交前体检：发现 ${errors} 个严重问题、${warnings} 个提醒`
-		: `提交前体检：发现 ${warnings} 个提醒`;
-	void vscode.window.showWarningMessage(summary, '查看问题', '忽略').then(choice => {
+	// every rule reports something the judge's compiler rejects, so one wording is enough
+	const summary = `提交前体检：${findings.length} 处写法会在评测机上编译失败`;
+	void vscode.window.showErrorMessage(summary, '查看问题', '忽略').then(choice => {
 		if (choice === '查看问题') {
 			void vscode.commands.executeCommand('workbench.actions.view.problems');
 		}
@@ -246,7 +208,7 @@ async function preSubmitCheck(): Promise<void> {
 	runCheck(editor.document, 'problems');
 	const found = diagnostics?.get(editor.document.uri) ?? [];
 	if (found.length === 0) {
-		void vscode.window.showInformationMessage('提交前体检：没有发现问题，可以提交了。');
+		void vscode.window.showInformationMessage('提交前体检：没有会导致编译失败的写法，可以提交了。');
 	}
 }
 
@@ -269,6 +231,11 @@ export function activate(context: vscode.ExtensionContext): void {
 	);
 
 	context.subscriptions.push(registerCompileTaskProvider());
+
+	// the persistent bars: the activity-bar panel and the status-bar chips. The palette stays
+	// available, but it is no longer the only way to reach any of this.
+	registerToolsView(context);
+	registerStatusBar(context);
 
 	// run on save, silently: the Problems panel is the surface, not a modal
 	context.subscriptions.push(

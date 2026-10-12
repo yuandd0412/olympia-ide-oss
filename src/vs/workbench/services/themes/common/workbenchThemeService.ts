@@ -12,6 +12,7 @@ import { isBoolean, isString } from '../../../../base/common/types.js';
 import { IconContribution, IconDefinition } from '../../../../platform/theme/common/iconRegistry.js';
 import { ColorScheme, ThemeTypeSelector } from '../../../../platform/theme/common/theme.js';
 import { IDisposable } from '../../../../base/common/lifecycle.js';
+import product from '../../../../platform/product/common/product.js';
 
 export const IWorkbenchThemeService = refineServiceDecorator<IThemeService, IWorkbenchThemeService>(IThemeService);
 
@@ -44,6 +45,13 @@ export namespace ThemeSettingDefaults {
 	export const COLOR_THEME_LIGHT = 'Light 2026';
 	export const COLOR_THEME_HC_DARK = 'Default High Contrast';
 	export const COLOR_THEME_HC_LIGHT = 'Default High Contrast Light';
+
+	/**
+	 * The dark theme a profile with no stored choice starts on. A product can name its own theme
+	 * through `defaultColorTheme` in product.json; the built-in ids above stay untouched, because
+	 * the light / high-contrast paths and the theme migration still key off them.
+	 */
+	export const COLOR_THEME_PRODUCT_DARK = product.defaultColorTheme ?? COLOR_THEME_DARK;
 
 	export const FILE_ICON_THEME = 'vs-seti';
 	export const PRODUCT_ICON_THEME = 'Default';

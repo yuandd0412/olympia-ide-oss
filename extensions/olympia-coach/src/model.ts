@@ -11,8 +11,9 @@
  *  expected to say so instead of answering from the prompt alone.
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
+import { CHOSEN_MODEL_STATE_KEY, SETTINGS_COMMAND } from './constants';
 
-const CHOSEN_KEY = 'olympia.coach.model';
+const CHOSEN_KEY = CHOSEN_MODEL_STATE_KEY;
 
 /** Models the user has actually granted this extension access to. */
 export async function listModels(): Promise<vscode.LanguageModelChat[]> {
@@ -47,8 +48,13 @@ export function registerModelPicker(context: vscode.ExtensionContext): void {
 	context.subscriptions.push(vscode.commands.registerCommand('olympia.coach.selectModel', async () => {
 		const models = await listModels();
 		if (models.length === 0) {
-			await vscode.window.showInformationMessage(
-				'还没有可用的语言模型。请先运行「Olympia：设置 AI 教练的 API Key」，并在设置里填写 olympia.ai.baseUrl（olympia.ai.models 留空即自动从该地址的 /models 读取模型列表）。原因会写在输出面板「Olympia AI Coach」里。');
+			const OPEN = '打开 Olympia AI 设置';
+			const choice = await vscode.window.showInformationMessage(
+				'还没有可用的语言模型：需要先填服务地址和 API Key。填好后教练会自动读取该地址的 /models 作为模型列表。',
+				OPEN);
+			if (choice === OPEN) {
+				await vscode.commands.executeCommand(SETTINGS_COMMAND);
+			}
 			return;
 		}
 		const picked = await vscode.window.showQuickPick(

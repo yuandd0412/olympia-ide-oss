@@ -30,7 +30,8 @@
 			{
 				"command": "olympia.problem.pull",
 				"title": "拉取题面...",
-				"category": "Olympia 竞赛"
+				"category": "Olympia 竞赛",
+				"icon": "$(cloud-download)"
 			},
 			{
 				"command": "olympia.problem.pullFromClipboard",
@@ -40,7 +41,8 @@
 			{
 				"command": "olympia.template.insert",
 				"title": "插入赛制模板...",
-				"category": "Olympia 竞赛"
+				"category": "Olympia 竞赛",
+				"icon": "$(file-code)"
 			},
 			{
 				"command": "olympia.problem.openStatement",
@@ -65,6 +67,18 @@
 				{
 					"command": "olympia.problem.openStatement",
 					"when": "true"
+				}
+			],
+			"editor/title": [
+				{
+					"command": "olympia.problem.pull",
+					"group": "navigation@5",
+					"when": "resourceLangId == cpp || resourceLangId == c"
+				},
+				{
+					"command": "olympia.template.insert",
+					"group": "navigation@6",
+					"when": "resourceLangId == cpp || resourceLangId == c"
 				}
 			],
 			"explorer/context": [

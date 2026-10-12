@@ -5,14 +5,24 @@
 
 import { escape } from '../../../../../base/common/strings.js';
 import { localize } from '../../../../../nls.js';
+import product from '../../../../../platform/product/common/product.js';
 import { ThemeSettingDefaults } from '../../../../services/themes/common/workbenchThemeService.js';
+
+/**
+ * 出厂默认主题。产品没有 `defaultColorTheme` 时退回上游的「深色现代」，
+ * 于是这个文件对 fork 和对本仓库都是同一份代码。
+ */
+const PRODUCT_DARK = ThemeSettingDefaults.COLOR_THEME_PRODUCT_DARK;
+const PRODUCT_DARK_LABEL = product.defaultColorTheme
+	? localize('productDark', "Olympia 默认 · {0}", product.defaultColorTheme)
+	: localize('dark', "深色现代");
 
 export default () => `
 <checklist>
 	<div class="theme-picker-row">
-		<checkbox when-checked="setTheme:${ThemeSettingDefaults.COLOR_THEME_DARK}" checked-on="config.workbench.colorTheme == '${ThemeSettingDefaults.COLOR_THEME_DARK}'">
+		<checkbox when-checked="setTheme:${PRODUCT_DARK}" checked-on="config.workbench.colorTheme == '${PRODUCT_DARK}'">
 			<img width="200" src="./dark.png"/>
-			${escape(localize('dark', "深色现代"))}
+			${escape(PRODUCT_DARK_LABEL)}
 		</checkbox>
 		<checkbox when-checked="setTheme:${ThemeSettingDefaults.COLOR_THEME_LIGHT}" checked-on="config.workbench.colorTheme == '${ThemeSettingDefaults.COLOR_THEME_LIGHT}'">
 			<img width="200" src="./light.png"/>

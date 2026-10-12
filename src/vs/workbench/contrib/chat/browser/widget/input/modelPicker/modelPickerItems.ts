@@ -78,9 +78,10 @@ export function createManageModelsAction(commandService: ICommandService): IActi
 		run: () => {
 			if (product.defaultChatAgent?.byokOnly) {
 				// `workbench.action.chat.manage` is contributed by the Copilot chat extension, which
-				// this product does not ship, so the item would silently do nothing. Send the user to
-				// the settings that actually drive our own provider instead.
-				commandService.executeCommand('workbench.action.openSettings', 'olympia.ai');
+				// this product does not ship, so the item would silently do nothing. Our own provider
+				// has a single settings page covering address, key and models — open that instead of
+				// dumping the user into the generic settings search.
+				commandService.executeCommand('olympia.ai.settings');
 			} else {
 				commandService.executeCommand(MANAGE_CHAT_COMMAND_ID);
 			}

@@ -1,6 +1,7 @@
 {
 	"nameShort": "Olympia",
 	"nameLong": "Olympia IDE",
+	"defaultColorTheme": "One Dark Pro",
 	"applicationName": "olympia",
 	"dataFolderName": ".olympia-ide",
 	"sharedDataFolderName": ".olympia-ide-shared",
@@ -146,6 +147,12 @@
 	],
 	"onboardingThemes": [
 		{
+			"id": "one-dark-pro",
+			"label": "One Dark Pro（出厂默认）",
+			"themeId": "One Dark Pro",
+			"type": "dark"
+		},
+		{
 			"id": "dark-2026",
 			"label": "Dark 2026",
 			"themeId": "Dark 2026",
@@ -158,12 +165,6 @@
 			"type": "hcDark"
 		},
 		{
-			"id": "solarized-dark",
-			"label": "Solarized Dark",
-			"themeId": "Solarized Dark",
-			"type": "dark"
-		},
-		{
 			"id": "light-2026",
 			"label": "Light 2026",
 			"themeId": "Light 2026",
@@ -174,12 +175,6 @@
 			"label": "Light High Contrast",
 			"themeId": "Default High Contrast Light",
 			"type": "hcLight"
-		},
-		{
-			"id": "solarized-light",
-			"label": "Solarized Light",
-			"themeId": "Solarized Light",
-			"type": "light"
 		}
 	],
 	"builtInExtensionsEnabledWithAutoUpdates": [],
