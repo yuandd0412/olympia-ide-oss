@@ -77,7 +77,7 @@
 			]
 		},
 		"configuration": {
-			"title": "Olympia AI 教练",
+			"title": "AI 教练",
 			"properties": {
 				"olympia.ai.baseUrl": {
 					"type": "string",

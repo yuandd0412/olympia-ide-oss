@@ -478,6 +478,10 @@ export function resolveConfiguredUntrustedSettings(groups: ISettingsGroup[], tar
 }
 
 export async function createTocTreeForExtensionSettings(extensionService: IExtensionService, groups: ISettingsGroup[], filter: ITOCFilter | undefined): Promise<ITOCEntry<ISetting>> {
+	// Olympia 的三个内置扩展（onboarding / contest / coach）在产品里是同一个东西，但默认按扩展名
+	// 分成三节，学生找一个开关要在三节之间来回翻。合并成一节，子标题用各扩展自己的分组名。
+	const OLYMPIA_SETTINGS_ROOT = 'olympia';
+	const isOlympiaExtensionId = (id: string) => id.startsWith(`${OLYMPIA_SETTINGS_ROOT}.`);
 	const extGroupTree = new Map<string, ITOCEntry<ISetting>>();
 	const addEntryToTree = (extensionId: string, extensionName: string, childEntry: ITOCEntry<ISetting>) => {
 		if (!extGroupTree.has(extensionId)) {
@@ -511,7 +515,10 @@ export async function createTocTreeForExtensionSettings(extensionService: IExten
 			order: group.order,
 			settings
 		};
-		addEntryToTree(extensionId, extensionName, childEntry);
+		addEntryToTree(
+			isOlympiaExtensionId(extensionId) ? OLYMPIA_SETTINGS_ROOT : extensionId,
+			isOlympiaExtensionId(extensionId) ? localize('olympiaSettingsRoot', "Olympia") : extensionName,
+			childEntry);
 	};
 
 	const processPromises = groups.map(g => processGroupEntry(g));

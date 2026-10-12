@@ -121,7 +121,7 @@
 			}
 		],
 		"configuration": {
-			"title": "Olympia 竞赛助手",
+			"title": "题面与模板",
 			"properties": {
 				"olympia.problem.problemsDir": {
 					"type": "string",

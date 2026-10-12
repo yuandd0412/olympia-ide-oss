@@ -32,7 +32,9 @@ const COMMONLY_USED_SETTINGS: readonly string[] = [
 	'editor.fontSize',
 	'editor.formatOnSave',
 	'files.autoSave',
-	'GitHub.copilot-chat.manageExtension',
+	// 原来这里是 GitHub.copilot-chat.manageExtension：本产品不装那个扩展，这条在「常用」里
+	// 只会静默消失。学生最常改的是按哪家评测机编译。
+	'olympia.compiler.profile',
 	'editor.defaultFormatter',
 	'editor.fontFamily',
 	'editor.wordWrap',
@@ -71,23 +73,10 @@ export const tocData: ITOCEntry<string> = {
 	id: 'root',
 	label: 'root',
 	children: [
-		{
-			id: 'olympia',
-			label: localize('olympia', "Olympia"),
-			settings: ['olympia.*'],
-			children: [
-				{
-					id: 'olympia/compiler',
-					label: localize('olympiaCompiler', "编译器"),
-					settings: ['olympia.compiler.*']
-				},
-				{
-					id: 'olympia/welcome',
-					label: localize('olympiaWelcome', "起始页"),
-					settings: ['olympia.startPage.*']
-				}
-			]
-		},
+		// Olympia 自己的设置全部来自内置扩展（olympia-onboarding / -contest / -coach），而
+		// resolveSettingsTree 只吃核心设置组（settingsEditor2.ts:1512 传的是 coreSettingsGroups），
+		// 所以在这里加 Olympia 分类不会有效果。三个扩展合并成一节的做法在
+		// settingsTree.ts 的 createTocTreeForExtensionSettings 里。
 		{
 			id: 'editor',
 			label: localize('textEditor', "文本编辑器"),
