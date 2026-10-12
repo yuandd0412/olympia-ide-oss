@@ -283,6 +283,18 @@
 				]
 			}
 		],
+		"taskDefinitions": [
+			{
+				"type": "olympia-compile",
+				"properties": {
+					"source": {
+						"type": "string",
+						"description": "要编译的源文件绝对路径。留空则编译当前活动文件。",
+						"default": ""
+					}
+				}
+			}
+		],
 		"configuration": {
 			"title": "编译器与评测",
 			"properties": {
