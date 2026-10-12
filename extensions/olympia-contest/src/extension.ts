@@ -16,6 +16,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { detectPlatform, fetchProblem, type Platform, type Problem } from './sources';
 import { renderStatement, templateFor, FORMAT_LABEL, type ContestFormat } from './templates';
+import { registerCppSnippets } from './snippets';
 
 const PLATFORM_LABEL: Record<Platform, string> = {
 	luogu: '洛谷',
@@ -190,6 +191,8 @@ export function activate(context: vscode.ExtensionContext): void {
 		vscode.commands.registerCommand('olympia.template.insert', insertTemplate),
 		vscode.commands.registerCommand('olympia.problem.openStatement', openCached),
 	);
+
+	context.subscriptions.push(registerCppSnippets());
 }
 
 export function deactivate(): void {
