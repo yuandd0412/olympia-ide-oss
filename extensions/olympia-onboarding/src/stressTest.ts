@@ -18,6 +18,8 @@ import { CMD } from './commands';
 
 const STATE_KEY = 'olympia.stress.roles';
 const CHANNEL_TITLE = 'Olympia 对拍';
+/** 一次扫描最多列这么多源文件：题解目录里上千个 .cpp 的工程，选择列表不能无限长。 */
+const MAX_SOURCES_SCANNED = 400;
 
 type Role = 'solution' | 'brute' | 'generator';
 
@@ -73,7 +75,7 @@ function sameOutput(left: string, right: string): boolean {
 }
 
 async function listSources(): Promise<vscode.Uri[]> {
-	const found = await vscode.workspace.findFiles('**/*.{cpp,cc,cxx,c}', '**/{node_modules,out,build,.git,dist}/**', 400);
+	const found = await vscode.workspace.findFiles('**/*.{cpp,cc,cxx,c}', '**/{node_modules,out,build,.git,dist}/**', MAX_SOURCES_SCANNED);
 	return found.sort((a, b) => a.fsPath.localeCompare(b.fsPath));
 }
 

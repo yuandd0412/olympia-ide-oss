@@ -18,7 +18,7 @@
 import * as vscode from 'vscode';
 import {
 	CONFIG_SECTION, BASE_URL_SETTING, MODELS_SETTING, EXAMPLE_BASE_URL, FALLBACK_CHAT_MODELS,
-	CHOSEN_MODEL_STATE_KEY, SETTINGS_COMMAND
+	CHOSEN_MODEL_STATE_KEY, SETTINGS_COMMAND, SHOW_LOG_COMMAND
 } from './constants';
 import { probeModels, readBaseUrl, readManualModels, setApiKey, apiKeyTail, invalidateModelsCache, type ModelProbe } from './provider';
 
@@ -233,7 +233,7 @@ async function showApiKeyDialog(context: vscode.ExtensionContext): Promise<void>
 
 export function registerSettingsPanel(context: vscode.ExtensionContext, log: vscode.LogOutputChannel): void {
 	context.subscriptions.push(vscode.commands.registerCommand('olympia.coach.setApiKey', () => showApiKeyDialog(context)));
-	context.subscriptions.push(vscode.commands.registerCommand('olympia.coach.showLog', () => log.show(true)));
+	context.subscriptions.push(vscode.commands.registerCommand(SHOW_LOG_COMMAND, () => log.show(true)));
 
 	context.subscriptions.push(vscode.commands.registerCommand(SETTINGS_COMMAND, async () => {
 		if (openPanel) {
@@ -302,7 +302,7 @@ export function registerSettingsPanel(context: vscode.ExtensionContext, log: vsc
 					await vscode.commands.executeCommand('workbench.action.openSettingsJson');
 					break;
 				case 'showLog':
-					await vscode.commands.executeCommand('olympia.coach.showLog');
+					await vscode.commands.executeCommand(SHOW_LOG_COMMAND);
 					break;
 			}
 			await refresh(context, panel, false);

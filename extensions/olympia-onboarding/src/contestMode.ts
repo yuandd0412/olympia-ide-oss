@@ -16,6 +16,12 @@ const ENDS_AT_KEY = 'olympia.contest.endsAt';
 const ENDED_AT_KEY = 'olympia.contest.endedAt';
 /** 常见赛制时长（分钟），自定义走输入框。 */
 const DURATIONS: readonly number[] = [60, 90, 120, 180, 240, 300, 360];
+/** CSP / NOIP 那一档：既要在选择列表里标出来，也是自定义输入框的预填值。 */
+const DEFAULT_CONTEST_MINUTES = 120;
+const CONTEST_MINUTES_MIN = 1;
+const CONTEST_MINUTES_MAX = 600;
+/** 倒计时要比编译器、运行、体检三个 chip 更靠左，所以优先级最高。 */
+const STATUS_PRIORITY = 110;
 
 let statusItem: vscode.StatusBarItem | undefined;
 let ticker: NodeJS.Timeout | undefined;
@@ -121,7 +127,7 @@ function start(context: vscode.ExtensionContext, minutes: number): void {
 async function askDuration(): Promise<number | undefined> {
 	const picked = await vscode.window.showQuickPick(
 		[
-			...DURATIONS.map(minutes => ({ label: `${minutes} 分钟`, description: minutes === 120 ? 'CSP / NOIP 常见时长' : undefined, minutes })),
+			...DURATIONS.map(minutes => ({ label: `${minutes} 分钟`, description: minutes === DEFAULT_CONTEST_MINUTES ? 'CSP / NOIP 常见时长' : undefined, minutes })),
 			{ label: '自定义…', description: '输入分钟数', minutes: 0 }
 		],
 		{ title: '比赛时长', ignoreFocusOut: true }
@@ -134,11 +140,13 @@ async function askDuration(): Promise<number | undefined> {
 	}
 	const raw = await vscode.window.showInputBox({
 		prompt: '比赛时长（分钟）',
-		value: '120',
+		value: String(DEFAULT_CONTEST_MINUTES),
 		ignoreFocusOut: true,
 		validateInput: v => {
 			const n = Number(v.trim());
-			return Number.isFinite(n) && n >= 1 && n <= 600 ? undefined : '请输入 1 到 600 之间的分钟数';
+			return n >= CONTEST_MINUTES_MIN && n <= CONTEST_MINUTES_MAX
+				? undefined
+				: `请输入 ${CONTEST_MINUTES_MIN} 到 ${CONTEST_MINUTES_MAX} 之间的分钟数`;
 		}
 	});
 	const minutes = Number((raw ?? '').trim());
@@ -146,7 +154,7 @@ async function askDuration(): Promise<number | undefined> {
 }
 
 export function registerContestMode(context: vscode.ExtensionContext): vscode.Disposable {
-	statusItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 110);
+	statusItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, STATUS_PRIORITY);
 	statusItem.command = CMD.contestMode;
 
 	const stored = context.workspaceState.get<number>(ENDS_AT_KEY);

@@ -19,12 +19,13 @@ import { registerCoachParticipant } from './coach';
 import { listModels, registerModelPicker } from './model';
 import { registerProvider } from './provider';
 import { registerSettingsPanel } from './settingsPanel';
+import { CHOSEN_MODEL_STATE_KEY, OUTPUT_CHANNEL_NAME } from './constants';
 
 export function activate(context: vscode.ExtensionContext): void {
 	// Created before the provider registers: it logs why a model listing fell back to the built-in
 	// list, which is the only trace of a network failure the user can see.
 	// Id ends up as `<extensionId>.<label>.log`, which is the value product.json advertises.
-	const log = vscode.window.createOutputChannel('Olympia AI Coach', { log: true });
+	const log = vscode.window.createOutputChannel(OUTPUT_CHANNEL_NAME, { log: true });
 	context.subscriptions.push(log);
 
 	registerProvider(context, log);
@@ -36,7 +37,7 @@ export function activate(context: vscode.ExtensionContext): void {
 		const models = await listModels();
 		return {
 			version: context.extension?.packageJSON.version ?? '0.0.0',
-			chosenModel: context.globalState.get<string>('olympia.coach.model') ?? null,
+			chosenModel: context.globalState.get<string>(CHOSEN_MODEL_STATE_KEY) ?? null,
 			availableModels: models.map(model => ({ id: model.id, name: model.name, vendor: model.vendor, family: model.family })),
 		};
 	}));

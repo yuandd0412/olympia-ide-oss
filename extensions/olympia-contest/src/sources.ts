@@ -72,6 +72,10 @@ export function detectPlatform(raw: string): Platform | undefined {
 
 // ------------------------------------------------------------------ 洛谷
 
+/** 两个平台的入口地址集中在这里，题面页、API、Referer 都从这里拼，换域名只改一处。 */
+const LUOGU_ORIGIN = 'https://www.luogu.com.cn';
+const CODEFORCES_ORIGIN = 'https://codeforces.com';
+
 const LUOGU_DIFFICULTY = ['', '暂无评分', '入门', '普及-', '普及/提高-', '提高+/省选-', 'NOI/NOI+/CTSC'];
 
 export async function fetchLuogu(id: string, timeoutMs: number): Promise<Problem> {
@@ -79,7 +83,7 @@ export async function fetchLuogu(id: string, timeoutMs: number): Promise<Problem
 	if (!/^P\d{3,5}$/.test(pid)) {
 		throw new Error('洛谷题号格式应为 P1001 这样。');
 	}
-	const url = `https://www.luogu.com.cn/problem/${pid}`;
+	const url = `${LUOGU_ORIGIN}/problem/${pid}`;
 	const { body } = await fetchText(url, timeoutMs);
 
 	const m = /<script[^>]*id=["']lentille-context["'][^>]*>([\s\S]*?)<\/script>/i.exec(body);
@@ -143,7 +147,7 @@ export async function fetchCodeforces(id: string, timeoutMs: number, fetchMetada
 	if (!ref) {
 		throw new Error('Codeforces 题号请写成「场次编号+题号字母」，例如 1660C 或 1660/C。');
 	}
-	const url = `https://codeforces.com/contest/${ref.contestId}/problem/${ref.index}`;
+	const url = `${CODEFORCES_ORIGIN}/contest/${ref.contestId}/problem/${ref.index}`;
 
 	// Metadata comes from the official API, which is NOT behind Cloudflare. It is opt-in
 	// because the only endpoint that reliably answers here is `problemset.problems` (~10 MB),
@@ -151,8 +155,8 @@ export async function fetchCodeforces(id: string, timeoutMs: number, fetchMetada
 	let meta: CfProblem | undefined;
 	if (fetchMetadata) {
 		const apiTries = [
-			`https://codeforces.com/api/contest.standings?contestId=${ref.contestId}&from=1&count=5`,
-			'https://codeforces.com/api/problemset.problems',
+			`${CODEFORCES_ORIGIN}/api/contest.standings?contestId=${ref.contestId}&from=1&count=5`,
+			`${CODEFORCES_ORIGIN}/api/problemset.problems`,
 		];
 		for (const api of apiTries) {
 			try {
@@ -175,7 +179,7 @@ export async function fetchCodeforces(id: string, timeoutMs: number, fetchMetada
 	let statement = '';
 	let note = '';
 	try {
-		const r = await fetchText(url, timeoutMs, { Referer: 'https://codeforces.com/' });
+		const r = await fetchText(url, timeoutMs, { Referer: `${CODEFORCES_ORIGIN}/` });
 		const inner = sliceByMarker(r.body, 'problem-statement', 'div');
 		if (inner) { statement = htmlToMarkdown(inner); }
 	} catch (err: any) {

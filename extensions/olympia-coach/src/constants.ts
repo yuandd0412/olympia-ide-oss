@@ -48,3 +48,4 @@ export const OUTPUT_CHANNEL_NAME = 'Olympia AI Coach';
 
 /** Name of the settings command, so other surfaces (model picker, walkthroughs) can link to it. */
 export const SETTINGS_COMMAND = 'olympia.ai.settings';
+export const SHOW_LOG_COMMAND = 'olympia.coach.showLog';
