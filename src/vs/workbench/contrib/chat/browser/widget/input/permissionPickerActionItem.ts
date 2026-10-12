@@ -137,7 +137,7 @@ function getPermissionLevelMeta(level: ChatPermissionLevel): IPermissionLevelMet
 				id: 'chat.permissions.default',
 				label: localize('permissions.default', "默认权限"),
 				shortLabel: localize('permissions.default.label', "默认权限"),
-				detail: localize('permissions.default.subtext', "Copilot 使用你配置的设置"),
+				detail: localize('permissions.default.subtext', "Olympia 使用你配置的设置"),
 				icon: ThemeIcon.fromId(Codicon.shield.id),
 				description: localize('permissions.default.description', "使用配置的审批设置"),
 				elevated: false,

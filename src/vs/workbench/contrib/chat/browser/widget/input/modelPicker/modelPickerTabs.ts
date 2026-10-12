@@ -7,6 +7,7 @@ import { IStringDictionary } from '../../../../../../../base/common/collections.
 import { ThemeIcon } from '../../../../../../../base/common/themables.js';
 import { isDefined } from '../../../../../../../base/common/types.js';
 import { localize } from '../../../../../../../nls.js';
+import product from '../../../../../../../platform/product/common/product.js';
 import { COPILOT_VENDOR_ID, ILanguageModelChatMetadata, ILanguageModelChatMetadataAndIdentifier, ILanguageModelsService, IModelControlEntry, isUserProvidedModel } from '../../../../common/languageModels.js';
 import { buildModelToProviderGroupMap, getProviderGroupForModel, getProviderGroupKey, isVersionAtLeast } from './modelPickerItemPrimitives.js';
 import { isDeprecated } from './modelPickerBadges.js';
@@ -100,7 +101,10 @@ export function buildModelPickerDestinations(
 
 	const builtInVendor = languageModelsService.getVendors().find(vendor => vendor.isDefault);
 	const builtInVendorId = builtInVendor?.vendor ?? COPILOT_VENDOR_ID;
-	const builtInLabel = builtInVendor?.displayName ?? localize('chat.modelPicker.builtInProvider', "GitHub Copilot");
+	// BYOK-only 的产品没有内置托管提供方，这里不能再挂「GitHub Copilot」这个名字：没有默认 vendor
+	// 时退回产品名，选择器顶部的分组标题和实际能用的模型提供方保持一致。
+	const builtInLabel = builtInVendor?.displayName
+		?? (product.defaultChatAgent?.byokOnly ? product.nameShort : localize('chat.modelPicker.builtInProvider', "GitHub Copilot"));
 	const builtInPlaceholders = placeholders.filter(placeholder => placeholder.vendor === builtInVendorId);
 	const userPlaceholders = placeholders.filter(placeholder => placeholder.vendor !== builtInVendorId);
 
