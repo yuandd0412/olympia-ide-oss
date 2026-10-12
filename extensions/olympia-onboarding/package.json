@@ -48,6 +48,12 @@
 				"icon": "$(check)"
 			},
 			{
+				"command": "olympia.stressTest",
+				"title": "对拍（正解 vs 暴力）",
+				"category": "Olympia",
+				"icon": "$(sync-again)"
+			},
+			{
 				"command": "olympia.compile",
 				"title": "编译当前文件（按评测机参数）",
 				"category": "Olympia",
@@ -152,6 +158,11 @@
 				"key": "ctrl+alt+enter",
 				"mac": "cmd+alt+enter",
 				"when": "editorTextFocus"
+			},
+			{
+				"command": "olympia.stressTest",
+				"key": "ctrl+alt+s",
+				"mac": "cmd+alt+s"
 			},
 			{
 				"command": "olympia.checkEnvironment",
@@ -321,6 +332,18 @@
 					"type": "boolean",
 					"default": true,
 					"markdownDescription": "检查 MSVC 允许当变量名、GNU C++ 却是关键字的名字：`asm` 与 `and`、`or`、`not`、`xor` 等替代运算符。"
+				},
+				"olympia.stress.rounds": {
+					"type": "number",
+					"default": 100,
+					"minimum": 1,
+					"markdownDescription": "对拍轮数。每一轮用生成器产一组数据，同时喂给正解和暴力。"
+				},
+				"olympia.stress.timeoutMs": {
+					"type": "number",
+					"default": 2000,
+					"minimum": 200,
+					"markdownDescription": "对拍时单个程序的运行上限（毫秒）。超过就算不一致，并把那组数据存进 `stress-fail`。"
 				},
 				"olympia.check.rules.removedCpp": {
 					"type": "boolean",

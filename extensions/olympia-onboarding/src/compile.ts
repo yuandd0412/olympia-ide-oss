@@ -19,7 +19,8 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
-import { execFile } from 'child_process';
+import { execFile, spawn } from 'child_process';
+import { readFile } from 'fs/promises';
 import { dirname, basename, join } from 'path';
 import { locateCompiler } from './toolchain';
 import { OJTarget, CUSTOM_TARGET_ID, findTarget, profileId } from './ojTargets';
@@ -86,12 +87,12 @@ export function planCompile(source: vscode.Uri, overrideOptimization?: string): 
 	const optimized = optSwitch !== undefined;
 
 	const isCustomProfile = profile.id === CUSTOM_TARGET_ID;
-	// in the order the judge documents: -x c++, then -std=, then their published switches.
+	// in the order the judge documents: -x <lang>, then -std=, then their published switches.
 	// A custom profile supplies all of it, so nothing is invented around the user's own flags.
 	const judgeFlags = isCustomProfile
 		? splitFlags(config.get<string>('compiler.customFlags', ''))
-		: ['-x', 'c++', `-std=${profile.std}`, ...profile.baseFlags];
-	const exeName = basename(source.fsPath).replace(/\.[^.]+$/, '') + (process.platform === 'win32' ? '.exe' : '');
+		: [...languageFlags(source, profile), ...profile.baseFlags];
+	const exeName = exeNameFor(source.fsPath);
 
 	const args = [
 		...judgeFlags,
@@ -157,8 +158,9 @@ class OlympiaTaskProvider implements vscode.TaskProvider {
 	}
 
 	resolveTask(task: vscode.Task): vscode.Task | undefined {
-		const source = task.definition?.source as vscode.Uri | undefined;
-		return formatSwitch(source);
+		// definition 只能带可序列化字段，所以存的是 fsPath；直接当 Uri 用会抛 TypeError。
+		const raw = task.definition?.source;
+		return formatSwitch(typeof raw === 'string' ? vscode.Uri.file(raw) : undefined);
 	}
 }
 
@@ -170,9 +172,20 @@ export function isCompilable(uri: vscode.Uri | undefined): uri is vscode.Uri {
 	return !!uri && /\.(?:c|cc|cpp|cxx|c\+\+)$/i.test(uri.fsPath);
 }
 
+/** `.c` 必须按 C 编译：给 C 文件套 `-x c++` 会让评测机能过的写法在本地编译失败。 */
+const C_STD = 'gnu17';
+
+function languageFlags(source: vscode.Uri, profile: OJTarget): string[] {
+	return /\.c$/i.test(source.fsPath)
+		? ['-x', 'c', `-std=${C_STD}`]
+		: ['-x', 'c++', `-std=${profile.std}`];
+}
+
 function exeNameFor(fsPath: string): string {
-	const base = basename(fsPath).replace(/\.[^.]+$/, '');
-	return process.platform === 'win32' ? `${base}.exe` : base;
+	// 保留源文件后缀：main.cpp 与 main.c 都收敛到 main.exe 时，后编译的会覆盖前一个，
+	// 运行环节就可能跑到另一个文件编出来的程序上。
+	const base = basename(fsPath);
+	return process.platform === 'win32' ? `${base}.exe` : `${base}.out`;
 }
 
 /**
@@ -198,23 +211,49 @@ function runCompiler(plan: CompilePlan): Promise<{ code: number | null; stdout: 
 	});
 }
 
+let buildChannel: vscode.OutputChannel | undefined;
+
+/** 每次调用都 createOutputChannel 会在面板里堆出一串「Olympia 编译1/2/3」。 */
+function outputChannel(): vscode.OutputChannel {
+	if (!buildChannel) {
+		buildChannel = vscode.window.createOutputChannel('Olympia 编译');
+	}
+	return buildChannel;
+}
+
+const RUN_TIMEOUT_MS = 30000;
+
+/**
+ * 直接起进程并把数据写进 stdin。以前是 `cmd /c "exe < 文件"`：路径带空格时重定向会断，
+ * 多开一个 shell 不说，POSIX 分支还漏了 `-c`，永远跑不起来。
+ */
 function runBinary(binary: string, cwd: string, stdinFile: string | undefined): Promise<{ code: number | null; stdout: string; stderr: string }> {
-	return new Promise(resolve => {
-		const args = stdinFile ? [`<${stdinFile}`] : [];
-		// a shell is required for the input redirect, so this one is intentionally not execFile
-		execFile(
-			process.platform === 'win32' ? 'cmd' : '/bin/sh',
-			process.platform === 'win32' ? ['/d', '/s', '/c', `"${binary}" ${args.join(' ')}`] : [`"${binary}" ${args.join(' ')}`],
-			{ cwd, timeout: 30000, windowsHide: true, maxBuffer: 16 * 1024 * 1024 },
-			(error, stdout, stderr) => {
-				resolve({
-					code: error && typeof (error as { code?: number }).code === 'number' ? (error as { code: number }).code : (error ? 1 : 0),
-					stdout: String(stdout),
-					stderr: String(stderr)
-				});
-			}
-		);
-	});
+	return (stdinFile ? readFile(stdinFile, 'utf8') : Promise.resolve('')).then(stdinText => new Promise(resolve => {
+		let stdout = '';
+		let stderr = '';
+		let timedOut = false;
+		const child = spawn(binary, [], { cwd, windowsHide: true });
+		const timer = setTimeout(() => {
+			timedOut = true;
+			child.kill();
+		}, RUN_TIMEOUT_MS);
+		child.stdout.on('data', chunk => { stdout += String(chunk); });
+		child.stderr.on('data', chunk => { stderr += String(chunk); });
+		child.on('error', error => {
+			clearTimeout(timer);
+			resolve({ code: 1, stdout, stderr: `${stderr}${error.message}\n` });
+		});
+		child.on('close', code => {
+			clearTimeout(timer);
+			resolve({
+				code: timedOut ? 124 : code,
+				stdout,
+				stderr: timedOut ? `${stderr}运行超过 ${Math.round(RUN_TIMEOUT_MS / 1000)} 秒，已强制结束。\n` : stderr
+			});
+		});
+		child.stdin.on('error', () => { /* 程序读完就退出导致 EPIPE，不是错误 */ });
+		child.stdin.end(stdinText);
+	}));
 }
 
 export async function compileCurrentFile(): Promise<void> {
@@ -236,8 +275,8 @@ export async function compileJudgeAccurate(): Promise<void> {
 		void vscode.window.showWarningMessage('按评测机编译：请先打开一个 C/C++ 源文件。');
 		return;
 	}
-	const plan = planCompile(editor.document.uri, 'O2');
-	const output = vscode.window.createOutputChannel('Olympia 编译');
+	const plan = planCompile(editor.document.uri, '-O2');
+	const output = outputChannel();
 	output.clear();
 	output.appendLine(renderCommandLine(plan));
 	output.show(true);
@@ -288,7 +327,7 @@ export async function compileAndRun(): Promise<void> {
 	}
 
 	const plan = planCompile(editor.document.uri);
-	const channel = vscode.window.createOutputChannel('Olympia 编译');
+	const channel = outputChannel();
 	channel.clear();
 	channel.appendLine(renderCommandLine(plan));
 	channel.show(true);
@@ -303,8 +342,7 @@ export async function compileAndRun(): Promise<void> {
 	}
 
 	channel.appendLine('--- 运行 ---');
-	const binary = join(dir, exeNameFor(sourcePath));
-	const run = await runBinary(binary, dir, stdinFile);
+	const run = await runBinary(plan.output, dir, stdinFile);
 	channel.appendLine(run.stdout);
 	if (run.stderr.trim().length > 0) {
 		channel.appendLine(run.stderr);

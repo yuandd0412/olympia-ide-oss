@@ -17,6 +17,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
+import { activeTarget } from './ojTargets';
 
 /** The diagnostic source every rule writes, so the bars can tell our findings from the compiler's. */
 export const PRECHECK_SOURCE = '提交前体检';
@@ -64,14 +65,16 @@ function positionOf(text: string, offset: number): { line: number; character: nu
 
 function finding(ctx: RuleContext, rule: RuleId, severity: vscode.DiagnosticSeverity,
 	re: RegExp, message: string, detail?: string): Finding | undefined {
-	const idx = indexOf(re, ctx.text);
-	if (idx < 0) {
+	// 注释和字符串里出现这些词不会让评测机编译失败，所以一律在挖空后的文本上匹配；
+	// stripCommentsAndStrings 保持偏移量不变，位置照样能落回原文。
+	const code = stripCommentsAndStrings(ctx.text);
+	re.lastIndex = 0;
+	const hit = re.exec(code);
+	if (!hit) {
 		return undefined;
 	}
-	const { line, character } = positionOf(ctx.text, idx);
-	const hit = re.exec(ctx.text);
-	const length = hit && hit[0].length > 0 ? Math.min(hit[0].length, 80) : 1;
-	return { rule, severity, message, line, character, length, detail };
+	const { line, character } = positionOf(ctx.text, hit.index);
+	return { rule, severity, message, line, character, length: Math.min(hit[0].length || 1, 80), detail };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -79,10 +82,8 @@ function finding(ctx: RuleContext, rule: RuleId, severity: vscode.DiagnosticSeve
 // ---------------------------------------------------------------------------------------------
 
 function checkPragmaOptimize(ctx: RuleContext): Finding | undefined {
-	// only flag when the build is actually optimized, otherwise it is legal
-	if (config().get<string>('compiler.optimization', 'none') === 'none') {
-		return undefined;
-	}
+	// 本地开不开优化与这条无关：交上去的源码到了评测机上，那边自己会再叠一层优化开关，
+	// 源码级 optimize 属性与它冲突时是编译失败，不是「跑得慢」。
 	return finding(
 		ctx, 'pragmaOptimize', vscode.DiagnosticSeverity.Error,
 		/#\s*pragma\s+GCC\s+optimize|__attribute__\s*\(\(\s*optimize/,
@@ -123,7 +124,18 @@ const REMOVED: ReadonlyArray<{ re: RegExp; what: string }> = [
 	{ re: /\bregister\s+\w/, what: 'register' },
 ];
 
+/** 上面三个是 C++17 起移除的。NOI 档位还是 c++14，在那里它们照样编得过，报出来就是误报。 */
+const REMOVED_SINCE = 17;
+
+function activeStdYear(): number {
+	const match = /c\+\+(\d{2})/.exec(activeTarget().std);
+	return match ? Number(match[1]) : REMOVED_SINCE;
+}
+
 function checkRemovedCpp(ctx: RuleContext): Finding | undefined {
+	if (activeStdYear() < REMOVED_SINCE) {
+		return undefined;
+	}
 	const text = stripCommentsAndStrings(ctx.text);
 	for (const entry of REMOVED) {
 		const idx = indexOf(entry.re, text);

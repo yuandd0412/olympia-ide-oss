@@ -22,6 +22,7 @@ import { resolveCompiler, type ResolvedCompiler, type CompilerSource } from './t
 import { OJ_TARGETS, OJTarget, CUSTOM_TARGET_ID, activeTarget, profileId, renderFlags } from './ojTargets';
 import { registerToolsView } from './toolsView';
 import { registerStatusBar } from './statusBar';
+import { registerStressTest } from './stressTest';
 
 const WEBSITE = 'https://olympia.dpdns.org';
 const DOCS = 'https://olympia.dpdns.org/docs';
@@ -236,6 +237,7 @@ export function activate(context: vscode.ExtensionContext): void {
 	// available, but it is no longer the only way to reach any of this.
 	registerToolsView(context);
 	registerStatusBar(context);
+	registerStressTest(context);
 
 	// run on save, silently: the Problems panel is the surface, not a modal
 	context.subscriptions.push(
