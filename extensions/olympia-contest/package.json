@@ -51,7 +51,7 @@
 			},
 			{
 				"command": "olympia.problem.appendSample",
-				"title": "把这一组数据补进题面样例",
+				"title": "给这道题加一组自定义样例",
 				"category": "Olympia 竞赛",
 				"enablement": "true"
 			}
@@ -76,7 +76,7 @@
 				},
 				{
 					"command": "olympia.problem.appendSample",
-					"when": "false"
+					"when": "true"
 				}
 			],
 			"editor/title": [

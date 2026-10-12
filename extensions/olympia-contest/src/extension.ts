@@ -130,7 +130,7 @@ async function openCached(): Promise<void> {
 	await showStatement(vscode.Uri.file(picked.entry.file));
 }
 
-/** 对拍抓到不一致时传过来的参数；命令故意不进命令面板，因为没有这组数据它什么都做不了。 */
+/** 对拍抓到的那组数据传过来时带这些字段；从命令面板直接调用时一个都没有。 */
 interface AppendSampleArgs {
 	readonly hint?: string;
 	readonly input?: string;
@@ -138,15 +138,21 @@ interface AppendSampleArgs {
 	readonly explain?: string;
 }
 
+/** 面板里手动加样例时留下的提示，学生照着填。 */
+const MANUAL_EXPLAIN = '自己加的样例：把数据填进上面两个代码块再跑样例，期望输出空着的那组会被跳过。';
+
 /**
- * 把一组数据永久留在题面里，之后每次跑样例都会带上它。
- * 对拍停下来的那一刻是记这组数据的最好时机——再跑一轮可能就复现不出来了。
+ * 把一组样例写进题面。带参数是对拍在补它抓到的那组数据（期望输出取正解的输出）；
+ * 不带参数是从命令面板来的，加一组空的占位样例并把文件打开让人填——
+ * 题面就是本地那份可编辑的用例表，不需要再造一个只有 Olympia 认的格式。
  */
 async function appendSample(args?: AppendSampleArgs): Promise<boolean> {
-	if (args?.input === undefined || args?.output === undefined) {
-		vscode.window.showWarningMessage('补充样例需要一组输入和期望输出：这条命令是给对拍点的，手动加样例请直接在题面 Markdown 里写。');
+	const partial = (args?.input === undefined) !== (args?.output === undefined);
+	if (partial) {
+		vscode.window.showWarningMessage('补一组样例要同时给出输入和期望输出，只给一半没法写。');
 		return false;
 	}
+	const manual = args?.input === undefined && args?.output === undefined;
 	const root = await problemsRoot();
 	if (!root) { return false; }
 	const entries = await readLibrary(root);
@@ -154,10 +160,12 @@ async function appendSample(args?: AppendSampleArgs): Promise<boolean> {
 		vscode.window.showInformationMessage('题面库里还没有题面，样例没地方写。先按 Ctrl+Alt+P 拉一道题的题面。');
 		return false;
 	}
-	const target = await pickTarget(entries, args.hint, async list => {
+	const target = await pickTarget(entries, args?.hint, async list => {
 		const picked = await vscode.window.showQuickPick(toPicks(list, vscode.workspace.workspaceFolders?.[0]?.uri.fsPath), {
 			title: '这组样例补进哪道题',
-			placeHolder: `当前文件没有同名题面，从题面库里挑一道（缓存了 ${list.length} 道）`,
+			placeHolder: manual
+				? `给题面库里的哪道题加一组样例（缓存了 ${list.length} 道）`
+				: `当前文件没有同名题面，从题面库里挑一道（缓存了 ${list.length} 道）`,
 			matchOnDescription: true,
 			matchOnDetail: true,
 			ignoreFocusOut: true,
@@ -167,8 +175,15 @@ async function appendSample(args?: AppendSampleArgs): Promise<boolean> {
 	if (!target) { return false; }
 
 	const markdown = await fs.promises.readFile(target.file, 'utf8');
-	const added = appendSampleTo(markdown, { input: args.input, output: args.output, explain: args.explain });
+	const added = appendSampleTo(markdown, manual
+		? { input: '', output: '', explain: MANUAL_EXPLAIN }
+		: { input: args?.input ?? '', output: args?.output ?? '', explain: args?.explain });
 	await fs.promises.writeFile(target.file, added.markdown, 'utf8');
+	if (manual) {
+		// 加完就打开让人填，不弹一句「已添加」然后什么都不动
+		await showStatement(vscode.Uri.file(target.file));
+		return true;
+	}
 	const action = await vscode.window.showInformationMessage(
 		`已把「样例 ${added.index}」写进 ${target.id} 的题面，下次跑样例会带上它。`,
 		'打开题面',

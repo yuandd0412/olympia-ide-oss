@@ -32,6 +32,8 @@ const MEMORY_UNITS: ReadonlyMap<string, number> = new Map([
 ]);
 
 interface Sample {
+	/** 题面里写的「样例 N」的 N。 */
+	readonly number: number;
 	readonly input: string;
 	readonly expected: string;
 }
@@ -73,13 +75,14 @@ function normalize(text: string): string {
 /** 从题面 Markdown 里把「### 样例 N」下面的输入 / 输出代码块读出来。 */
 export function parseSamples(markdown: string): { samples: Sample[]; timeLimitMs: number; memoryLimitMb: number } {
 	const samples: Sample[] = [];
-	const blocks = markdown.matchAll(/###\s*样例\s*\d+([\s\S]*?)(?=\n###\s*样例|\n##\s|$)/g);
+	const blocks = markdown.matchAll(/###\s*样例\s*(\d+)([\s\S]*?)(?=\n###\s*样例|\n##\s|$)/g);
 	for (const block of blocks) {
-		const parts = [...(block[1] ?? '').matchAll(/\*\*(输入|输出)\*\*\s*\r?\n\s*```[^\n]*\r?\n([\s\S]*?)```/g)];
+		const parts = [...(block[2] ?? '').matchAll(/\*\*(输入|输出)\*\*\s*\r?\n\s*```[^\n]*\r?\n([\s\S]*?)```/g)];
 		const input = parts.find(part => part[1] === '输入')?.[2];
 		const expected = parts.find(part => part[1] === '输出')?.[2];
 		if (input !== undefined || expected !== undefined) {
-			samples.push({ input: input ?? '', expected: expected ?? '' });
+			// 题号要带着走：跳过没填完的样例之后，位置就不等于编号了
+			samples.push({ number: Number(block[1]) || samples.length + 1, input: input ?? '', expected: expected ?? '' });
 		}
 	}
 	const limit = /时限：\s*([\d.]+)\s*(ms|毫秒|s|秒)/i.exec(markdown);
@@ -166,9 +169,15 @@ export function registerSampleJudge(context: vscode.ExtensionContext): vscode.Di
 		}
 
 		const markdown = Buffer.from(await vscode.workspace.fs.readFile(statement)).toString('utf8');
-		const { samples, timeLimitMs, memoryLimitMb } = parseSamples(markdown);
-		if (!samples.length) {
+		const { samples: all, timeLimitMs, memoryLimitMb } = parseSamples(markdown);
+		if (!all.length) {
 			await vscode.window.showWarningMessage(`「${basename(statement.fsPath)}」里没有解析到样例数据，可能这道题的题面没抓到样例。`);
+			return;
+		}
+		// 自己加的样例可能还没填完期望输出：那组没法判，跳过并说清楚，别报成一个 WA
+		const samples = all.filter(sample => normalize(sample.expected) !== '');
+		if (!samples.length) {
+			await vscode.window.showWarningMessage(`「${basename(statement.fsPath)}」里 ${all.length} 组样例都没填期望输出，跑样例没法判。把答案写进题面的 **输出** 代码块再试。`);
 			return;
 		}
 		// 设置里的数字优先；两边都没写就不判 MLE，只报峰值。
@@ -181,6 +190,9 @@ export function registerSampleJudge(context: vscode.ExtensionContext): vscode.Di
 		log.show(true);
 		log.appendLine(`题面：${vscode.workspace.asRelativePath(statement, false)} · 样例 ${samples.length} 组 · 时限 ${timeLimitMs} ms（本地按 ${LOCAL_MARGIN} 倍余量）`);
 		log.appendLine(`内存：${limitMb > 0 ? `限制 ${limitMb} MB（按峰值工作集判，采样只会少报）` : '题面没写内存限制，只报峰值不判 MLE'}`);
+		if (samples.length !== all.length) {
+			log.appendLine(`题面里另有 ${all.length - samples.length} 组没填期望输出，这次跳过：${all.filter(s => normalize(s.expected) === '').map(s => `样例 ${s.number}`).join('、')}`);
+		}
 		log.appendLine(`编译：${renderCommandLine(plan)}`);
 
 		const built = await runProcess(plan.program, plan.args, plan.cwd, '', COMPILE_TIMEOUT_MS);
@@ -197,20 +209,21 @@ export function registerSampleJudge(context: vscode.ExtensionContext): vscode.Di
 			{ location: vscode.ProgressLocation.Notification, title: 'Olympia 正在跑样例', cancellable: false },
 			async (progress) => {
 				for (let i = 0; i < samples.length; i++) {
-					progress.report({ message: `样例 ${i + 1} / ${samples.length}`, increment: 100 / samples.length });
+					const sample = samples[i];
+					progress.report({ message: `样例 ${sample.number} / ${all.length}`, increment: 100 / samples.length });
 					const started = Date.now();
-					const ran = await runSampled(plan.output, [], dirname(plan.output), samples[i].input, budget);
+					const ran = await runSampled(plan.output, [], dirname(plan.output), sample.input, budget);
 					const ms = Date.now() - started;
 					const overMemory = limitMb > MEMORY_LIMIT_UNSET
 						&& ran.peakBytes !== undefined
 						&& ran.peakBytes > limitMb * 1024 * 1024;
 					const verdict: Verdict = ran.timedOut ? 'TLE' : overMemory ? 'MLE' : ran.failed ? 'RE'
-						: normalize(ran.stdout) === normalize(samples[i].expected) ? 'AC' : 'WA';
-					results.push({ index: i + 1, verdict, got: ran.stdout, detail: ran.stderr, ms, peakBytes: ran.peakBytes });
+						: normalize(ran.stdout) === normalize(sample.expected) ? 'AC' : 'WA';
+					results.push({ index: sample.number, verdict, got: ran.stdout, detail: ran.stderr, ms, peakBytes: ran.peakBytes });
 					const peak = ran.peakBytes === undefined ? '' : ` · 峰值内存 ${formatMb(ran.peakBytes)}`;
-					log.appendLine(`样例 ${i + 1}：${verdict} · ${ms} ms${peak}`);
+					log.appendLine(`样例 ${sample.number}：${verdict} · ${ms} ms${peak}`);
 					if (verdict === 'WA') {
-						log.appendLine(`  期望：${normalize(samples[i].expected).slice(0, 200)}`);
+						log.appendLine(`  期望：${normalize(sample.expected).slice(0, 200)}`);
 						log.appendLine(`  得到：${normalize(ran.stdout).slice(0, 200)}`);
 					}
 					if (verdict === 'MLE') {

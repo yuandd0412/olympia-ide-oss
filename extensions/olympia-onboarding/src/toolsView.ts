@@ -153,6 +153,7 @@ class OlympiaToolsProvider implements vscode.TreeDataProvider<TreeEntry> {
 					{ kind: 'action', id: 'pull', label: '拉取题面', icon: 'cloud-download', command: CMD.problemPull, key: KEYS.problemPull },
 					{ kind: 'action', id: 'pullClipboard', label: '从剪贴板拉取题号', icon: 'clippy', command: CMD.problemPullFromClipboard, key: KEYS.problemPullFromClipboard },
 					{ kind: 'action', id: 'openStatement', label: '打开题面库', icon: 'book', command: CMD.problemOpenStatement, key: KEYS.openStatement, tooltip: '缓存过的题面都在这里，按题号或标题搜。' },
+					{ kind: 'action', id: 'addSample', label: '给这道题加一组自定义样例', icon: 'add', command: CMD.appendSample, tooltip: '在题面的样例区末尾加一组空的占位样例，填完再跑样例。自己加的样例和题面存在一起，跟着工程走。' },
 					{ kind: 'action', id: 'template', label: '插入赛制模板', icon: 'file-code', command: CMD.templateInsert, key: KEYS.templateInsert }
 				];
 			case 'coach':
