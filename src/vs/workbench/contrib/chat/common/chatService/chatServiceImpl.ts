@@ -602,6 +602,11 @@ export class ChatService extends Disposable implements IChatService {
 
 		const defaultAgentData = this.chatAgentService.getContributedDefaultAgent(location) ?? this.chatAgentService.getContributedDefaultAgent(ChatAgentLocation.Chat);
 		if (!defaultAgentData) {
+			// Olympia：BYOK-only 的产品压根不带托管助手，"没有默认智能体" 是预期状态。
+			// 以前每次开会话都把它当错误抛出去，日志里全是噪声，命令面板里那条路径还会弹错误提示。
+			if (this.chatEntitlementService.sentiment.hidden) {
+				return;
+			}
 			throw new ErrorNoTelemetry('No default agent contributed');
 		}
 

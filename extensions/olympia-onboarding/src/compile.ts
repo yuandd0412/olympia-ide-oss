@@ -192,12 +192,15 @@ function exeNameFor(fsPath: string): string {
  * Runs `g++` directly. Used by the compile-and-run path where a background task would make it
  * impossible to feed stdin from a test file before the program starts.
  */
+export const COMPILE_TIMEOUT_MS = 120000;
+export const COMPILE_MAX_BUFFER_BYTES = 16 * 1024 * 1024;
+
 function runCompiler(plan: CompilePlan): Promise<{ code: number | null; stdout: string; stderr: string }> {
 	return new Promise(resolve => {
 		execFile(
 			plan.program,
 			plan.args,
-			{ cwd: plan.cwd, timeout: 120000, windowsHide: true, maxBuffer: 16 * 1024 * 1024 },
+			{ cwd: plan.cwd, timeout: COMPILE_TIMEOUT_MS, windowsHide: true, maxBuffer: COMPILE_MAX_BUFFER_BYTES },
 			(error, stdout, stderr) => {
 				resolve({
 					code: error && typeof (error as { code?: number }).code === 'number'

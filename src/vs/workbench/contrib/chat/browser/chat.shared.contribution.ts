@@ -2668,7 +2668,8 @@ configurationRegistry.registerConfiguration({
 			type: 'boolean',
 			// allow-any-unicode-next-line
 			description: nls.localize('chat.titleBar.openInAgentsWindow.enabled', "控制是否在标题栏中显示“在智能体窗口中打开”按钮。"),
-			default: true,
+			// Olympia：BYOK-only 的产品没有智能体窗口可去，出厂就把这个按钮关掉，而不是只靠上下文键兜底。
+			default: !product.defaultChatAgent?.byokOnly,
 		},
 		[ChatConfiguration.OpenInAgentsWindowRevealCurrentSession]: {
 			type: 'boolean',

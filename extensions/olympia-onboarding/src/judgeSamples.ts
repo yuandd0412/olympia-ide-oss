@@ -7,18 +7,22 @@
  *
  *  「编辑 → 评测 → 对拍」里的那一环。题面由 olympia-contest 抓成 `.olympia/problems/<题号>.md`，
  *  样例就写在里面的 ``` 代码块里，所以这里只读那份 Markdown，不需要联网、也不需要账号。
- *  判定按 token 比对（和评测机一样忽略空白），时限读题面里的「时限：1.00s」，本地给三倍余量。
+ *  判定按 token 比对（和评测机一样忽略空白），时限认题面里的「时限：1.00s」或「时限：1000 ms」，本地给三倍余量。
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
 import { basename, dirname } from 'path';
 
-import { planCompile, renderCommandLine } from './compile';
+import { isCompilable, planCompile, renderCommandLine, COMPILE_TIMEOUT_MS } from './compile';
 import { CMD } from './commands';
 import { runProcess } from './stressTest';
 
 const DEFAULT_PROBLEMS_DIR = '.olympia/problems';
-const COMPILE_BUDGET_MS = 120000;
 const LOCAL_MARGIN = 3;
+const RUN_TIMEOUT_SLACK_MS = 500;
+/** 题面没写时限时的默认值，也是本地判 TLE 的上下界，免得一个 1 ms 的时限把编译都算进去。 */
+const TIME_LIMIT_MS_DEFAULT = 1000;
+const TIME_LIMIT_MS_MIN = 500;
+const TIME_LIMIT_MS_MAX = 10000;
 
 interface Sample {
 	readonly input: string;
@@ -51,9 +55,24 @@ export function parseSamples(markdown: string): { samples: Sample[]; timeLimitMs
 			samples.push({ input: input ?? '', expected: expected ?? '' });
 		}
 	}
-	const limit = /时限：\s*([\d.]+)\s*s/i.exec(markdown);
-	const parsed = limit ? Math.round(Number(limit[1]) * 1000) : 1000;
-	return { samples, timeLimitMs: Math.min(Math.max(parsed || 1000, 500), 10000) };
+	const limit = /时限：\s*([\d.]+)\s*(ms|毫秒|s|秒)/i.exec(markdown);
+	return { samples, timeLimitMs: timeLimitMsOf(limit) };
+}
+
+/**
+ * 单位必须认出来：拉题面那条链写的是「时限：1000 ms」，手写题面习惯「时限：1.00s」，
+ * 只认秒会把 2000 ms 的题读成默认的 1 s，正解反而被判 TLE。认不出单位就用默认值，不猜。
+ */
+function timeLimitMsOf(match: RegExpExecArray | null): number {
+	if (!match) {
+		return TIME_LIMIT_MS_DEFAULT;
+	}
+	const value = Number(match[1]);
+	if (!Number.isFinite(value) || value <= 0) {
+		return TIME_LIMIT_MS_DEFAULT;
+	}
+	const ms = match[2].toLowerCase() === 'ms' || match[2] === '毫秒' ? value : value * 1000;
+	return Math.min(Math.max(Math.round(ms), TIME_LIMIT_MS_MIN), TIME_LIMIT_MS_MAX);
 }
 
 async function problemFiles(): Promise<vscode.Uri[]> {
@@ -118,7 +137,7 @@ export function registerSampleJudge(context: vscode.ExtensionContext): vscode.Di
 	const command = vscode.commands.registerCommand(CMD.judgeSamples, async () => {
 		const editor = vscode.window.activeTextEditor;
 		const source = editor?.document.uri;
-		if (!source || !/\.(?:c|cc|cpp|cxx|c\+\+)$/i.test(source.fsPath)) {
+		if (!isCompilable(source)) {
 			await vscode.window.showWarningMessage('样例评测：请先打开一个 C/C++ 源文件。');
 			return;
 		}
@@ -141,7 +160,7 @@ export function registerSampleJudge(context: vscode.ExtensionContext): vscode.Di
 		log.appendLine(`题面：${vscode.workspace.asRelativePath(statement, false)} · 样例 ${samples.length} 组 · 时限 ${timeLimitMs} ms（本地按 ${LOCAL_MARGIN} 倍余量）`);
 		log.appendLine(`编译：${renderCommandLine(plan)}`);
 
-		const built = await runProcess(plan.program, plan.args, plan.cwd, '', COMPILE_BUDGET_MS);
+		const built = await runProcess(plan.program, plan.args, plan.cwd, '', COMPILE_TIMEOUT_MS);
 		if (built.failed || built.timedOut) {
 			log.appendLine('--- 编译失败 ---');
 			log.appendLine(`${built.stdout}${built.stderr}`);
@@ -149,7 +168,7 @@ export function registerSampleJudge(context: vscode.ExtensionContext): vscode.Di
 			return;
 		}
 
-		const budget = Math.min(COMPILE_BUDGET_MS, timeLimitMs * LOCAL_MARGIN + 500);
+		const budget = Math.min(COMPILE_TIMEOUT_MS, timeLimitMs * LOCAL_MARGIN + RUN_TIMEOUT_SLACK_MS);
 		const results: CaseResult[] = [];
 		await vscode.window.withProgress(
 			{ location: vscode.ProgressLocation.Notification, title: 'Olympia 正在跑样例', cancellable: false },

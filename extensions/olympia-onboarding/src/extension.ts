@@ -25,6 +25,7 @@ import { registerStatusBar } from './statusBar';
 import { registerStressTest } from './stressTest';
 import { registerContestMode } from './contestMode';
 import { registerSampleJudge } from './judgeSamples';
+import { CMD } from './commands';
 
 const WEBSITE = 'https://olympia.dpdns.org';
 const DOCS = 'https://olympia.dpdns.org/docs';
@@ -124,7 +125,7 @@ async function showEnvironmentReport(): Promise<CompilerReport> {
 	if (choice === '打开设置') {
 		await vscode.commands.executeCommand('workbench.action.openSettings', 'olympia.compiler.path');
 	} else if (choice === '查看官网') {
-		await vscode.commands.executeCommand('olympia.openWebsite');
+		await vscode.commands.executeCommand(CMD.openWebsite);
 	}
 	return report;
 }
@@ -224,13 +225,13 @@ export function activate(context: vscode.ExtensionContext): void {
 		.get<boolean>('check.enabled', true);
 
 	context.subscriptions.push(
-		vscode.commands.registerCommand('olympia.checkEnvironment', () => showEnvironmentReport()),
-		vscode.commands.registerCommand('olympia.pickCompileProfile', () => pickCompileProfile()),
-		vscode.commands.registerCommand('olympia.preSubmitCheck', () => preSubmitCheck()),
-		vscode.commands.registerCommand('olympia.compile', () => compileCurrentFile()),
-		vscode.commands.registerCommand('olympia.compileJudgeAccurate', () => compileJudgeAccurate()),
-		vscode.commands.registerCommand('olympia.compileAndRun', () => compileAndRun()),
-		vscode.commands.registerCommand('olympia.openWebsite', () => vscode.env.openExternal(vscode.Uri.parse(WEBSITE)))
+		vscode.commands.registerCommand(CMD.checkEnvironment, () => showEnvironmentReport()),
+		vscode.commands.registerCommand(CMD.pickCompileProfile, () => pickCompileProfile()),
+		vscode.commands.registerCommand(CMD.preSubmitCheck, () => preSubmitCheck()),
+		vscode.commands.registerCommand(CMD.compile, () => compileCurrentFile()),
+		vscode.commands.registerCommand(CMD.compileJudgeAccurate, () => compileJudgeAccurate()),
+		vscode.commands.registerCommand(CMD.compileAndRun, () => compileAndRun()),
+		vscode.commands.registerCommand(CMD.openWebsite, () => vscode.env.openExternal(vscode.Uri.parse(WEBSITE)))
 	);
 
 	context.subscriptions.push(registerCompileTaskProvider());

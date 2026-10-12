@@ -569,24 +569,26 @@ export class ChatSpeechToTextService extends Disposable implements IChatSpeechTo
 		this._preparingContextKey = ChatContextKeys.speechToTextPreparing.bindTo(contextKeyService);
 		this._usesMaiContextKey = ChatContextKeys.speechToTextUsesMai.bindTo(contextKeyService);
 		this._updateConfiguredContextKey();
-		void this._refreshGitHubSession();
-		this._register(this._authenticationService.onDidChangeSessions(e => {
-			if (e.providerId === 'github') {
-				void this._refreshGitHubSession();
-			}
-		}));
-		this._register(this._authenticationService.onDidRegisterAuthenticationProvider(e => {
-			if (e.id === 'github') {
-				void this._refreshGitHubSession();
-			}
-		}));
-		this._register(this._authenticationService.onDidUnregisterAuthenticationProvider(e => {
-			if (e.id === 'github') {
-				this._githubSessionGeneration++;
-				this._hasGitHubSession = false;
-				this._updateConfiguredContextKey();
-			}
-		}));
+		if (this._supportsGitHubDictation) {
+			void this._refreshGitHubSession();
+			this._register(this._authenticationService.onDidChangeSessions(e => {
+				if (e.providerId === 'github') {
+					void this._refreshGitHubSession();
+				}
+			}));
+			this._register(this._authenticationService.onDidRegisterAuthenticationProvider(e => {
+				if (e.id === 'github') {
+					void this._refreshGitHubSession();
+				}
+			}));
+			this._register(this._authenticationService.onDidUnregisterAuthenticationProvider(e => {
+				if (e.id === 'github') {
+					this._githubSessionGeneration++;
+					this._hasGitHubSession = false;
+					this._updateConfiguredContextKey();
+				}
+			}));
+		}
 		this._register(this._configurationService.onDidChangeConfiguration(e => {
 			if (e.affectsConfiguration(ENABLED_SETTING) || e.affectsConfiguration(DICTATION_MODEL_SETTING)) {
 				this._updateConfiguredContextKey();
@@ -669,6 +671,14 @@ export class ChatSpeechToTextService extends Disposable implements IChatSpeechTo
 	private _updateConfiguredContextKey(): void {
 		this._usesMaiContextKey.set(this._getBackend() === 'mai');
 		this._configuredContextKey.set(this.isConfigured);
+	}
+
+	/**
+	 * 云端听写要用 GitHub 账号换 token，而 BYOK-only 的产品永远不注册 github 提供方。
+	 * 询问它的会话只会让启动多等五秒并在日志里留一条超时，所以整条 GitHub 链路按产品开关关掉。
+	 */
+	private get _supportsGitHubDictation(): boolean {
+		return !this._productService.defaultChatAgent?.byokOnly;
 	}
 
 	private async _refreshGitHubSession(): Promise<void> {
@@ -1030,6 +1040,9 @@ export class ChatSpeechToTextService extends Disposable implements IChatSpeechTo
 
 	/** Resolve the GitHub access token used to authenticate the voice websocket. */
 	private async _getGitHubToken(): Promise<string | undefined> {
+		if (!this._supportsGitHubDictation) {
+			return undefined;
+		}
 		try {
 			const sessions = await this._authenticationService.getSessions('github');
 			if (sessions[0]) {

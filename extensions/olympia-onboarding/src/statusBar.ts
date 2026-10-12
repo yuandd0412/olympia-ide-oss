@@ -37,7 +37,7 @@ export function registerStatusBar(context: vscode.ExtensionContext): void {
 	const runItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, PRIORITY_RUN);
 	runItem.name = 'Olympia';
 	runItem.text = `$(play) 编译运行 ${KEYS.compileAndRun}`;
-	runItem.tooltip = '按当前评测机参数编译并运行（编译不运行是 Shift+F9）';
+	runItem.tooltip = `按当前评测机参数编译并运行（编译不运行是 ${KEYS.compile}）`;
 	runItem.command = CMD.compileAndRun;
 
 	const checkItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, PRIORITY_CHECK);

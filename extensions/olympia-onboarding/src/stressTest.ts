@@ -13,7 +13,7 @@ import * as vscode from 'vscode';
 import { execFile, spawn } from 'child_process';
 import { basename, dirname, join } from 'path';
 
-import { planCompile, renderCommandLine } from './compile';
+import { planCompile, renderCommandLine, COMPILE_MAX_BUFFER_BYTES } from './compile';
 import { CMD } from './commands';
 
 const STATE_KEY = 'olympia.stress.roles';
@@ -106,7 +106,7 @@ async function compileAsync(uri: vscode.Uri, channel: vscode.OutputChannel): Pro
 	channel.appendLine(`编译 ${basename(uri.fsPath)}：${renderCommandLine(plan)}`);
 	try {
 		await new Promise<void>((resolve, reject) => {
-			execFile(plan.program, plan.args, { cwd: plan.cwd, windowsHide: true, maxBuffer: 16 * 1024 * 1024 }, error => {
+			execFile(plan.program, plan.args, { cwd: plan.cwd, windowsHide: true, maxBuffer: COMPILE_MAX_BUFFER_BYTES }, error => {
 				error ? reject(error) : resolve();
 			});
 		});
