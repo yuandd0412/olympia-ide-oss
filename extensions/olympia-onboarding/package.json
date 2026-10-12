@@ -60,6 +60,12 @@
 				"icon": "$(clock)"
 			},
 			{
+				"command": "olympia.judgeSamples",
+				"title": "跑样例（本地评测）",
+				"category": "Olympia",
+				"icon": "$(checklist)"
+			},
+			{
 				"command": "olympia.compile",
 				"title": "编译当前文件（按评测机参数）",
 				"category": "Olympia",
@@ -174,6 +180,12 @@
 				"command": "olympia.contestMode",
 				"key": "ctrl+alt+c",
 				"mac": "cmd+alt+c"
+			},
+			{
+				"command": "olympia.judgeSamples",
+				"key": "ctrl+alt+j",
+				"mac": "cmd+alt+j",
+				"when": "editorTextFocus"
 			},
 			{
 				"command": "olympia.checkEnvironment",

@@ -35,7 +35,8 @@ interface RunResult {
 	readonly failed: boolean;
 }
 
-function run(program: string, args: readonly string[], cwd: string, stdin: string, timeoutMs: number): Promise<RunResult> {
+/** 起一个进程、喂 stdin、收 stdout/stderr，带超时。对拍与样例评测共用。 */
+export function runProcess(program: string, args: readonly string[], cwd: string, stdin: string, timeoutMs: number): Promise<RunResult> {
 	return new Promise(resolve => {
 		let stdout = '';
 		let stderr = '';
@@ -201,15 +202,15 @@ export function registerStressTest(context: vscode.ExtensionContext): vscode.Dis
 				}
 				progress.report({ message: `第 ${round} / ${rounds} 轮`, increment: 100 / rounds });
 
-				const made = await run(exes.generator as string, [String(round)], dirname(generator.fsPath), '', timeoutMs);
+				const made = await runProcess(exes.generator as string, [String(round)], dirname(generator.fsPath), '', timeoutMs);
 				if (made.failed || made.timedOut || !made.stdout.trim()) {
 					channel.appendLine(`第 ${round} 轮生成器没有产出可用数据：${made.stderr.trim() || '标准输出为空'}`);
 					return { cancelled: false, round, generatorFailed: true };
 				}
 				const data = made.stdout;
 
-				const solutionOut = await run(exes.solution as string, [], dirname(solution.fsPath), data, timeoutMs);
-				const bruteOut = await run(exes.brute as string, [], dirname(brute.fsPath), data, timeoutMs);
+				const solutionOut = await runProcess(exes.solution as string, [], dirname(solution.fsPath), data, timeoutMs);
+				const bruteOut = await runProcess(exes.brute as string, [], dirname(brute.fsPath), data, timeoutMs);
 				const differs = solutionOut.timedOut || bruteOut.timedOut || solutionOut.failed || bruteOut.failed
 					|| !sameOutput(solutionOut.stdout, bruteOut.stdout);
 				if (differs) {

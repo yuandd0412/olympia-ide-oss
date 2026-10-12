@@ -130,6 +130,7 @@ class OlympiaToolsProvider implements vscode.TreeDataProvider<TreeEntry> {
 					{ kind: 'action', id: 'compile', label: '只编译', icon: 'tools', command: CMD.compile, key: KEYS.compile },
 					{ kind: 'action', id: 'judge', label: '按评测机编译（-O2）', icon: 'server-process', command: CMD.compileJudgeAccurate, key: KEYS.compileJudgeAccurate, tooltip: '打开优化并套用评测机开关，用来复现「本地过、评测机超时」之外的那类差异' },
 					{ kind: 'action', id: 'precheck', label: '提交前体检', icon: 'check', command: CMD.preSubmitCheck, key: KEYS.preSubmitCheck, tooltip: '只报会在评测机上编译失败的写法：`#pragma GCC optimize`、MSVC 保留字、C++17 起删除的设施' },
+					{ kind: 'action', id: 'judgeSamples', label: '跑样例（本地评测）', icon: 'checklist', command: CMD.judgeSamples, key: KEYS.judgeSamples, tooltip: '用拉下来的题面样例跑当前文件，按 token 比对，给出 AC / WA / RE / TLE' },
 					{ kind: 'action', id: 'stressTest', label: '对拍（正解 vs 暴力）', icon: 'sync-again', command: CMD.stressTest, key: KEYS.stressTest, tooltip: '用生成器产随机数据，同时喂给正解和暴力；输出不一致就停下，并把那组数据存进 stress-fail' },
 					{ kind: 'action', id: 'contest', label: '比赛模式（倒计时）', icon: 'clock', command: CMD.contestMode, key: KEYS.contestMode, tooltip: '选一段时长，状态栏出现倒计时；重载窗口也接着走，点 chip 可提前结束' }
 				];
