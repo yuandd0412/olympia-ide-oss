@@ -92,12 +92,14 @@ interface IElevatedWarningCopy {
 function getElevatedWarningCopy(level: ChatPermissionLevel, defaultSettingKey: string, levelLabel?: string): IElevatedWarningCopy | undefined {
 	switch (level) {
 		case ChatPermissionLevel.Assisted:
-			levelLabel ??= localize('permissions.assisted', "Auto Approvals");
+			// 同一个 nls key 在权限选择器里已经写成「辅助权限」，这里必须跟它一致，
+			// 否则同一个标签会出现两种说法。
+			levelLabel ??= localize('permissions.assisted', "辅助权限");
 			return {
-				title: localize('permissions.assisted.warning.title', "Enable {0}?", levelLabel),
+				title: localize('permissions.assisted.warning.title', "是否启用 {0}?", levelLabel),
 				confirm: localize('permissions.assisted.warning.confirm', "启用"),
 				icon: Codicon.sparkle,
-				detail: localize('permissions.assisted.warning.detail', "{0} uses model recommendations to approve tool calls. Copilot will still ask when the model requires approval, excludes the request from automatic approval, or cannot make a recommendation.\n\nTo make this the starting permission level for new sessions, change the [{1}](command:workbench.action.openSettings?%5B%22{1}%22%5D) setting.", levelLabel, defaultSettingKey),
+				detail: localize('permissions.assisted.warning.detail', "{0} 会按模型的建议来批准工具调用。当模型要求确认、把某次请求排除在自动批准之外，或者给不出建议时，智能体仍然会先问你。\n\n若要将此项设置为新会话的初始权限级别，请更改 [{1}](command:workbench.action.openSettings?%5B%22{1}%22%5D) 设置。", levelLabel, defaultSettingKey),
 			};
 		case ChatPermissionLevel.Autopilot:
 			return {
@@ -107,12 +109,14 @@ function getElevatedWarningCopy(level: ChatPermissionLevel, defaultSettingKey: s
 				detail: localize('permissions.autopilot.warning.detail', "Autopilot 会自动批准所有工具调用，并自主继续工作，直到任务完成。这包括终端命令、文件编辑和外部工具调用。智能体会代表你做出决策，无需确认。\r\n\r\n可以随时通过单击“停止”按钮来停止智能体。此操作仅适用于当前会话。\r\n\r\n若要将此项设置为新会话的初始权限级别，请更改 [{0}](command:workbench.action.openSettings?%5B%22{0}%22%5D)设置。", defaultSettingKey),
 			};
 		case ChatPermissionLevel.AutoApprove:
-			levelLabel ??= localize('permissions.autoApprove', "绕过审批");
+			// 同一个 nls key 在权限选择器里写的是「全部允许」，两处必须一致。
+			levelLabel ??= localize('permissions.autoApprove', "全部允许");
 			return {
-				title: localize('permissions.autoApprove.warning.title', "Enable {0}?", levelLabel),
+				title: localize('permissions.autoApprove.warning.title', "是否启用 {0}?", levelLabel),
 				confirm: localize('permissions.autoApprove.warning.confirm', "启用"),
 				icon: Codicon.warning,
-				detail: localize('permissions.autoApprove.warning.detail', "绕过审批将自动批准所有工具调用，无需确认。这包括文件编辑、终端命令和外部工具调用。\r\n\r\n若要将此项设置为新会话的初始权限级别，请更改 [{0}](command:workbench.action.openSettings?%5B%22{0}%22%5D)设置。", levelLabel, defaultSettingKey),
+				// 链接里必须用 {1}（设置项 id）：用 {0} 会拿本地化标签去设置里搜，一个结果也搜不到。
+				detail: localize('permissions.autoApprove.warning.detail', "{0} 会自动批准所有工具调用，无需确认。这包括文件编辑、终端命令和外部工具调用。\r\n\r\n若要将此项设置为新会话的初始权限级别，请更改 [{1}](command:workbench.action.openSettings?%5B%22{1}%22%5D) 设置。", levelLabel, defaultSettingKey),
 			};
 		default:
 			return undefined;
