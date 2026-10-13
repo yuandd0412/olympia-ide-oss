@@ -21,7 +21,9 @@ export class ManageAccountsAction extends Action2 {
 			id: 'workbench.action.manageAccounts',
 			title: localize2('manageAccounts', "管理帐户"),
 			category: localize2('accounts', "账户"),
-			f1: true
+			// 本产品没有托管账号，活动栏的「账户」按钮出厂就是关的（见 olympiaChrome.ts），
+			// 这条留在命令面板只会点开一个空列表。命令保留：账户入口被别人打开时还要能用。
+			f1: false
 		});
 	}
 

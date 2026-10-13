@@ -21,7 +21,7 @@ import { StatusbarAlignment, IStatusbarService, IStatusbarEntryAccessor, IStatus
 import { IOutputChannelRegistry, Extensions as OutputExt } from '../../../services/output/common/output.js';
 
 import { ITaskEvent, TaskGroup, TaskSettingId, TASKS_CATEGORY, TASK_RUNNING_STATE, TASK_TERMINAL_ACTIVE, TaskEventKind, rerunTaskIcon, RerunForActiveTerminalCommandId, RerunAllRunningTasksCommandId } from '../common/tasks.js';
-import { ITaskService, TaskCommandsRegistered, TaskExecutionSupportedContext } from '../common/taskService.js';
+import { ITaskService, TaskCommandsRegistered } from '../common/taskService.js';
 
 import { Extensions as WorkbenchExtensions, IWorkbenchContributionsRegistry, IWorkbenchContribution, WorkbenchPhase, registerWorkbenchContribution2 } from '../../../common/contributions.js';
 import { RunAutomaticTasks, ManageAutomaticTaskRunning } from './runAutomaticTasks.js';
@@ -32,7 +32,6 @@ import schemaVersion2, { updateProblemMatchers, updateTaskDefinitions } from '..
 import { AbstractTaskService, ConfigureTaskAction } from './abstractTaskService.js';
 import { tasksSchemaId } from '../../../services/configuration/common/configuration.js';
 import { ConfigurationScope, Extensions as ConfigurationExtensions, IConfigurationRegistry } from '../../../../platform/configuration/common/configurationRegistry.js';
-import { WorkbenchStateContext } from '../../../common/contextkeys.js';
 import { IQuickAccessRegistry, Extensions as QuickAccessExtensions } from '../../../../platform/quickinput/common/quickAccess.js';
 import { TasksQuickAccessProvider } from './tasksQuickAccess.js';
 import { ContextKeyExpr } from '../../../../platform/contextkey/common/contextkey.js';
@@ -46,6 +45,17 @@ import { ServicesAccessor } from '../../../../editor/browser/editorExtensions.js
 import { ITerminalInstance, ITerminalService } from '../../terminal/browser/terminal.js';
 
 const workbenchRegistry = Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench);
+
+/**
+ * Olympia：任务系统不在竞赛工作流里。写代码的人是「F9 编译运行」和「按评测机编译」，
+ * 不是 tasks.json —— 上游那二十来条「任务: …」命令面板入口，点开了绝大多数学生只会撞见
+ * 「你还没有配置任务」，而配任务这件事本身是我们不该要求一个初中生去学的。
+ *
+ * 整组入口挂在**这一个**开关上：想恢复上游行为就把它换成 `TaskExecutionSupportedContext`
+ * （从 `../common/taskService.js` 导入），不用逐条找。齿轮菜单和标题栏菜单里那两条也走它，
+ * 所以「改一处」是真的改所有可见入口。
+ */
+const TASKS_UI_AVAILABLE = ContextKeyExpr.false();
 workbenchRegistry.registerWorkbenchContribution(RunAutomaticTasks, LifecyclePhase.Eventually);
 
 registerAction2(ManageAutomaticTaskRunning);
@@ -55,7 +65,7 @@ MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 		title: ManageAutomaticTaskRunning.LABEL,
 		category: TASKS_CATEGORY
 	},
-	when: TaskExecutionSupportedContext
+	when: TASKS_UI_AVAILABLE
 });
 
 export class TaskStatusBarContributions extends Disposable implements IWorkbenchContribution {
@@ -169,7 +179,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarTerminalMenu, {
 		title: nls.localize({ key: 'miRunTask', comment: ['&& denotes a mnemonic'] }, "运行任务(&&R)…")
 	},
 	order: 1,
-	when: TaskExecutionSupportedContext
+	when: TASKS_UI_AVAILABLE
 });
 
 MenuRegistry.appendMenuItem(MenuId.MenubarTerminalMenu, {
@@ -179,7 +189,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarTerminalMenu, {
 		title: nls.localize({ key: 'miBuildTask', comment: ['&& denotes a mnemonic'] }, "运行生成任务(&&B)…")
 	},
 	order: 2,
-	when: TaskExecutionSupportedContext
+	when: TASKS_UI_AVAILABLE
 });
 
 // Manage Tasks
@@ -191,7 +201,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarTerminalMenu, {
 		title: nls.localize({ key: 'miRunningTask', comment: ['&& denotes a mnemonic'] }, "显示正在运行的任务(&&G)…")
 	},
 	order: 1,
-	when: TaskExecutionSupportedContext
+	when: TASKS_UI_AVAILABLE
 });
 
 MenuRegistry.appendMenuItem(MenuId.MenubarTerminalMenu, {
@@ -202,7 +212,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarTerminalMenu, {
 		title: nls.localize({ key: 'miRestartTask', comment: ['&& denotes a mnemonic'] }, "重启正在运行的任务(&&E)…")
 	},
 	order: 2,
-	when: TaskExecutionSupportedContext
+	when: TASKS_UI_AVAILABLE
 });
 
 MenuRegistry.appendMenuItem(MenuId.MenubarTerminalMenu, {
@@ -213,7 +223,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarTerminalMenu, {
 		title: nls.localize({ key: 'miTerminateTask', comment: ['&& denotes a mnemonic'] }, "终止任务(&&T)…")
 	},
 	order: 3,
-	when: TaskExecutionSupportedContext
+	when: TASKS_UI_AVAILABLE
 });
 
 // Configure Tasks
@@ -224,7 +234,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarTerminalMenu, {
 		title: nls.localize({ key: 'miConfigureTask', comment: ['&& denotes a mnemonic'] }, "配置任务(&&C)…")
 	},
 	order: 1,
-	when: TaskExecutionSupportedContext
+	when: TASKS_UI_AVAILABLE
 });
 
 MenuRegistry.appendMenuItem(MenuId.MenubarTerminalMenu, {
@@ -234,7 +244,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarTerminalMenu, {
 		title: nls.localize({ key: 'miConfigureBuildTask', comment: ['&& denotes a mnemonic'] }, "配置默认生成任务(&&F)…")
 	},
 	order: 2,
-	when: TaskExecutionSupportedContext
+	when: TASKS_UI_AVAILABLE
 });
 
 
@@ -244,7 +254,7 @@ MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 		title: nls.localize2('workbench.action.tasks.openWorkspaceFileTasks', "打开工作区任务"),
 		category: TASKS_CATEGORY
 	},
-	when: ContextKeyExpr.and(WorkbenchStateContext.isEqualTo('workspace'), TaskExecutionSupportedContext)
+	when: TASKS_UI_AVAILABLE
 });
 
 MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
@@ -253,7 +263,7 @@ MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 		title: ConfigureTaskAction.TEXT,
 		category: TASKS_CATEGORY
 	},
-	when: TaskExecutionSupportedContext
+	when: TASKS_UI_AVAILABLE
 });
 MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 	command: {
@@ -261,7 +271,7 @@ MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 		title: nls.localize2('ShowLogAction.label', "显示任务日志"),
 		category: TASKS_CATEGORY
 	},
-	when: TaskExecutionSupportedContext
+	when: TASKS_UI_AVAILABLE
 });
 MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 	command: {
@@ -276,7 +286,7 @@ MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 		title: nls.localize2('ReRunTaskAction.label', "重新运行上一个任务"),
 		category: TASKS_CATEGORY
 	},
-	when: TaskExecutionSupportedContext
+	when: TASKS_UI_AVAILABLE
 });
 MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 	command: {
@@ -284,7 +294,7 @@ MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 		title: nls.localize2('RestartTaskAction.label', "重启正在运行的任务"),
 		category: TASKS_CATEGORY
 	},
-	when: TaskExecutionSupportedContext
+	when: TASKS_UI_AVAILABLE
 });
 MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 	command: {
@@ -292,7 +302,7 @@ MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 		title: nls.localize2('RerunAllRunningTasksAction.label', "重新运行所有正在运行的任务"),
 		category: TASKS_CATEGORY
 	},
-	when: TaskExecutionSupportedContext
+	when: TASKS_UI_AVAILABLE
 });
 MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 	command: {
@@ -300,7 +310,7 @@ MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 		title: nls.localize2('ShowTasksAction.label', "显示正在运行的任务"),
 		category: TASKS_CATEGORY
 	},
-	when: TaskExecutionSupportedContext
+	when: TASKS_UI_AVAILABLE
 });
 MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 	command: {
@@ -308,7 +318,7 @@ MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 		title: nls.localize2('TerminateAction.label', "终止任务"),
 		category: TASKS_CATEGORY
 	},
-	when: TaskExecutionSupportedContext
+	when: TASKS_UI_AVAILABLE
 });
 MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 	command: {
@@ -316,7 +326,7 @@ MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 		title: nls.localize2('BuildAction.label', "运行构建任务"),
 		category: TASKS_CATEGORY
 	},
-	when: TaskExecutionSupportedContext
+	when: TASKS_UI_AVAILABLE
 });
 MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 	command: {
@@ -324,7 +334,7 @@ MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 		title: nls.localize2('TestAction.label', "运行测试任务"),
 		category: TASKS_CATEGORY
 	},
-	when: TaskExecutionSupportedContext
+	when: TASKS_UI_AVAILABLE
 });
 MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 	command: {
@@ -332,7 +342,7 @@ MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 		title: nls.localize2('ConfigureDefaultBuildTask.label', "配置默认构建任务"),
 		category: TASKS_CATEGORY
 	},
-	when: TaskExecutionSupportedContext
+	when: TASKS_UI_AVAILABLE
 });
 MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 	command: {
@@ -340,14 +350,14 @@ MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 		title: nls.localize2('ConfigureDefaultTestTask.label', "配置默认测试任务"),
 		category: TASKS_CATEGORY
 	},
-	when: TaskExecutionSupportedContext
+	when: TASKS_UI_AVAILABLE
 });
 MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 	command: {
 		id: 'workbench.action.tasks.openUserTasks',
 		title: nls.localize2('workbench.action.tasks.openUserTasks', "打开用户任务"), category: TASKS_CATEGORY
 	},
-	when: TaskExecutionSupportedContext
+	when: TASKS_UI_AVAILABLE
 });
 
 class UserTasksGlobalActionContribution extends Disposable implements IWorkbenchContribution {
@@ -365,7 +375,7 @@ class UserTasksGlobalActionContribution extends Disposable implements IWorkbench
 				id,
 				title
 			},
-			when: ContextKeyExpr.false(),
+			when: TASKS_UI_AVAILABLE,
 			group: '2_configuration',
 			order: 6
 		}));
@@ -374,7 +384,7 @@ class UserTasksGlobalActionContribution extends Disposable implements IWorkbench
 				id,
 				title
 			},
-			when: ContextKeyExpr.false(),
+			when: TASKS_UI_AVAILABLE,
 			group: '2_configuration',
 			order: 6
 		}));

@@ -28,7 +28,7 @@
     "terminal": {
       "completionProviders": [
         {
-          "description": "Show suggestions for commands, arguments, flags, and file paths based upon the Fig spec."
+          "description": "按 Fig 规格给出命令、参数、选项与文件路径的补全建议"
         }
       ]
     }
