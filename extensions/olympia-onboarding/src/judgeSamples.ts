@@ -125,23 +125,32 @@ function memoryLimitMbOf(match: RegExpExecArray | null): number {
 	return Math.round(value * (MEMORY_UNITS.get(unit) ?? 1));
 }
 
-/** 源文件名 → 上次为它选的题面。按工作区存，跟着工程走。 */
+/**
+ * 源文件名 → 上次为它选的题面。按工作区存，跟着工程走。
+ * 两边都不能写绝对路径：机房那台机器上工程可能挂在 E: 而不是 D:，
+ * 存了盘符就等于换台机器全部重问一遍。题面本身是扁平的 `<题号>.md`，
+ * 所以记文件名就够定位了。
+ */
 const STATEMENT_PICK_KEY = 'olympia.judge.statements';
 
 function statementKey(sourceUri: vscode.Uri): string {
-	return vscode.workspace.asRelativePath(sourceUri, true).toLowerCase();
+	return vscode.workspace.asRelativePath(sourceUri, false).toLowerCase();
 }
 
-function rememberedStatement(context: vscode.ExtensionContext, sourceUri: vscode.Uri): vscode.Uri | undefined {
+function rememberedStatement(context: vscode.ExtensionContext, files: readonly vscode.Uri[], sourceUri: vscode.Uri): vscode.Uri | undefined {
 	const map = context.workspaceState.get<Record<string, string>>(STATEMENT_PICK_KEY);
-	const file = map?.[statementKey(sourceUri)];
-	return file ? vscode.Uri.file(file) : undefined;
+	const name = map?.[statementKey(sourceUri)];
+	if (!name) {
+		return undefined;
+	}
+	// 只在这份文件确实还在缓存里时才算记住：被删了或被改名了都要回到选择列表。
+	return files.find(file => basename(file.fsPath).toLowerCase() === name.toLowerCase());
 }
 
 async function rememberStatement(context: vscode.ExtensionContext, sourceUri: vscode.Uri, statement: vscode.Uri | undefined): Promise<void> {
 	const map = { ...context.workspaceState.get<Record<string, string>>(STATEMENT_PICK_KEY) };
 	if (statement) {
-		map[statementKey(sourceUri)] = statement.fsPath;
+		map[statementKey(sourceUri)] = basename(statement.fsPath);
 	} else {
 		delete map[statementKey(sourceUri)];
 	}
@@ -165,9 +174,8 @@ async function pickProblemFile(context: vscode.ExtensionContext, sourceUri: vsco
 	// 改代码 → 跑样例 → 改代码 是最常见的循环：同一份文件选过的题面要记住，
 	// 不然每按一次 Ctrl+Alt+J 都要重新挑一遍那道题。
 	if (!repick) {
-		const remembered = rememberedStatement(context, sourceUri);
-		// 记着的那份必须还在缓存里：题面被删或改名之后要回到选择列表，不能拿一个读不到的文件去跑。
-		if (remembered && files.some(uri => uri.fsPath.toLowerCase() === remembered.fsPath.toLowerCase())) {
+		const remembered = rememberedStatement(context, files, sourceUri);
+		if (remembered) {
 			return { uri: remembered, how: 'remembered' };
 		}
 	}
