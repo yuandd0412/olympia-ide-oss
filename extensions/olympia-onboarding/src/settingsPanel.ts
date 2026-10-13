@@ -73,11 +73,14 @@ function renderMarkdownLite(text: string): string {
 		.replace(/`([^`]+)`/g, '<code>$1</code>');
 }
 
-/** 第一句当标题，剩下的当说明——清单里本来就是一句名字加几句解释。 */
+/**
+ * 第一句当标题，剩下的当说明——清单里本来就是一句名字加几句解释。
+ * 标题不裁长度：裁过会把 `#pragma GCC optimize` 这类代码名切成半截，反而更难读。
+ */
 function splitDescription(text: string): { label: string; hint: string } {
 	const parts = text.split(/(?<=[。；])/);
 	const label = (parts.shift() ?? text).trim().replace(/[。；]$/, '');
-	return { label: label.length > 48 ? text.slice(0, 48) : label, hint: parts.join('').trim() };
+	return { label, hint: parts.join('').trim() };
 }
 
 function groupOf(key: string): string {

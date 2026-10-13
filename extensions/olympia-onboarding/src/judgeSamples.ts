@@ -125,7 +125,33 @@ function memoryLimitMbOf(match: RegExpExecArray | null): number {
 	return Math.round(value * (MEMORY_UNITS.get(unit) ?? 1));
 }
 
-async function pickProblemFile(sourceUri: vscode.Uri): Promise<vscode.Uri | undefined> {
+/** 源文件名 → 上次为它选的题面。按工作区存，跟着工程走。 */
+const STATEMENT_PICK_KEY = 'olympia.judge.statements';
+
+function statementKey(sourceUri: vscode.Uri): string {
+	return vscode.workspace.asRelativePath(sourceUri, true).toLowerCase();
+}
+
+function rememberedStatement(context: vscode.ExtensionContext, sourceUri: vscode.Uri): vscode.Uri | undefined {
+	const map = context.workspaceState.get<Record<string, string>>(STATEMENT_PICK_KEY);
+	const file = map?.[statementKey(sourceUri)];
+	return file ? vscode.Uri.file(file) : undefined;
+}
+
+async function rememberStatement(context: vscode.ExtensionContext, sourceUri: vscode.Uri, statement: vscode.Uri | undefined): Promise<void> {
+	const map = { ...context.workspaceState.get<Record<string, string>>(STATEMENT_PICK_KEY) };
+	if (statement) {
+		map[statementKey(sourceUri)] = statement.fsPath;
+	} else {
+		delete map[statementKey(sourceUri)];
+	}
+	await context.workspaceState.update(STATEMENT_PICK_KEY, map);
+}
+
+/** 题面是怎么定下来的：日志要把「沿用了上次的选择」这件事说出来，不然学生会以为同名自动匹配上了。 */
+type StatementChoice = { uri: vscode.Uri; how: 'exact' | 'remembered' | 'picked' };
+
+async function pickProblemFile(context: vscode.ExtensionContext, sourceUri: vscode.Uri, repick: boolean): Promise<StatementChoice | undefined> {
 	const files = await statementFiles();
 	if (!files.length) {
 		await vscode.window.showInformationMessage('还没有拉取过题面，无法跑样例。先用「拉取题面」（Ctrl+Alt+P）抓一道题的样例。');
@@ -134,13 +160,26 @@ async function pickProblemFile(sourceUri: vscode.Uri): Promise<vscode.Uri | unde
 	const stem = basename(sourceUri.fsPath).replace(/\.[^.]+$/, '').toLowerCase();
 	const exact = files.find(uri => basename(uri.fsPath).toLowerCase() === `${stem}.md`);
 	if (exact) {
-		return exact;
+		return { uri: exact, how: 'exact' };
+	}
+	// 改代码 → 跑样例 → 改代码 是最常见的循环：同一份文件选过的题面要记住，
+	// 不然每按一次 Ctrl+Alt+J 都要重新挑一遍那道题。
+	if (!repick) {
+		const remembered = rememberedStatement(context, sourceUri);
+		// 记着的那份必须还在缓存里：题面被删或改名之后要回到选择列表，不能拿一个读不到的文件去跑。
+		if (remembered && files.some(uri => uri.fsPath.toLowerCase() === remembered.fsPath.toLowerCase())) {
+			return { uri: remembered, how: 'remembered' };
+		}
 	}
 	const picked = await vscode.window.showQuickPick(
 		files.map(uri => ({ label: basename(uri.fsPath).replace(/\.md$/i, ''), description: vscode.workspace.asRelativePath(uri, false), uri })),
 		{ title: '用哪道题的样例来测', placeHolder: `当前文件 ${basename(sourceUri.fsPath)} 没有同名题面，手动选一道`, ignoreFocusOut: true }
 	);
-	return picked?.uri;
+	if (!picked) {
+		return undefined;
+	}
+	await rememberStatement(context, sourceUri, picked.uri);
+	return { uri: picked.uri, how: 'picked' };
 }
 
 let channel: vscode.OutputChannel | undefined;
@@ -157,23 +196,33 @@ export function verdictOf(results: readonly CaseResult[]): Verdict {
 	return results.reduce<Verdict>((worst, r) => severityOf(r.verdict) > severityOf(worst) ? r.verdict : worst, 'AC');
 }
 
+/** 换一道题来测：清掉这份文件记住的选择，再重新问一次。 */
+async function repick(context: vscode.ExtensionContext, source: vscode.Uri): Promise<void> {
+	await rememberStatement(context, source, undefined);
+	await vscode.commands.executeCommand(CMD.judgeSamples, { repick: true });
+}
+
 export function registerSampleJudge(context: vscode.ExtensionContext): vscode.Disposable {
-	const command = vscode.commands.registerCommand(CMD.judgeSamples, async () => {
+	const command = vscode.commands.registerCommand(CMD.judgeSamples, async (args?: { repick?: boolean }) => {
 		const editor = vscode.window.activeTextEditor;
 		const source = editor?.document.uri;
 		if (!isCompilable(source)) {
 			await vscode.window.showWarningMessage('样例评测：请先打开一个 C/C++ 源文件。');
 			return;
 		}
-		const statement = await pickProblemFile(source);
-		if (!statement) {
+		const choice = await pickProblemFile(context, source, !!args?.repick);
+		if (!choice) {
 			return;
 		}
+		const statement = choice.uri;
 
 		const markdown = Buffer.from(await vscode.workspace.fs.readFile(statement)).toString('utf8');
 		const { samples: all, timeLimitMs, memoryLimitMb } = parseSamples(markdown);
 		if (!all.length) {
-			await vscode.window.showWarningMessage(`「${basename(statement.fsPath)}」里没有解析到样例数据，可能这道题的题面没抓到样例。`);
+			const action = await vscode.window.showWarningMessage(`「${basename(statement.fsPath)}」里没有解析到样例数据，可能这道题的题面没抓到样例。`, '换一道题');
+			if (action === '换一道题') {
+				await repick(context, source);
+			}
 			return;
 		}
 		// 自己加的样例可能还没填完期望输出：那组没法判，跳过并说清楚，别报成一个 WA
@@ -191,6 +240,9 @@ export function registerSampleJudge(context: vscode.ExtensionContext): vscode.Di
 		log.clear();
 		log.show(true);
 		log.appendLine(`题面：${vscode.workspace.asRelativePath(statement, false)} · 样例 ${samples.length} 组 · 时限 ${timeLimitMs} ms（本地按 ${LOCAL_MARGIN} 倍余量）`);
+		if (choice.how === 'remembered') {
+			log.appendLine(`这份题面是上次为 ${basename(source.fsPath)} 选的，所以这次没再问；要换一道题，点结果通知里的「换一道题」。`);
+		}
 		log.appendLine(`内存：${limitMb > 0 ? `限制 ${limitMb} MB（按峰值工作集判，采样只会少报）` : '题面没写内存限制，只报峰值不判 MLE'}`);
 		if (samples.length !== all.length) {
 			log.appendLine(`题面里另有 ${all.length - samples.length} 组没填期望输出，这次跳过：${all.filter(s => normalize(s.expected) === '').map(s => `样例 ${s.number}`).join('、')}`);
@@ -243,13 +295,22 @@ export function registerSampleJudge(context: vscode.ExtensionContext): vscode.Di
 		const passed = results.filter(r => r.verdict === 'AC').length;
 		log.appendLine(`--- ${overall} · ${passed}/${results.length} 组通过 ---`);
 		const message = `样例判定 ${verdictText(overall)}：通过 ${passed}/${results.length} 组。`;
+		// 自动同名匹配上的题面没有「换一道题」这一说；用记住的或手动选的必须留一个出口，
+		// 不然选错一次就再也改不过来。
+		const actions = [
+			...(overall === 'AC' ? [] : ['查看输出']),
+			'继续对拍',
+			...(choice.how === 'exact' ? [] : ['换一道题'])
+		];
 		const action = overall === 'AC'
-			? await vscode.window.showInformationMessage(message, '继续对拍')
-			: await vscode.window.showErrorMessage(message, '查看输出', '继续对拍');
+			? await vscode.window.showInformationMessage(message, ...actions)
+			: await vscode.window.showErrorMessage(message, ...actions);
 		if (action === '继续对拍') {
 			await vscode.commands.executeCommand(CMD.stressTest);
 		} else if (action === '查看输出') {
 			log.show(true);
+		} else if (action === '换一道题') {
+			await repick(context, source);
 		}
 	});
 

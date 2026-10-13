@@ -599,8 +599,8 @@ registry.registerConfiguration({
 	'properties': {
 		'workbench.enableExperiments': {
 			'type': 'boolean',
-			'description': localize('workbench.enableExperiments', "从 Microsoft 联机服务中获取要进行的实验。"),
-			'default': true,
+			'description': localize('workbench.enableExperiments', "是否从 Microsoft 的联机服务获取实验配置。Olympia 没有配置这项服务，保持关闭可以避免无意义的联网请求。"),
+			'default': false,
 			'scope': ConfigurationScope.APPLICATION,
 			'restricted': true,
 			'tags': ['usesOnlineServices']

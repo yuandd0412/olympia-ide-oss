@@ -207,8 +207,8 @@
 		"walkthroughs": [
 			{
 				"id": "olympia.gettingStarted",
-				"title": "三分钟上手 Olympia IDE",
-				"description": "装完就能编译 C++、运行程序，不用手写 tasks.json。\n\n[访问 Olympia 官网](https://olympia.dpdns.org)",
+				"title": "十分钟上手 Olympia IDE",
+				"description": "从打开文件夹到跑样例、对拍、比赛模式，十步走完；装完就能编译 C++，不用手写 tasks.json。\n\n[访问 Olympia 官网](https://olympia.dpdns.org)",
 				"when": "!isWeb",
 				"steps": [
 					{
@@ -236,6 +236,54 @@
 						]
 					},
 					{
+						"id": "olympia.step.compileRun",
+						"title": "按 F9 编译并运行",
+						"description": "不用写 tasks.json：按你选的评测机档位编译当前文件，通过后直接运行。状态栏左下角那枚 chip 也写着 `编译运行 F9`，点它就执行。\n\n[编译并运行](command:olympia.compileAndRun)",
+						"media": {
+							"altText": "编译并运行的输出",
+							"markdown": "media/compileRun.svg"
+						},
+						"completionEvents": [
+							"onCommand:olympia.compileAndRun"
+						]
+					},
+					{
+						"id": "olympia.step.judgeSamples",
+						"title": "用题面样例判一次（AC / WA / TLE / MLE）",
+						"description": "先拉一道题的题面，样例就存进工程里的 `.olympia/problems`。之后 `Ctrl+Alt+J` 拿这些样例跑当前文件，按 token 比对，超时限报 TLE、超内存报 MLE 并给出峰值内存；没拉过题面也能手写样例数据。\n\n[拉取题面](command:olympia.problem.pull) · [跑样例](command:olympia.judgeSamples)",
+						"media": {
+							"altText": "样例判定结果",
+							"markdown": "media/judgeSamples.svg"
+						},
+						"completionEvents": [
+							"onCommand:olympia.judgeSamples"
+						]
+					},
+					{
+						"id": "olympia.step.stress",
+						"title": "对拍：让随机数据替你找反例",
+						"description": "交出正解和暴力，再交一个数据生成器，Olympia 一轮一轮喂同样的随机数据；输出不一致就停下来，把那组数据和两份输出存进 `stress-fail`，还能一键补进题面样例。不用装 Python。\n\n[开始对拍](command:olympia.stressTest)",
+						"media": {
+							"altText": "正解与暴力互相验证",
+							"markdown": "media/stress.svg"
+						},
+						"completionEvents": [
+							"onCommand:olympia.stressTest"
+						]
+					},
+					{
+						"id": "olympia.step.contest",
+						"title": "比赛模式：给自己一场倒计时",
+						"description": "选一段时长（CSP / NOIP 常考的 120 分钟在列表里），状态栏出现倒计时，关掉窗口重载也接着走；这段时间里 AI 教练不出场。\n\n[开始一场比赛](command:olympia.contestMode)",
+						"media": {
+							"altText": "状态栏的比赛倒计时",
+							"markdown": "media/contest.svg"
+						},
+						"completionEvents": [
+							"onCommand:olympia.contestMode"
+						]
+					},
+					{
 						"id": "olympia.step.checkEnv",
 						"title": "跑一次环境自检",
 						"description": "确认编译器就绪，并看看当前版本和目标评测机是否一致。\n\n[立即自检](command:olympia.checkEnvironment)",
@@ -245,6 +293,18 @@
 						},
 						"completionEvents": [
 							"onCommand:olympia.checkEnvironment"
+						]
+					},
+					{
+						"id": "olympia.step.settings",
+						"title": "所有开关都在同一页",
+						"description": "编译档位、对拍轮数、跑样例判 MLE 的内存上限、题面存放位置……`Ctrl+Alt+,` 打开 Olympia 设置，每一项的说明就写在它下面，改过的会标出「已改」。\n\n[打开 Olympia 设置](command:olympia.settings)",
+						"media": {
+							"altText": "Olympia 设置页",
+							"markdown": "media/settings.svg"
+						},
+						"completionEvents": [
+							"onCommand:olympia.settings"
 						]
 					},
 					{

@@ -21,7 +21,7 @@ configurationRegistry.registerConfiguration({
 			enum: ['none', 'manual', 'start', 'default'],
 			default: 'default',
 			scope: ConfigurationScope.APPLICATION,
-			description: localize('updateMode', "Configure whether you receive automatic updates. The updates are fetched from a Microsoft online service."),
+			description: localize('updateMode', "配置是否接收自动更新。Olympia 的安装包发布在官网；本构建没有配置更新服务时，这项不起作用。"),
 			tags: ['usesOnlineServices'],
 			enumDescriptions: [
 				localize('none', "禁用更新。"),
@@ -34,7 +34,7 @@ configurationRegistry.registerConfiguration({
 				category: PolicyCategory.Update,
 				minimumVersion: '1.67',
 				localization: {
-					description: { key: 'updateMode', value: localize('updateMode', "Configure whether you receive automatic updates. The updates are fetched from a Microsoft online service."), },
+					description: { key: 'updateMode', value: localize('updateMode', "配置是否接收自动更新。Olympia 的安装包发布在官网；本构建没有配置更新服务时，这项不起作用。"), },
 					enumDescriptions: [
 						{
 							key: 'none',
@@ -60,7 +60,7 @@ configurationRegistry.registerConfiguration({
 			type: 'string',
 			default: 'default',
 			scope: ConfigurationScope.APPLICATION,
-			description: localize('updateMode', "Configure whether you receive automatic updates. The updates are fetched from a Microsoft online service."),
+			description: localize('updateMode', "配置是否接收自动更新。Olympia 的安装包发布在官网；本构建没有配置更新服务时，这项不起作用。"),
 			deprecationMessage: localize('deprecated', "此设置已弃用，请改用“{0}”。", 'update.mode')
 		},
 		'update.enableWindowsBackgroundUpdates': {
@@ -75,7 +75,7 @@ configurationRegistry.registerConfiguration({
 			type: 'boolean',
 			default: true,
 			scope: ConfigurationScope.APPLICATION,
-			description: localize('showReleaseNotes', "在更新后显示发行说明。发行说明将从 Microsoft 联机服务中获取。"),
+			description: localize('showReleaseNotes', "在更新后显示发行说明。发行说明从官网获取。"),
 			tags: ['usesOnlineServices'],
 			agentsWindow: { default: false, readOnly: true },
 		},

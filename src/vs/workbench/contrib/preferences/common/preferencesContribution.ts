@@ -110,8 +110,8 @@ registry.registerConfiguration({
 	'properties': {
 		'workbench.settings.enableNaturalLanguageSearch': {
 			'type': 'boolean',
-			'description': nls.localize('enableNaturalLanguageSettingsSearch', "控制是否在设置中启用自然语言搜索。自然语言搜索由 Microsoft 联机服务提供。"),
-			'default': true,
+			'description': nls.localize('enableNaturalLanguageSettingsSearch', "控制是否在设置搜索里启用自然语言匹配。该功能要把搜索词发给 Microsoft 的联机服务，Olympia 没有配置这项服务，默认关闭；关键词搜索不受影响。"),
+			'default': false,
 			'scope': ConfigurationScope.WINDOW,
 			'tags': ['usesOnlineServices']
 		},

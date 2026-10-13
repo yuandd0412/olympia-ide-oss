@@ -170,7 +170,7 @@ export const startEntries: GettingStartedStartEntryContent = [
 		id: 'topLevelGitClone',
 		title: localize('gettingStarted.topLevelGitClone.title', "克隆 Git 仓库..."),
 		description: localize('gettingStarted.topLevelGitClone.description', "把远程仓库克隆到本地文件夹"),
-		when: 'config.git.enabled && !git.missing',
+		when: 'false',
 		icon: Codicon.sourceControl,
 		content: {
 			type: 'startEntry',
@@ -181,7 +181,7 @@ export const startEntries: GettingStartedStartEntryContent = [
 		id: 'topLevelGitOpen',
 		title: localize('gettingStarted.topLevelGitOpen.title', "打开仓库..."),
 		description: localize('gettingStarted.topLevelGitOpen.description', "连接远程仓库或拉取请求，以浏览、搜索、编辑和提交"),
-		when: 'workspacePlatform == \'webworker\'',
+		when: 'false',
 		icon: Codicon.sourceControl,
 		content: {
 			type: 'startEntry',
@@ -192,7 +192,7 @@ export const startEntries: GettingStartedStartEntryContent = [
 		id: 'topLevelRemoteOpen',
 		title: localize('gettingStarted.topLevelRemoteOpen.title', "连接到..."),
 		description: localize('gettingStarted.topLevelRemoteOpen.description', "连接到远程开发工作区。"),
-		when: '!isWeb',
+		when: 'false',
 		icon: Codicon.remote,
 		content: {
 			type: 'startEntry',
@@ -203,7 +203,7 @@ export const startEntries: GettingStartedStartEntryContent = [
 		id: 'topLevelOpenTunnel',
 		title: localize('gettingStarted.topLevelOpenTunnel.title', "打开隧道..."),
 		description: localize('gettingStarted.topLevelOpenTunnel.description', "通过隧道连接到远程机器"),
-		when: 'isWeb && showRemoteStartEntryInWeb',
+		when: 'false',
 		icon: Codicon.remote,
 		content: {
 			type: 'startEntry',
@@ -215,7 +215,7 @@ export const startEntries: GettingStartedStartEntryContent = [
 		title: localize('gettingStarted.newWorkspaceChat.title', "新建工作区..."),
 		description: localize('gettingStarted.newWorkspaceChat.description', "通过对话创建新工作区"),
 		icon: Codicon.chatSparkle,
-		when: '!isWeb && !chatSetupHidden && !chatSetupDisabledInWorkspace',
+		when: 'false',
 		content: {
 			type: 'startEntry',
 			command: 'command:welcome.newWorkspaceChat',
@@ -233,7 +233,7 @@ const CopilotSignedOutButton = Button(localize('setupCopilotButton.setup', "使�
 const CopilotSignedInButton = Button(localize('setupCopilotButton.setup', "使用 AI 功能"), `command:workbench.action.chat.triggerSetup`);
 const CopilotCompleteButton = Button(localize('setupCopilotButton.chatWithCopilot', "开始对话"), 'command:workbench.action.chat.open');
 
-function createCopilotSetupStep(id: string, button: string, when: string, includeTerms: boolean): BuiltinGettingStartedStep {
+function createCopilotSetupStep(id: string, button: string, includeTerms: boolean): BuiltinGettingStartedStep {
 	const description = includeTerms ?
 		`${CopilotDescription}\n${CopilotTermsString}\n${button}` :
 		`${CopilotDescription}\n${button}`;
@@ -242,7 +242,7 @@ function createCopilotSetupStep(id: string, button: string, when: string, includ
 		id,
 		title: CopilotStepTitle,
 		description,
-		when: `${when} && !chatSetupHidden && !chatSetupDisabledInWorkspace`,
+		when: 'false',
 		media: {
 			type: 'svg', altText: 'Olympia IDE Copilot multi file edits', path: 'multi-file-edits.svg'
 		},
@@ -262,10 +262,10 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
 		content: {
 			type: 'steps',
 			steps: [
-				createCopilotSetupStep('CopilotSetupAnonymous', CopilotAnonymousButton, 'chatAnonymous && !chatSetupCompleted', true),
-				createCopilotSetupStep('CopilotSetupSignedOut', CopilotSignedOutButton, 'chatEntitlementSignedOut && !chatAnonymous && !github.copilot.hasByokModels', false),
-				createCopilotSetupStep('CopilotSetupComplete', CopilotCompleteButton, 'chatSetupCompleted && !chatSetupDisabled && (chatAnonymous || chatPlanPro || chatPlanProPlus || chatPlanMax || chatPlanBusiness || chatPlanEnterprise || chatPlanFree)', false),
-				createCopilotSetupStep('CopilotSetupSignedIn', CopilotSignedInButton, '!chatEntitlementSignedOut && (!chatSetupCompleted || chatSetupDisabled || chatPlanCanSignUp)', false),
+				createCopilotSetupStep('CopilotSetupAnonymous', CopilotAnonymousButton, true),
+				createCopilotSetupStep('CopilotSetupSignedOut', CopilotSignedOutButton, false),
+				createCopilotSetupStep('CopilotSetupComplete', CopilotCompleteButton, false),
+				createCopilotSetupStep('CopilotSetupSignedIn', CopilotSignedInButton, false),
 				{
 					id: 'pickColorTheme',
 					title: localize('gettingStarted.pickColor.title', "选择你的主题"),
@@ -278,8 +278,8 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
 				},
 				{
 					id: 'videoTutorial',
-					title: localize('gettingStarted.videoTutorial.title', "观看视频教程"),
-					description: localize('gettingStarted.videoTutorial.description.interpolated', "这是 Olympia IDE 核心功能系列短视频教程的第一集，简短实用。\n{0}", Button(localize('watch', "观看教程"), 'https://aka.ms/vscode-getting-started-video')),
+					title: localize('gettingStarted.videoTutorial.title', "看一遍快捷键和判题流程"),
+					description: localize('gettingStarted.videoTutorial.description.interpolated', "文档里写着每个功能的快捷键、跑样例怎么判 AC/WA/TLE/MLE、对拍怎么配数据，比视频查得快。\n{0}", Button(localize('watch', "打开 Olympia 文档"), 'https://olympia.dpdns.org/docs/')),
 					media: { type: 'svg', altText: 'Olympia IDE Settings', path: 'learn.svg' },
 				}
 			]
@@ -520,7 +520,7 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
 					id: 'debugging',
 					title: localize('gettingStarted.debug.title', "看着你的代码跑起来"),
 					description: localize('gettingStarted.debug.description.interpolated', "配置启动项，加速「编辑-构建-测试-调试」循环。\n{0}", Button(localize('runProject', "运行你的项目"), 'command:workbench.action.debug.selectandstart')),
-					when: 'workspacePlatform != \'webworker\' && workspaceFolderCount != 0',
+					when: 'false',
 					media: {
 						type: 'svg', altText: 'Run and debug view.', path: 'debug.svg',
 					},
@@ -529,7 +529,7 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
 					id: 'scmClone',
 					title: localize('gettingStarted.scm.title', "用 Git 管理你的代码"),
 					description: localize('gettingStarted.scmClone.description.interpolated', "为你的项目配置内置版本控制，追踪改动并与他人协作。\n{0}", Button(localize('cloneRepo', "克隆仓库"), 'command:git.clone')),
-					when: 'config.git.enabled && !git.missing && workspaceFolderCount == 0',
+					when: 'false',
 					media: {
 						type: 'svg', altText: 'Source Control view.', path: 'git.svg',
 					},
@@ -538,7 +538,7 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
 					id: 'scmSetup',
 					title: localize('gettingStarted.scm.title', "用 Git 管理你的代码"),
 					description: localize('gettingStarted.scmSetup.description.interpolated', "为你的项目配置内置版本控制，追踪改动并与他人协作。\n{0}", Button(localize('initRepo', "初始化 Git 仓库"), 'command:git.init')),
-					when: 'config.git.enabled && !git.missing && workspaceFolderCount != 0 && gitOpenRepositoryCount == 0',
+					when: 'false',
 					media: {
 						type: 'svg', altText: 'Source Control view.', path: 'git.svg',
 					},
@@ -547,7 +547,7 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
 					id: 'scm',
 					title: localize('gettingStarted.scm.title', "用 Git 管理你的代码"),
 					description: localize('gettingStarted.scm.description.interpolated', "不用再查 Git 命令了，Git 与 GitHub 工作流已无缝集成。\n{0}", Button(localize('openSCM', "打开源代码管理"), 'command:workbench.view.scm')),
-					when: 'config.git.enabled && !git.missing && workspaceFolderCount != 0 && gitOpenRepositoryCount != 0 && activeViewlet != \'workbench.view.scm\'',
+					when: 'false',
 					media: {
 						type: 'svg', altText: 'Source Control view.', path: 'git.svg',
 					},
@@ -556,7 +556,7 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
 					id: 'installGit',
 					title: localize('gettingStarted.installGit.title', "安装 Git"),
 					description: localize({ key: 'gettingStarted.installGit.description.interpolated', comment: ['The placeholders are command link items should not be translated'] }, "安装 Git 以跟踪项目中的更改。\r\n{0}\r\n安装后 {1}重新加载窗口{2} 以完成 Git 安装。", Button(localize('installGit', "安装 Git"), 'https://aka.ms/vscode-install-git'), '[', '](command:workbench.action.reloadWindow)'),
-					when: 'git.missing',
+					when: 'false',
 					media: {
 						type: 'svg', altText: 'Install Git.', path: 'git.svg',
 					},
@@ -585,7 +585,7 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
 				{
 					id: 'workspaceTrust',
 					title: localize('gettingStarted.workspaceTrust.title', "安全地浏览和编辑代码"),
-					description: localize('gettingStarted.workspaceTrust.description.interpolated', "通过 {0}，可以确定项目文件夹是否应 **允许或限制** 自动代码执行 __(扩展、调试等所必需)__。\r\n 打开文件/文件夹将提示授予信任。以后始终可以 {1}。", Button(localize('workspaceTrust', "工作区信任"), 'https://code.visualstudio.com/docs/editor/workspace-trust'), Button(localize('enableTrust', "启用信任"), 'command:toSide:workbench.trust.manage')),
+					description: localize('gettingStarted.workspaceTrust.description.interpolated', "打开一个文件夹时，Olympia 会先限制扩展自动执行代码，确认这个文件夹是你自己的再放开。\r\n打开文件/文件夹时会提示你授予信任，以后始终可以 {0}。", Button(localize('enableTrust', "启用信任"), 'command:toSide:workbench.trust.manage')),
 					when: 'workspacePlatform != \'webworker\' && !isWorkspaceTrusted && workspaceFolderCount == 0',
 					media: {
 						type: 'svg', altText: 'Workspace Trust editor in Restricted mode and a primary button for switching to Trusted mode.', path: 'workspaceTrust.svg'

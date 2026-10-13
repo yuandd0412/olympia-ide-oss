@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 300" width="480" height="300" role="img" aria-label="对拍：正解与暴力互相验证">
+	<rect width="480" height="300" fill="#16161a"/>
+	<rect x="168" y="36" width="144" height="52" rx="12" fill="#1f1f26" stroke="#c678dd" stroke-width="2"/>
+	<rect x="192" y="52" width="96" height="11" rx="5" fill="#a48bbd"/>
+	<rect x="192" y="70" width="60" height="8" rx="4" fill="#4a4a58"/>
+	<path d="M 216 88 L 140 132" fill="none" stroke="#4a4a58" stroke-width="2"/>
+	<path d="M 264 88 L 340 132" fill="none" stroke="#4a4a58" stroke-width="2"/>
+	<rect x="48" y="132" width="176" height="66" rx="12" fill="#1f1f26" stroke="#6ec8f5" stroke-width="2"/>
+	<rect x="70" y="150" width="80" height="11" rx="5" fill="#9fd8f5"/>
+	<rect x="70" y="170" width="132" height="8" rx="4" fill="#3a3a46"/>
+	<rect x="256" y="132" width="176" height="66" rx="12" fill="#1f1f26" stroke="#4a4a58" stroke-width="2"/>
+	<rect x="278" y="150" width="72" height="11" rx="5" fill="#5a5a68"/>
+	<rect x="278" y="170" width="132" height="8" rx="4" fill="#3a3a46"/>
+	<rect x="48" y="222" width="384" height="42" rx="10" fill="#20301f" stroke="#98c379" stroke-width="2"/>
+	<rect x="70" y="238" width="152" height="11" rx="5" fill="#7f8b66"/>
+	<circle cx="400" cy="243" r="10" fill="none" stroke="#98c379" stroke-width="3"/>
+	<path d="M 395 243 L 399 248 L 406 238" fill="none" stroke="#98c379" stroke-width="3" stroke-linecap="round"/>
+</svg>

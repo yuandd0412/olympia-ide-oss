@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 300" width="480" height="300" role="img" aria-label="跑样例判定">
+	<rect width="480" height="300" fill="#16161a"/>
+	<rect x="40" y="36" width="400" height="228" rx="14" fill="#1f1f26" stroke="#3a3a46" stroke-width="2"/>
+	<rect x="64" y="60" width="188" height="11" rx="5" fill="#4a4a58"/>
+	<rect x="300" y="60" width="116" height="11" rx="5" fill="#3a3a46"/>
+	<g>
+		<rect x="64" y="96" width="352" height="44" rx="9" fill="#20301f" stroke="#98c379" stroke-width="2"/>
+		<rect x="84" y="112" width="80" height="12" rx="6" fill="#7f8b66"/>
+		<rect x="336" y="108" width="60" height="20" rx="10" fill="#98c379"/>
+		<text x="366" y="123" font-family="monospace" font-size="13" fill="#16161a" text-anchor="middle">AC</text>
+	</g>
+	<g>
+		<rect x="64" y="152" width="352" height="44" rx="9" fill="#2b1f22" stroke="#e06c75" stroke-width="2"/>
+		<rect x="84" y="168" width="96" height="12" rx="6" fill="#7f6a6f"/>
+		<rect x="336" y="164" width="60" height="20" rx="10" fill="#e06c75"/>
+		<text x="366" y="179" font-family="monospace" font-size="13" fill="#16161a" text-anchor="middle">WA</text>
+	</g>
+	<g>
+		<rect x="64" y="208" width="352" height="44" rx="9" fill="#2a2519" stroke="#e5c07b" stroke-width="2"/>
+		<rect x="84" y="224" width="112" height="12" rx="6" fill="#7d7355"/>
+		<rect x="336" y="220" width="60" height="20" rx="10" fill="#e5c07b"/>
+		<text x="366" y="235" font-family="monospace" font-size="13" fill="#16161a" text-anchor="middle">MLE</text>
+	</g>
+</svg>
