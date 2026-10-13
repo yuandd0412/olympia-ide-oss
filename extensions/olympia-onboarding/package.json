@@ -280,7 +280,7 @@
 					{
 						"id": "olympia.step.contest",
 						"title": "比赛模式：给自己一场倒计时",
-						"description": "选一段时长（CSP / NOIP 常考的 120 分钟在列表里），状态栏出现倒计时，关掉窗口重载也接着走；这段时间里 AI 教练不出场。\n\n[开始一场比赛](command:olympia.contestMode)",
+						"description": "选一段时长（CSP / NOIP 常考的 120 分钟在列表里），状态栏出现倒计时，关掉窗口重载也接着走；这段时间里 AI 教练不出场。已经攒好题目的话，`Ctrl+Alt+L` 打开集训清单，选中一份就直接按它写的分钟数开场。\n\n[开始一场比赛](command:olympia.contestMode)\n\n[打开集训清单](command:olympia.practice.open)",
 						"media": {
 							"altText": "状态栏的比赛倒计时",
 							"markdown": "media/contest.svg"
