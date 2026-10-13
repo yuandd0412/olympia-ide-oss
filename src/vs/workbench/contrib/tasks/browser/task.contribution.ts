@@ -365,7 +365,7 @@ class UserTasksGlobalActionContribution extends Disposable implements IWorkbench
 				id,
 				title
 			},
-			when: TaskExecutionSupportedContext,
+			when: ContextKeyExpr.false(),
 			group: '2_configuration',
 			order: 6
 		}));
@@ -374,7 +374,7 @@ class UserTasksGlobalActionContribution extends Disposable implements IWorkbench
 				id,
 				title
 			},
-			when: TaskExecutionSupportedContext,
+			when: ContextKeyExpr.false(),
 			group: '2_configuration',
 			order: 6
 		}));

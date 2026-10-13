@@ -143,7 +143,7 @@ Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration)
 					localize('extensions.autoUpdate.on', "仅为启用的扩展自动下载和安装更新。"),
 					localize('extensions.autoUpdate.off', "扩展不会自动更新。"),
 				],
-				description: localize('extensions.autoUpdate', "控制扩展的自动更新行为。更新包来自微软的在线服务。"),
+				description: localize('extensions.autoUpdate', "控制扩展的自动更新行为。更新包从扩展市场获取。"),
 				default: 'on',
 				scope: ConfigurationScope.APPLICATION,
 				tags: ['usesOnlineServices'],
@@ -154,7 +154,7 @@ Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration)
 					localization: {
 						description: {
 							key: 'extensions.autoUpdate',
-							value: localize('extensions.autoUpdate', "控制扩展的自动更新行为。更新包来自微软的在线服务。"),
+							value: localize('extensions.autoUpdate', "控制扩展的自动更新行为。更新包从扩展市场获取。"),
 						},
 						enumDescriptions: [
 							{
@@ -1722,7 +1722,7 @@ class ExtensionsContributions extends Disposable implements IWorkbenchContributi
 					const description = localize('extensionInfoDescription', "描述: {0}", extension.description);
 					const verision = localize('extensionInfoVersion', "版本: {0}", extension.version);
 					const publisher = localize('extensionInfoPublisher', "发布者: {0}", extension.publisherDisplayName);
-					const link = extension.url ? localize('extensionInfoVSMarketplaceLink', "VS Marketplace 链接: {0}", `${extension.url}`) : null;
+					const link = extension.url ? localize('extensionInfoVSMarketplaceLink', "扩展市场链接: {0}", `${extension.url}`) : null;
 					const clipboardStr = `${name}\n${id}\n${description}\n${verision}\n${publisher}${link ? '\n' + link : ''}`;
 					await clipboardService.writeText(clipboardStr);
 				}
