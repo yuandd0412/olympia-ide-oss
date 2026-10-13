@@ -45,6 +45,12 @@
 				"icon": "$(file-code)"
 			},
 			{
+				"command": "olympia.template.editMy",
+				"title": "编辑我的模板",
+				"category": "Olympia",
+				"icon": "$(edit)"
+			},
+			{
 				"command": "olympia.problem.openStatement",
 				"title": "打开题面库",
 				"category": "Olympia"
@@ -69,6 +75,10 @@
 				{
 					"command": "olympia.template.insert",
 					"when": "editorLangId == cpp"
+				},
+				{
+					"command": "olympia.template.editMy",
+					"when": "true"
 				},
 				{
 					"command": "olympia.problem.openStatement",
@@ -141,7 +151,7 @@
 				"olympia.problem.templateOnPull": {
 					"type": "boolean",
 					"default": false,
-					"description": "拉取题面后是否自动生成 ACM 赛制的 main.cpp。"
+					"description": "拉取题面后是否在题面旁边自动新建一个同名 .cpp 文件。有「我的模板」就用你自己那份打底，没有就用 ACM 模板。"
 				},
 				"olympia.problem.requestTimeoutMs": {
 					"type": "number",

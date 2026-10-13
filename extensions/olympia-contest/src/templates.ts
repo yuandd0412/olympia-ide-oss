@@ -12,7 +12,7 @@
 
 export type ContestFormat = 'acm' | 'ioi';
 
-export const ACM_TEMPLATE = `// ${'$'}Olympia ACM 赛制模板 — C++17
+export const ACM_TEMPLATE = `// Olympia ACM 赛制模板 — C++17
 #include <bits/stdc++.h>
 using namespace std;
 
@@ -55,6 +55,15 @@ export const FORMAT_LABEL: Record<ContestFormat, string> = {
 	acm: 'ACM 赛制（单文件 main.cpp）',
 	ioi: 'IOI 赛制（函数接口 + 评测机）',
 };
+
+/**
+ * 学生自己那份模板放在工程里，不在设置里：一个 .cpp 文件他能直接打开改、直接看效果，
+ * 比让他在 settings.json 里手写带 `\n` 的字符串现实得多，而且跟着文件夹走到机房。
+ */
+export const TEMPLATE_FOLDER = '.olympia';
+export const TEMPLATE_FILE = 'template.cpp';
+export const MY_TEMPLATE_LABEL = '我的模板';
+export const MY_TEMPLATE_HINT = `${TEMPLATE_FOLDER}/${TEMPLATE_FILE}，你自己写的那份`;
 
 /** sample cases rendered as a fenced block, ready to paste next to the statement */
 export function renderSamples(samples: { input: string; output: string; explain?: string }[]): string {

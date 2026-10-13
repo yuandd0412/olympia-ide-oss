@@ -171,7 +171,7 @@ export function registerSolveLog(context: vscode.ExtensionContext): vscode.Dispo
 		const records = await readSolves();
 		if (!records.length) {
 			await vscode.window.showInformationMessage(
-				'还没有解题记录。跑样例（Ctrl+Alt+J）判成 AC 的时候会自动记一条，记录存在工程的 .olympia/solves.json 里。'
+				`还没有解题记录。跑样例（Ctrl+Alt+J）判成 AC 的时候会自动记一条，记录存在工程的 ${SOLVES_FOLDER}/${SOLVES_FILE} 里。`
 			);
 			return;
 		}

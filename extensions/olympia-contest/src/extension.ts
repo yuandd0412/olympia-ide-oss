@@ -15,7 +15,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { detectPlatform, fetchProblem, type Platform, type Problem } from './sources';
-import { renderStatement, templateFor, FORMAT_LABEL, PLATFORM_TEXT, platformText, type ContestFormat } from './templates';
+import { renderStatement, templateFor, FORMAT_LABEL, PLATFORM_TEXT, platformText, MY_TEMPLATE_LABEL, MY_TEMPLATE_HINT, TEMPLATE_FOLDER, TEMPLATE_FILE, type ContestFormat } from './templates';
 import { readLibrary, showStatement, toPicks } from './problemLibrary';
 import { appendSample as appendSampleTo, customSamplesOf, MANUAL_EXPLAIN, pickTarget, withCustomSamples } from './statementSamples';
 import { registerCppSnippets } from './snippets';
@@ -91,7 +91,8 @@ async function pullProblem(ref: { id: string; platform: Platform }): Promise<voi
 				if (templateOnPull) {
 					const seed = path.join(path.dirname(uri.fsPath), `${problem.id}.cpp`);
 					if (!fs.existsSync(seed)) {
-						await fs.promises.writeFile(seed, templateFor('acm'), 'utf8');
+						// 拉完题面建新文件正是模板最该出现的一刻：有自己那份就用自己那份。
+						await fs.promises.writeFile(seed, await readMyTemplate() ?? templateFor('acm'), 'utf8');
 					}
 				}
 
@@ -208,19 +209,82 @@ async function appendSample(args?: AppendSampleArgs): Promise<boolean> {
 	return true;
 }
 
+/** 学生自己那份模板的位置；没打开工作区就没有。 */
+function myTemplateFile(): vscode.Uri | undefined {
+	const folder = vscode.workspace.workspaceFolders?.[0];
+	return folder ? vscode.Uri.joinPath(folder.uri, TEMPLATE_FOLDER, TEMPLATE_FILE) : undefined;
+}
+
+/** 只有内容才算模板：新建出来还没填过的空文件不该被当成一份模板插进代码。 */
+async function readMyTemplate(): Promise<string | undefined> {
+	const file = myTemplateFile();
+	if (!file) {
+		return undefined;
+	}
+	try {
+		const text = await fs.promises.readFile(file.fsPath, 'utf8');
+		return text.trim() ? text : undefined;
+	} catch {
+		return undefined;
+	}
+}
+
+/** 打开我的模板；没有就用 ACM 模板建一份，让学生改现成的而不是从空白开始。 */
+async function editMyTemplate(): Promise<void> {
+	const file = myTemplateFile();
+	if (!file) {
+		await vscode.window.showWarningMessage('先打开一个文件夹，我的模板存在工程里的 .olympia/template.cpp。');
+		return;
+	}
+	if (!fs.existsSync(file.fsPath)) {
+		await fs.promises.mkdir(path.dirname(file.fsPath), { recursive: true });
+		await fs.promises.writeFile(file.fsPath, templateFor('acm'), 'utf8');
+	}
+	const doc = await vscode.workspace.openTextDocument(file);
+	await vscode.window.showTextDocument(doc, { preview: false });
+}
+
+interface TemplateChoice {
+	readonly label: string;
+	readonly description?: string;
+	readonly format?: ContestFormat;
+	readonly mine?: boolean;
+	readonly edit?: boolean;
+}
+
 async function insertTemplate(): Promise<void> {
-	const picked = await vscode.window.showQuickPick(
-		(Object.keys(FORMAT_LABEL) as ContestFormat[]).map(f => ({ label: FORMAT_LABEL[f], f })),
-		{ title: '选择赛制模板', ignoreFocusOut: true },
-	);
+	const my = await readMyTemplate();
+	const formats = (Object.keys(FORMAT_LABEL) as ContestFormat[]).map(f => ({ label: FORMAT_LABEL[f], format: f }));
+	const choices: TemplateChoice[] = [
+		...(my ? [{ label: MY_TEMPLATE_LABEL, description: MY_TEMPLATE_HINT, mine: true }] : []),
+		...formats,
+		{ label: my ? '编辑我的模板…' : '新建我的模板（拿 ACM 模板打底）…', edit: true }
+	];
+	const picked = await vscode.window.showQuickPick(choices, {
+		title: '选择赛制模板',
+		placeHolder: my ? '我的模板排在最前面，直接回车就是用你自己那份' : '建一份你自己的模板，以后每次都省事',
+		ignoreFocusOut: true,
+	});
 	if (!picked) { return; }
+	if (picked.edit) {
+		await editMyTemplate();
+		return;
+	}
 	const editor = vscode.window.activeTextEditor;
 	if (!editor) {
 		vscode.window.showWarningMessage('请先打开一个 C++ 文件。');
 		return;
 	}
-	await editor.edit(b => b.insert(editor.selection.active, templateFor(picked.f)));
-	vscode.window.showInformationMessage(`已插入${picked.f === 'ioi' ? ' IOI' : ' ACM'} 赛制模板。`);
+	const body = picked.mine ? my : templateFor(picked.format ?? 'acm');
+	if (!body) {
+		await vscode.window.showWarningMessage('我的模板是空的，先填几行再插。');
+		return;
+	}
+	await editor.edit(b => b.insert(editor.selection.active, body));
+	vscode.window.showInformationMessage(
+		picked.mine ? '已插入你的模板。不想用它了就按 Ctrl+Alt+T 选「编辑我的模板」。'
+			: `已插入${picked.format === 'ioi' ? ' IOI' : ' ACM'} 赛制模板。`
+	);
 }
 
 /**
@@ -265,6 +329,8 @@ export function activate(context: vscode.ExtensionContext): void {
 			if (typed) { await pullProblem(typed); }
 		}),
 		vscode.commands.registerCommand('olympia.template.insert', insertTemplate),
+		// 面板和命令面板里给一条直达入口：想改模板的人不该先被问「插哪个模板」。
+		vscode.commands.registerCommand('olympia.template.editMy', editMyTemplate),
 		vscode.commands.registerCommand('olympia.problem.openStatement', openCached),
 		vscode.commands.registerCommand('olympia.problem.appendSample', appendSample),
 	);
