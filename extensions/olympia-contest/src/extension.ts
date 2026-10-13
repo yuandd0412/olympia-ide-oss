@@ -15,7 +15,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { detectPlatform, fetchProblem, type Platform, type Problem } from './sources';
-import { renderStatement, templateFor, FORMAT_LABEL, PLATFORM_TEXT, platformText, MY_TEMPLATE_LABEL, MY_TEMPLATE_HINT, TEMPLATE_FOLDER, TEMPLATE_FILE, type ContestFormat } from './templates';
+import { renderStatement, templateFor, FORMAT_LABEL, PLATFORM_TEXT, platformText, MY_TEMPLATE_LABEL, MY_TEMPLATE_HINT, TEMPLATE_FOLDER, TEMPLATE_FILE, STATEMENT_EXTENSION, type ContestFormat } from './templates';
 import { readLibrary, showStatement, toPicks } from './problemLibrary';
 import { markOf, solvedMarks } from './solvedMarks';
 import { appendSample as appendSampleTo, customSamplesOf, MANUAL_EXPLAIN, pickTarget, withCustomSamples } from './statementSamples';
@@ -68,7 +68,7 @@ async function askProblemRef(initial?: string): Promise<{ id: string; platform: 
 async function writeProblem(p: Problem): Promise<vscode.Uri | undefined> {
 	const root = await problemsRoot();
 	if (!root) { return undefined; }
-	const file = path.join(root, `${p.id}.md`);
+	const file = path.join(root, `${p.id}${STATEMENT_EXTENSION}`);
 	// 题面里可能已经有学生自己加的样例（面板补的、对拍补的），重新拉一次不能把它们冲掉
 	const previous = await fs.promises.readFile(file, 'utf8').catch(() => '');
 	const custom = previous ? customSamplesOf(previous) : [];

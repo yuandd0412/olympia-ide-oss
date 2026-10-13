@@ -169,6 +169,8 @@ export const platformText = (platform: string): string => PLATFORM_TEXT[platform
  * 改了字段名只改这里，否则题库会静默读不出标题，页面上只剩一个题号。
  */
 export const FIELD = { source: '来源', difficulty: '难度', timeLimit: '时限', memoryLimit: '内存', tags: '标签' } as const;
+/** 题面文件的后缀：写下它的是 `renderStatement` 那条路，读回来的是题面库，两边共用这一个值。 */
+export const STATEMENT_EXTENSION = '.md';
 export const SAMPLE_HEADING = '### 样例';
 /** 样例区的小节标题；补样例时要找的就是它。 */
 export const SAMPLES_SECTION = '## 样例数据';

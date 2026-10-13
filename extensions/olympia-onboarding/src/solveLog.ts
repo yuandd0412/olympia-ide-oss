@@ -13,7 +13,8 @@ import * as vscode from 'vscode';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { CMD } from './commands';
-import { problemsDir } from './problemFiles';
+import { problemsDir, STATEMENT_EXTENSION } from './problemFiles';
+import { formatMb as formatPeak } from './memoryProbe';
 
 export interface SolveRecord {
 	/** 题号：题面文件名（去掉 .md），和缓存目录里的名字一致。 */
@@ -144,8 +145,9 @@ function formatWhen(at: string): string {
 	return Number.isNaN(d.getTime()) ? at : `${d.getMonth() + 1}月${d.getDate()}日 ${`${d.getHours()}`.padStart(2, '0')}:${`${d.getMinutes()}`.padStart(2, '0')}`;
 }
 
+/** 内存的写法跟跑样例那边共用一个函数：同一个字节数不该一处显示 120.4 MB、另一处显示 120 MB。 */
 function formatMb(bytes: number | undefined): string {
-	return bytes === undefined ? '' : ` · 峰值 ${(bytes / 1024 / 1024).toFixed(1)} MB`;
+	return bytes === undefined ? '' : ` · 峰值 ${formatPeak(bytes)}`;
 }
 
 /**
@@ -157,7 +159,7 @@ async function statementFileFor(problem: string): Promise<vscode.Uri | undefined
 	if (!dir) {
 		return undefined;
 	}
-	const candidate = vscode.Uri.joinPath(dir, `${problem}.md`);
+	const candidate = vscode.Uri.joinPath(dir, `${problem}${STATEMENT_EXTENSION}`);
 	try {
 		await fs.stat(candidate.fsPath);
 	} catch {

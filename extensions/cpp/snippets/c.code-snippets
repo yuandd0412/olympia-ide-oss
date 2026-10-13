@@ -4,13 +4,13 @@
 		"body": [
 			"#pragma region $0"
 		],
-		"description": "Folding Region Start"
+		"description": "折叠区开始"
 	},
 	"Region End": {
 		"prefix": "#endregion",
 		"body": [
 			"#pragma endregion"
 		],
-		"description": "Folding Region End"
+		"description": "折叠区结束"
 	}
 }

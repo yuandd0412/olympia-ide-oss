@@ -15,7 +15,7 @@ import { basename, dirname } from 'path';
 
 import { isCompilable, planCompile, renderCommandLine, COMPILE_TIMEOUT_MS } from './compile';
 import { CMD } from './commands';
-import { statementFiles } from './problemFiles';
+import { STATEMENT_EXTENSION, stripStatementExtension, statementFiles } from './problemFiles';
 import { runProcess } from './stressTest';
 import { formatMb, runSampled } from './memoryProbe';
 import { recordSolve, titleOf } from './solveLog';
@@ -168,7 +168,7 @@ async function pickProblemFile(context: vscode.ExtensionContext, sourceUri: vsco
 		return undefined;
 	}
 	const stem = basename(sourceUri.fsPath).replace(/\.[^.]+$/, '').toLowerCase();
-	const exact = files.find(uri => basename(uri.fsPath).toLowerCase() === `${stem}.md`);
+	const exact = files.find(uri => basename(uri.fsPath).toLowerCase() === `${stem}${STATEMENT_EXTENSION}`);
 	if (exact) {
 		return { uri: exact, how: 'exact' };
 	}
@@ -181,7 +181,7 @@ async function pickProblemFile(context: vscode.ExtensionContext, sourceUri: vsco
 		}
 	}
 	const picked = await vscode.window.showQuickPick(
-		files.map(uri => ({ label: basename(uri.fsPath).replace(/\.md$/i, ''), description: vscode.workspace.asRelativePath(uri, false), uri })),
+		files.map(uri => ({ label: stripStatementExtension(basename(uri.fsPath)), description: vscode.workspace.asRelativePath(uri, false), uri })),
 		{ title: '用哪道题的样例来测', placeHolder: `当前文件 ${basename(sourceUri.fsPath)} 没有同名题面，手动选一道`, ignoreFocusOut: true }
 	);
 	if (!picked) {
@@ -314,7 +314,7 @@ export function registerSampleJudge(context: vscode.ExtensionContext): vscode.Di
 		log.appendLine(`--- ${overall} · ${passed}/${results.length} 组通过 ---`);
 		if (overall === 'AC') {
 			await recordSolve({
-				problem: basename(statement.fsPath).replace(/\.md$/i, ''),
+				problem: stripStatementExtension(basename(statement.fsPath)),
 				title: titleOf(markdown),
 				at: new Date().toISOString(),
 				...worstOf(results)

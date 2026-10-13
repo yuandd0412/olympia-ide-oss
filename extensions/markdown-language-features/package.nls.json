@@ -3,7 +3,7 @@
 	"description": "为 Markdown 提供丰富的语言支持。",
 	"configuration.preview": "预览",
 	"configuration.editor": "语言功能",
-	"configuration.markdown.experimental.richLinks.enabled": "Controls whether supported links in the Markdown editor are rendered as rich links with live metadata. Enabling this may make authenticated requests to services such as GitHub.",
+	"configuration.markdown.experimental.richLinks.enabled": "控制 Markdown 编辑器里支持的链接是否渲染成带实时信息的富链接。打开后可能会向 GitHub 这类服务发起需要登录的请求。",
 	"configuration.validation": "验证",
 	"configuration.advanced": "高级",
 	"markdown.copyImage.title": "复制图像",

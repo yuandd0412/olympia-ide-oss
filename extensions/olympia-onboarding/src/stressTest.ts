@@ -282,12 +282,12 @@ export function registerStressTest(context: vscode.ExtensionContext): vscode.Dis
 						explain: `对拍第 ${outcome.round} 轮抓到的数据，当时正解与暴力输出不一致`,
 					});
 					if (written !== true) {
-						channel.appendLine('样例没写进题面：可能是选了取消，或题面有没保存的改动。数据仍然在 stress-fail 里。');
+						channel.appendLine(`样例没写进题面：可能是选了取消，或题面有没保存的改动。数据仍然在 ${EVIDENCE_FOLDER} 里。`);
 					}
 				} catch (error) {
 					const detail = (error as Error)?.message ?? String(error);
 					channel.appendLine(`补进题面样例失败：${detail}`);
-					await vscode.window.showWarningMessage(`补进题面样例失败：${detail}。这组数据还在 stress-fail 里。`);
+					await vscode.window.showWarningMessage(`补进题面样例失败：${detail}。这组数据还在 ${EVIDENCE_FOLDER} 里。`);
 				}
 			} else if (action === '查看输出') {
 				channel.show(true);

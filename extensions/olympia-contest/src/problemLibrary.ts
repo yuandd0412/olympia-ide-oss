@@ -14,7 +14,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 
-import { metaOf, platformText, type ProblemMeta } from './templates';
+import { metaOf, platformText, STATEMENT_EXTENSION, FIELD, type ProblemMeta } from './templates';
 import { markOf, type SolvedMark } from './solvedMarks';
 
 export interface LibraryEntry extends ProblemMeta {
@@ -48,7 +48,7 @@ export async function readLibrary(root: string): Promise<LibraryEntry[]> {
 			fs.promises.stat(file).catch(() => undefined)
 		]);
 		entries.push({
-			...metaOf(markdown, path.basename(file).replace(/\.md$/i, '')),
+			...metaOf(markdown, stemOf(file)),
 			file,
 			mtimeMs: stat?.mtimeMs ?? 0
 		});
@@ -85,8 +85,8 @@ export function summaryOf(entry: LibraryEntry): string {
 		// 老题面里写的是内部 id（来源：luogu），列出来时统一成中文，新题面本来就是中文
 		entry.source && platformText(entry.source),
 		entry.difficulty,
-		entry.timeLimit && `时限 ${entry.timeLimit}`,
-		entry.memoryLimit && `内存 ${entry.memoryLimit}`,
+		entry.timeLimit && `${FIELD.timeLimit} ${entry.timeLimit}`,
+		entry.memoryLimit && `${FIELD.memoryLimit} ${entry.memoryLimit}`,
 		entry.sampleCount ? `样例 ${entry.sampleCount} 组` : undefined,
 	];
 	return parts.filter(Boolean).join(' · ');
@@ -101,8 +101,14 @@ export async function showStatement(uri: vscode.Uri): Promise<void> {
 async function markdownFiles(root: string): Promise<string[]> {
 	const names = await fs.promises.readdir(root).catch(() => [] as string[]);
 	return names
-		.filter(name => name.toLowerCase().endsWith('.md'))
+		.filter(name => name.toLowerCase().endsWith(STATEMENT_EXTENSION))
 		.map(name => path.join(root, name));
+}
+
+/** 文件名去掉题面后缀就是题号（手写的题面没有标题行时用它兜底）。 */
+function stemOf(file: string): string {
+	const name = path.basename(file);
+	return name.slice(0, name.length - STATEMENT_EXTENSION.length);
 }
 
 function relative(file: string, workspaceRoot?: string): string {

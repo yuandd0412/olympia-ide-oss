@@ -28,7 +28,7 @@
       {
         "command": "extension.node-debug.toggleAutoAttach",
         "title": "%toggle.auto.attach%",
-        "category": "Debug"
+        "category": "调试"
       }
     ]
   },

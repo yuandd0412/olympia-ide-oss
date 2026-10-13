@@ -56,7 +56,7 @@
         "command": "ipynb.newUntitledIpynb",
         "title": "%newUntitledIpynb.title%",
         "shortTitle": "%newUntitledIpynb.shortTitle%",
-        "category": "Create"
+        "category": "新建"
       },
       {
         "command": "ipynb.openIpynbInNotebookEditor",
@@ -69,18 +69,18 @@
       {
         "command": "notebook.cellOutput.copy",
         "title": "%copyCellOutput.title%",
-        "category": "Notebook"
+        "category": "笔记本"
       },
       {
         "command": "notebook.cellOutput.addToChat",
         "title": "%addCellOutputToChat.title%",
-        "category": "Notebook",
+        "category": "笔记本",
         "enablement": "chatIsEnabled"
       },
       {
         "command": "notebook.cellOutput.openInTextEditor",
         "title": "%openCellOutput.title%",
-        "category": "Notebook"
+        "category": "笔记本"
       }
     ],
     "notebooks": [

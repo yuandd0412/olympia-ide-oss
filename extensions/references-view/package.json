@@ -123,18 +123,18 @@
       {
         "command": "references-view.showCallHierarchy",
         "title": "%cmd.references-view.showCallHierarchy%",
-        "category": "Calls"
+        "category": "调用"
       },
       {
         "command": "references-view.showOutgoingCalls",
         "title": "%cmd.references-view.showOutgoingCalls%",
-        "category": "Calls",
+        "category": "调用",
         "icon": "$(call-incoming)"
       },
       {
         "command": "references-view.showIncomingCalls",
         "title": "%cmd.references-view.showIncomingCalls%",
-        "category": "Calls",
+        "category": "调用",
         "icon": "$(call-outgoing)"
       },
       {
@@ -155,18 +155,18 @@
       {
         "command": "references-view.showTypeHierarchy",
         "title": "%cmd.references-view.showTypeHierarchy%",
-        "category": "Types"
+        "category": "类型"
       },
       {
         "command": "references-view.showSupertypes",
         "title": "%cmd.references-view.showSupertypes%",
-        "category": "Types",
+        "category": "类型",
         "icon": "$(type-hierarchy-super)"
       },
       {
         "command": "references-view.showSubtypes",
         "title": "%cmd.references-view.showSubtypes%",
-        "category": "Types",
+        "category": "类型",
         "icon": "$(type-hierarchy-sub)"
       },
       {

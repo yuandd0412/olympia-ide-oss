@@ -2900,13 +2900,13 @@
       },
       {
         "command": "typescript.experimental.enableTsgo",
-        "title": "Use TypeScript Go (Experimental)",
+        "title": "改用 TypeScript Go（实验性）",
         "category": "TypeScript",
         "enablement": "!config.js/ts.experimental.useTsgo && !config.typescript.experimental.useTsgo && config.typescript-go.executablePath"
       },
       {
         "command": "typescript.experimental.disableTsgo",
-        "title": "Stop using TypeScript Go (Experimental)",
+        "title": "停止使用 TypeScript Go（实验性）",
         "category": "TypeScript",
         "enablement": "config.js/ts.experimental.useTsgo || config.typescript.experimental.useTsgo"
       }

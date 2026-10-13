@@ -12,7 +12,13 @@
 import * as vscode from 'vscode';
 
 const DEFAULT_PROBLEMS_DIR = '.olympia/problems';
-const STATEMENT_EXTENSION = '.md';
+/** 题面文件名去掉后缀就是题号；机房里有人存成 P1001.MD，所以按大小写不敏感剥。 */
+export function stripStatementExtension(name: string): string {
+	return name.toLowerCase().endsWith(STATEMENT_EXTENSION) ? name.slice(0, -STATEMENT_EXTENSION.length) : name;
+}
+
+/** 题面后缀：列目录、监听、去掉后缀拿题号，都在这个扩展里，所以只有这一个值。 */
+export const STATEMENT_EXTENSION = '.md';
 
 /** 题面目录；没打开工作区时是 undefined（不是错误，只是没地方读）。 */
 export function problemsDir(): vscode.Uri | undefined {
