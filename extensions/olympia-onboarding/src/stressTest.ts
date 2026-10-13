@@ -11,13 +11,16 @@
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
 import { execFile, spawn } from 'child_process';
+import { promises as fs } from 'fs';
 import { basename, dirname, join } from 'path';
 
-import { planCompile, renderCommandLine, COMPILE_MAX_BUFFER_BYTES } from './compile';
+import { planCompile, renderCommandLine, COMPILE_MAX_BUFFER_BYTES, COMPILE_TIMEOUT_MS } from './compile';
 import { CMD } from './commands';
 
 const STATE_KEY = 'olympia.stress.roles';
 const CHANNEL_TITLE = 'Olympia 对拍';
+/** 抓到不一致的那组数据时写进工程目录的文件夹名。 */
+const EVIDENCE_FOLDER = 'stress-fail';
 /** 一次扫描最多列这么多源文件：题解目录里上千个 .cpp 的工程，选择列表不能无限长。 */
 const MAX_SOURCES_SCANNED = 400;
 
@@ -108,7 +111,8 @@ async function compileAsync(uri: vscode.Uri, channel: vscode.OutputChannel): Pro
 	channel.appendLine(`编译 ${basename(uri.fsPath)}：${renderCommandLine(plan)}`);
 	try {
 		await new Promise<void>((resolve, reject) => {
-			execFile(plan.program, plan.args, { cwd: plan.cwd, windowsHide: true, maxBuffer: COMPILE_MAX_BUFFER_BYTES }, error => {
+			// 没有 timeout 的话，一个卡住的 g++ 会把整场对拍挂在编译这一步上（跑样例那侧是有时限的）
+			execFile(plan.program, plan.args, { cwd: plan.cwd, windowsHide: true, maxBuffer: COMPILE_MAX_BUFFER_BYTES, timeout: COMPILE_TIMEOUT_MS }, error => {
 				error ? reject(error) : resolve();
 			});
 		});
@@ -120,17 +124,32 @@ async function compileAsync(uri: vscode.Uri, channel: vscode.OutputChannel): Pro
 	}
 }
 
+async function exists(file: string): Promise<boolean> {
+	try {
+		await fs.stat(file);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 /** 把不一致的那组数据与两份输出留在工程目录里，方便直接贴到题解或问人。 */
-async function saveEvidence(dir: string, round: number, data: string, solutionOut: string, bruteOut: string): Promise<string> {
-	const folder = join(dir, 'stress-fail');
+async function saveEvidence(
+	dir: string, round: number, data: string, solutionOut: string, bruteOut: string
+): Promise<{ folder: string; file: string }> {
+	const folder = join(dir, EVIDENCE_FOLDER);
 	await vscode.workspace.fs.createDirectory(vscode.Uri.file(folder));
-	const stem = join(folder, `round-${round}`);
+	// 上一场对拍留下的同名文件不覆盖：那个反例可能正是学生找了一晚上的东西。
+	let stem = join(folder, `round-${round}`);
+	for (let taken = 2; await exists(`${stem}.in`); taken++) {
+		stem = join(folder, `round-${round}-${taken}`);
+	}
 	const write = (suffix: string, text: string): Thenable<void> =>
 		vscode.workspace.fs.writeFile(vscode.Uri.file(`${stem}.${suffix}`), Buffer.from(text, 'utf8'));
 	await write('in', data);
 	await write('sol', solutionOut);
 	await write('brute', bruteOut);
-	return folder;
+	return { folder, file: `${stem}.in` };
 }
 
 interface StressOutcome {
@@ -236,29 +255,40 @@ export function registerStressTest(context: vscode.ExtensionContext): vscode.Dis
 		}
 		const mismatch = outcome.mismatch;
 		if (mismatch) {
-			const folder = await saveEvidence(dirname(solution.fsPath), outcome.round, mismatch.data, mismatch.solution.stdout, mismatch.brute.stdout);
+			const evidence = await saveEvidence(dirname(solution.fsPath), outcome.round, mismatch.data, mismatch.solution.stdout, mismatch.brute.stdout);
 			const why = mismatch.solution.timedOut || mismatch.brute.timedOut
 				? '超时'
 				: mismatch.solution.failed || mismatch.brute.failed
 					? '运行出错'
 					: '输出不一致';
-			channel.appendLine(`第 ${outcome.round} 轮${why}，数据与两份输出已存到 ${folder}`);
+			channel.appendLine(`第 ${outcome.round} 轮${why}，数据与两份输出已存到 ${evidence.folder}`);
 			// 只有「两边都跑完了、输出不一样」时正解的输出才值得当期望输出写进题面
 			const actions = why === '输出不一致'
 				? ['打开这组数据', '补进题面样例', '查看输出']
 				: ['打开这组数据', '查看输出'];
 			const action = await vscode.window.showErrorMessage(
-				`对拍在第 ${outcome.round} 轮${why}。这组数据已存进 stress-fail 文件夹。`, ...actions);
+				`对拍在第 ${outcome.round} 轮${why}。这组数据存成了 ${basename(evidence.file)}。`, ...actions);
 			if (action === '打开这组数据') {
-				const doc = await vscode.workspace.openTextDocument(join(folder, `round-${outcome.round}.in`));
+				const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(evidence.file));
 				await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
 			} else if (action === '补进题面样例') {
-				await vscode.commands.executeCommand(CMD.appendSample, {
-					hint: basename(solution.fsPath),
-					input: mismatch.data,
-					output: mismatch.solution.stdout,
-					explain: `对拍第 ${outcome.round} 轮抓到的数据，当时正解与暴力输出不一致`,
-				});
+				// 这道命令是 olympia-contest 实现的：那个扩展被停掉时不能让 rejection 冒出来，
+				// 学生看到的应该是「为什么没写进去」，而不是一个没反应的按钮
+				try {
+					const written = await vscode.commands.executeCommand<boolean>(CMD.appendSample, {
+						hint: basename(solution.fsPath),
+						input: mismatch.data,
+						output: mismatch.solution.stdout,
+						explain: `对拍第 ${outcome.round} 轮抓到的数据，当时正解与暴力输出不一致`,
+					});
+					if (written !== true) {
+						channel.appendLine('样例没写进题面：可能是选了取消，或题面有没保存的改动。数据仍然在 stress-fail 里。');
+					}
+				} catch (error) {
+					const detail = (error as Error)?.message ?? String(error);
+					channel.appendLine(`补进题面样例失败：${detail}`);
+					await vscode.window.showWarningMessage(`补进题面样例失败：${detail}。这组数据还在 stress-fail 里。`);
+				}
 			} else if (action === '查看输出') {
 				channel.show(true);
 			}

@@ -73,10 +73,46 @@ export function renderSamples(samples: { input: string; output: string; explain?
  */
 export function renderSampleBlock(index: number, sample: { input: string; output: string; explain?: string }): string {
 	const out: string[] = [`${SAMPLE_HEADING} ${index}`, ''];
-	out.push('**输入**', '', '```', sample.input, '```', '');
-	out.push('**输出**', '', '```', sample.output, '```', '');
-	if (sample.explain) { out.push(`**说明**：${sample.explain}`, ''); }
+	out.push(`**${CASE_INPUT}**`, '', '```', sample.input, '```', '');
+	out.push(`**${CASE_OUTPUT}**`, '', '```', sample.output, '```', '');
+	if (sample.explain) { out.push(`**${CASE_EXPLAIN}**：${sample.explain}`, ''); }
 	return out.join('\n');
+}
+
+/** 样例块里的三个字段名，和 `renderSampleBlock` 用的是同一份。 */
+export const CASE_INPUT = '输入';
+export const CASE_OUTPUT = '输出';
+export const CASE_EXPLAIN = '说明';
+
+export interface ParsedSample {
+	readonly number: number;
+	readonly input: string;
+	readonly output: string;
+	readonly explain: string;
+}
+
+/**
+ * 把题面里已有的每组样例读回来（写的时候用的就是上面那几个常量，所以读也按同一张表）。
+ * 只有一处需要它：重新拉题面时要把学生自己加的样例搬回新文件里。
+ */
+export function parseSampleBlocks(markdown: string): ParsedSample[] {
+	const blocks = markdown.matchAll(new RegExp(`${SAMPLE_HEADING}\\s*(\\d+)([\\s\\S]*?)(?=\\n${SAMPLE_HEADING}|\\n##\\s|$)`, 'g'));
+	const parsed: ParsedSample[] = [];
+	for (const block of blocks) {
+		const body = block[2] ?? '';
+		const fields = [...body.matchAll(new RegExp(`\\*\\*(${CASE_INPUT}|${CASE_OUTPUT}|${CASE_EXPLAIN})\\*\\*\\s*\\r?\\n\\s*(?:\`{3}[^\\n]*\\r?\\n([\\s\\S]*?)\`{3}|([^\\n]*))`, 'g'))];
+		const field = (name: string): string => {
+			const found = fields.find(entry => entry[1] === name);
+			return (found?.[2] ?? found?.[3] ?? '').trim();
+		};
+		parsed.push({
+			number: Number(block[1]) || parsed.length + 1,
+			input: field(CASE_INPUT),
+			output: field(CASE_OUTPUT),
+			explain: field(CASE_EXPLAIN),
+		});
+	}
+	return parsed;
 }
 
 export function renderStatement(p: {

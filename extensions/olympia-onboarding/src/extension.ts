@@ -29,6 +29,7 @@ import { CMD } from './commands';
 
 const WEBSITE = 'https://olympia.dpdns.org';
 const DOCS = 'https://olympia.dpdns.org/docs';
+const ENVIRONMENT_CHANNEL_TITLE = 'Olympia 环境自检';
 
 export interface TargetMatch {
 	readonly target: OJTarget;
@@ -107,9 +108,22 @@ function renderReport(report: CompilerReport): string {
 	return lines.join('\n');
 }
 
+/**
+ * 环境自检的输出面板：一次按 Ctrl+Alt+D 建一个的话，面板列表会攒出一排同名的
+ * 「Olympia 环境自检 #2 #3…」——和 compile.ts 里警告过的是同一件事。
+ */
+let environment: vscode.OutputChannel | undefined;
+
+function environmentChannel(): vscode.OutputChannel {
+	if (!environment) {
+		environment = vscode.window.createOutputChannel(ENVIRONMENT_CHANNEL_TITLE);
+	}
+	return environment;
+}
+
 async function showEnvironmentReport(): Promise<CompilerReport> {
 	const report = await detectCompiler();
-	const channel = vscode.window.createOutputChannel('Olympia 环境自检');
+	const channel = environmentChannel();
 	channel.clear();
 	channel.appendLine(renderReport(report));
 	channel.show(true);
@@ -233,6 +247,8 @@ export function activate(context: vscode.ExtensionContext): void {
 		vscode.commands.registerCommand(CMD.compileAndRun, () => compileAndRun()),
 		vscode.commands.registerCommand(CMD.openWebsite, () => vscode.env.openExternal(vscode.Uri.parse(WEBSITE)))
 	);
+	// 面板本身也要跟着扩展销毁，不然重载窗口会攒出一排同名面板
+	context.subscriptions.push({ dispose: () => environment?.dispose() });
 
 	context.subscriptions.push(registerCompileTaskProvider());
 

@@ -17,7 +17,7 @@ import * as fs from 'fs';
 import { detectPlatform, fetchProblem, type Platform, type Problem } from './sources';
 import { renderStatement, templateFor, FORMAT_LABEL, PLATFORM_TEXT, platformText, type ContestFormat } from './templates';
 import { readLibrary, showStatement, toPicks } from './problemLibrary';
-import { appendSample as appendSampleTo, pickTarget } from './statementSamples';
+import { appendSample as appendSampleTo, customSamplesOf, MANUAL_EXPLAIN, pickTarget, withCustomSamples } from './statementSamples';
 import { registerCppSnippets } from './snippets';
 
 function cfg() {
@@ -68,7 +68,13 @@ async function writeProblem(p: Problem): Promise<vscode.Uri | undefined> {
 	const root = await problemsRoot();
 	if (!root) { return undefined; }
 	const file = path.join(root, `${p.id}.md`);
-	await fs.promises.writeFile(file, renderStatement(p), 'utf8');
+	// 题面里可能已经有学生自己加的样例（面板补的、对拍补的），重新拉一次不能把它们冲掉
+	const previous = await fs.promises.readFile(file, 'utf8').catch(() => '');
+	const custom = previous ? customSamplesOf(previous) : [];
+	await fs.promises.writeFile(file, withCustomSamples(renderStatement(p), custom), 'utf8');
+	if (custom.length) {
+		vscode.window.showInformationMessage(`题面已更新，你加的 ${custom.length} 组样例保留了。`);
+	}
 	return vscode.Uri.file(file);
 }
 
@@ -138,8 +144,11 @@ interface AppendSampleArgs {
 	readonly explain?: string;
 }
 
-/** 面板里手动加样例时留下的提示，学生照着填。 */
-const MANUAL_EXPLAIN = '自己加的样例：把数据填进上面两个代码块再跑样例，期望输出空着的那组会被跳过。';
+/** 这道题的题面是不是正开着且有没保存的改动。 */
+function hasUnsavedEdits(file: string): boolean {
+	const wanted = file.toLowerCase();
+	return vscode.workspace.textDocuments.some(doc => doc.isDirty && doc.uri.fsPath.toLowerCase() === wanted);
+}
 
 /**
  * 把一组样例写进题面。带参数是对拍在补它抓到的那组数据（期望输出取正解的输出）；
@@ -174,6 +183,11 @@ async function appendSample(args?: AppendSampleArgs): Promise<boolean> {
 	});
 	if (!target) { return false; }
 
+	// 题面在编辑器里有没保存的改动时不能写磁盘：那份改动保存时会把刚补的样例盖掉
+	if (hasUnsavedEdits(target.file)) {
+		vscode.window.showWarningMessage(`「${target.id}」的题面在编辑器里有没保存的改动。先按 Ctrl+S 保存，再补样例。`);
+		return false;
+	}
 	const markdown = await fs.promises.readFile(target.file, 'utf8');
 	const added = appendSampleTo(markdown, manual
 		? { input: '', output: '', explain: MANUAL_EXPLAIN }

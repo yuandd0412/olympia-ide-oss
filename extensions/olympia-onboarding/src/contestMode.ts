@@ -13,13 +13,14 @@ import * as vscode from 'vscode';
 import { CMD } from './commands';
 
 const ENDS_AT_KEY = 'olympia.contest.endsAt';
-const ENDED_AT_KEY = 'olympia.contest.endedAt';
 /** 常见赛制时长（分钟），自定义走输入框。 */
 const DURATIONS: readonly number[] = [60, 90, 120, 180, 240, 300, 360];
 /** CSP / NOIP 那一档：既要在选择列表里标出来，也是自定义输入框的预填值。 */
 const DEFAULT_CONTEST_MINUTES = 120;
 const CONTEST_MINUTES_MIN = 1;
 const CONTEST_MINUTES_MAX = 600;
+/** 倒计时、状态栏、面板行的刷新间隔。 */
+const TICK_INTERVAL_MS = 1000;
 /** 倒计时要比编译器、运行、体检三个 chip 更靠左，所以优先级最高。 */
 const STATUS_PRIORITY = 110;
 /** 比赛进行中要把 AI 教练关掉（和老版本一致）；界面侧的 when 子句读这个键。 */
@@ -30,6 +31,7 @@ let ticker: NodeJS.Timeout | undefined;
 let endsAt: number | undefined;
 let onChange: (() => void) | undefined;
 let publishedRunning: boolean | undefined;
+let endAnnounced = false;
 
 function remainingMs(): number | undefined {
 	return endsAt === undefined ? undefined : endsAt - Date.now();
@@ -73,7 +75,7 @@ function publishRunning(): void {
 	void vscode.commands.executeCommand('setContext', CONTEST_RUNNING_CONTEXT, running);
 }
 
-function render(): void {
+function render(context: vscode.ExtensionContext): void {
 	publishRunning();
 	if (!statusItem) {
 		return;
@@ -87,6 +89,7 @@ function render(): void {
 		statusItem.text = '$(clock) 时间到';
 		statusItem.tooltip = '比赛时间到。点这里结束比赛模式。';
 		statusItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+		announceEnd(context);
 	} else {
 		statusItem.text = `$(clock) ${format(left)}`;
 		statusItem.tooltip = `比赛剩余 ${format(left)}，结束于 ${new Date(endsAt as number).toLocaleTimeString()}。点这里结束比赛模式。`;
@@ -96,6 +99,23 @@ function render(): void {
 	onChange?.();
 }
 
+/**
+ * 时间到提醒一次就够。放在 render 里是为了让两条路径都走到：新开比赛走的
+ * 是 start 的 tick，重载后接着走的是 registerContestMode 恢复时的 tick——
+ * 后者以前没人提醒，窗口一重开比赛就无声无息地结束了。
+ */
+function announceEnd(context: vscode.ExtensionContext): void {
+	if (endAnnounced) {
+		return;
+	}
+	endAnnounced = true;
+	void vscode.window.showWarningMessage('比赛时间到。', '结束比赛模式').then(action => {
+		if (action) {
+			stop(context, false);
+		}
+	});
+}
+
 function stop(context: vscode.ExtensionContext, notify: boolean): void {
 	if (ticker) {
 		clearInterval(ticker);
@@ -103,6 +123,7 @@ function stop(context: vscode.ExtensionContext, notify: boolean): void {
 	}
 	const left = remainingMs();
 	endsAt = undefined;
+	endAnnounced = false;
 	publishRunning();
 	if (statusItem) {
 		statusItem.hide();
@@ -116,27 +137,22 @@ function stop(context: vscode.ExtensionContext, notify: boolean): void {
 
 function start(context: vscode.ExtensionContext, minutes: number): void {
 	endsAt = Date.now() + minutes * 60 * 1000;
+	endAnnounced = false;
 	void context.workspaceState.update(ENDS_AT_KEY, endsAt);
-	void context.workspaceState.update(ENDED_AT_KEY, undefined);
 	if (ticker) {
 		clearInterval(ticker);
 	}
-	let announced = false;
-	ticker = setInterval(() => {
-		const left = remainingMs();
-		if (left !== undefined && left <= 0 && !announced) {
-			announced = true;
-			void vscode.window.showWarningMessage('比赛时间到。', '结束比赛模式').then(action => {
-				if (action) {
-					stop(context, false);
-				}
-			});
-			void context.workspaceState.update(ENDED_AT_KEY, Date.now());
-		}
-		render();
-	}, 1000);
-	render();
+	ticker = setInterval(() => render(context), TICK_INTERVAL_MS);
+	render(context);
 	void vscode.window.showInformationMessage(`比赛模式开始：${minutes} 分钟，结束于 ${new Date(endsAt).toLocaleTimeString()}。`);
+}
+
+/** 输入框的提示和最终采纳走同一条规则，免得两处判定各说各话。 */
+function minutesInRange(raw: string): number | undefined {
+	const minutes = Number(raw.trim());
+	return Number.isInteger(minutes) && minutes >= CONTEST_MINUTES_MIN && minutes <= CONTEST_MINUTES_MAX
+		? minutes
+		: undefined;
 }
 
 async function askDuration(): Promise<number | undefined> {
@@ -157,15 +173,27 @@ async function askDuration(): Promise<number | undefined> {
 		prompt: '比赛时长（分钟）',
 		value: String(DEFAULT_CONTEST_MINUTES),
 		ignoreFocusOut: true,
-		validateInput: v => {
-			const n = Number(v.trim());
-			return n >= CONTEST_MINUTES_MIN && n <= CONTEST_MINUTES_MAX
-				? undefined
-				: `请输入 ${CONTEST_MINUTES_MIN} 到 ${CONTEST_MINUTES_MAX} 之间的分钟数`;
-		}
+		validateInput: v => minutesInRange(v) === undefined
+			? `请输入 ${CONTEST_MINUTES_MIN} 到 ${CONTEST_MINUTES_MAX} 之间的整数分钟数`
+			: undefined
 	});
-	const minutes = Number((raw ?? '').trim());
-	return Number.isFinite(minutes) && minutes >= 1 ? minutes : undefined;
+	return minutesInRange(raw ?? '');
+}
+
+/**
+ * 停用（禁用再启用、重载）时把模块状态收干净。留着 endsAt 的话，下次激活时
+ * `isContestRunning()` 还是 true，chip 却已经不在了——AI 教练会一直显示「比赛进行中」。
+ */
+function release(): void {
+	if (ticker) {
+		clearInterval(ticker);
+		ticker = undefined;
+	}
+	endsAt = undefined;
+	endAnnounced = false;
+	publishRunning();
+	statusItem = undefined;
+	onChange = undefined;
 }
 
 export function registerContestMode(context: vscode.ExtensionContext): vscode.Disposable {
@@ -173,10 +201,16 @@ export function registerContestMode(context: vscode.ExtensionContext): vscode.Di
 	statusItem.command = CMD.contestMode;
 
 	const stored = context.workspaceState.get<number>(ENDS_AT_KEY);
-	if (typeof stored === 'number' && stored > Date.now()) {
-		endsAt = stored;
-		render();
-		ticker = setInterval(render, 1000);
+	if (typeof stored === 'number') {
+		if (stored > Date.now()) {
+			endsAt = stored;
+			endAnnounced = false;
+			render(context);
+			ticker = setInterval(() => render(context), TICK_INTERVAL_MS);
+		} else {
+			// 窗口关掉的这段时间里比赛已经结束了：把键清掉，别让下次重载再判一遍。
+			void context.workspaceState.update(ENDS_AT_KEY, undefined);
+		}
 	}
 
 	const command = vscode.commands.registerCommand(CMD.contestMode, async () => {
@@ -201,5 +235,5 @@ export function registerContestMode(context: vscode.ExtensionContext): vscode.Di
 
 	const isRunning = vscode.commands.registerCommand(CMD.contestIsRunning, () => isContestRunning());
 
-	return vscode.Disposable.from(statusItem, command, isRunning, { dispose: () => { if (ticker) { clearInterval(ticker); } } });
+	return vscode.Disposable.from(statusItem, command, isRunning, { dispose: release });
 }

@@ -12,7 +12,7 @@
  *  写出来的形状必须和 `renderSamples` 一致（跑样例按同样的标记读回来），所以这里只调用它，
  *  不另写一份 Markdown 拼接。
  *--------------------------------------------------------------------------------------------*/
-import { renderSampleBlock, SAMPLES_SECTION, SAMPLE_HEADING } from './templates';
+import { parseSampleBlocks, renderSampleBlock, SAMPLES_SECTION, SAMPLE_HEADING } from './templates';
 import { type LibraryEntry } from './problemLibrary';
 
 export interface SampleToAppend {
@@ -24,6 +24,27 @@ export interface SampleToAppend {
 export interface AppendResult {
 	readonly markdown: string;
 	readonly index: number;
+}
+
+/** 面板里手动加样例时留下的提示，学生照着填。这行字同时也是「这条样例是学生自己加的」的记号。 */
+export const MANUAL_EXPLAIN = '自己加的样例：把数据填进上面两个代码块再跑样例，期望输出空着的那组会被跳过。';
+
+/**
+ * 认「不是题面自带的样例」的记号：自己加的、对拍补的。
+ * 对拍那条文案由 olympia-onboarding 的 stressTest.ts 拼（跨扩展 import 不了），改的时候要两边一起改。
+ */
+export const CUSTOM_MARKERS: readonly string[] = ['自己加的样例', '对拍第'];
+
+/** 重新拉题面之前先把这些挑出来，新文件写完再原样贴回去。 */
+export function customSamplesOf(markdown: string): SampleToAppend[] {
+	return parseSampleBlocks(markdown)
+		.filter(sample => CUSTOM_MARKERS.some(marker => sample.explain.includes(marker)))
+		.map(sample => ({ input: sample.input, output: sample.output, explain: sample.explain }));
+}
+
+/** 把一组组样例按顺序贴回题面，编号顺着已有最大的往后排。 */
+export function withCustomSamples(markdown: string, custom: readonly SampleToAppend[]): string {
+	return custom.reduce((text, sample) => appendSample(text, sample).markdown, markdown);
 }
 
 /**

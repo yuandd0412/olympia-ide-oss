@@ -81,8 +81,10 @@ export function parseSamples(markdown: string): { samples: Sample[]; timeLimitMs
 		const input = parts.find(part => part[1] === '输入')?.[2];
 		const expected = parts.find(part => part[1] === '输出')?.[2];
 		if (input !== undefined || expected !== undefined) {
-			// 题号要带着走：跳过没填完的样例之后，位置就不等于编号了
-			samples.push({ number: Number(block[1]) || samples.length + 1, input: input ?? '', expected: expected ?? '' });
+			// 题号要带着走：跳过没填完的样例之后，位置就不等于编号了。
+			// 题面真写了「样例 0」时就得是 0，不能用 `||` 把它顺成了 1。
+			const declared = Number(block[1]);
+			samples.push({ number: Number.isFinite(declared) ? declared : samples.length + 1, input: input ?? '', expected: expected ?? '' });
 		}
 	}
 	const limit = /时限：\s*([\d.]+)\s*(ms|毫秒|s|秒)/i.exec(markdown);
@@ -203,14 +205,15 @@ export function registerSampleJudge(context: vscode.ExtensionContext): vscode.Di
 			return;
 		}
 
-		const budget = Math.min(COMPILE_TIMEOUT_MS, timeLimitMs * LOCAL_MARGIN + RUN_TIMEOUT_SLACK_MS);
+		// 时限已经被 TIME_LIMIT_MS_MAX 夹住了，这里不用再拿编译预算当上限——那是另一回事。
+		const budget = timeLimitMs * LOCAL_MARGIN + RUN_TIMEOUT_SLACK_MS;
 		const results: CaseResult[] = [];
 		await vscode.window.withProgress(
 			{ location: vscode.ProgressLocation.Notification, title: 'Olympia 正在跑样例', cancellable: false },
 			async (progress) => {
 				for (let i = 0; i < samples.length; i++) {
 					const sample = samples[i];
-					progress.report({ message: `样例 ${sample.number} / ${all.length}`, increment: 100 / samples.length });
+					progress.report({ message: `样例 ${sample.number}（本次第 ${i + 1}/${samples.length} 组）`, increment: 100 / samples.length });
 					const started = Date.now();
 					const ran = await runSampled(plan.output, [], dirname(plan.output), sample.input, budget);
 					const ms = Date.now() - started;

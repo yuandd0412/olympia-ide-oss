@@ -22,6 +22,8 @@ import { type RunResult } from './stressTest';
 
 /** tasklist 一次可能要一两百毫秒，所以同一时刻只允许有一个在跑；间隔再密也只是排队。 */
 const SAMPLE_INTERVAL_MS = 30;
+/** kill 之后等多久自己收尾：被测程序的孙子进程攥着 stdout 时 close 永远不会来。 */
+const KILL_GRACE_MS = 500;
 const TASKLIST = 'tasklist.exe';
 const KB = 1024;
 
@@ -52,15 +54,19 @@ export function parseMemoryKb(tasklistCsv: string): number | undefined {
 	return Number.isFinite(value) && value > 0 ? value : undefined;
 }
 
-function sampleOnce(pid: number, onSample: (bytes: number) => void): void {
+/**
+ * 查一次这个 PID 的工作集。**回调一定会被调用一次**，读不到就是 undefined——
+ * 采样链靠这次回调决定下一次什么时候查，少调一次就等于采样停了。
+ * 导出只给检查台验证这条契约用。
+ */
+export function sampleOnce(pid: number, onSample: (bytes: number | undefined) => void): void {
 	execFile(TASKLIST, ['/NH', '/FO', 'CSV', '/FI', `PID eq ${pid}`], { windowsHide: true, encoding: 'buffer' }, (error, stdout) => {
 		if (error) {
+			onSample(undefined);
 			return;
 		}
 		const kb = parseMemoryKb(String(stdout));
-		if (kb !== undefined) {
-			onSample(kb * KB);
-		}
+		onSample(kb === undefined ? undefined : kb * KB);
 	});
 }
 
@@ -74,39 +80,45 @@ export function runSampled(program: string, args: readonly string[], cwd: string
 		let stderr = '';
 		let timedOut = false;
 		let peakBytes = 0;
-		let sampling = false;
+		let settled = false;
 		let timer: NodeJS.Timeout | undefined;
 
 		const child = spawn(program, [...args], { cwd, windowsHide: true });
 		child.stdout.on('data', chunk => { stdout += String(chunk); });
 		child.stderr.on('data', chunk => { stderr += String(chunk); });
 
-		const startSampling = () => {
+		/**
+		 * 采样是一条链：每查完一次再约下一次。用 setInterval 的话就得配一个
+		 * 「上一次还没回来就跳过」的开关，而那次查询一旦不回调，开关就永远卡在 true，
+		 * 之后每次采样都被跳过——峰值内存再也测不出来，表现成 MLE 偶发漏判。
+		 */
+		const sample = (pid: number): void => {
+			sampleOnce(pid, bytes => {
+				if (settled) {
+					return;
+				}
+				if (bytes !== undefined && bytes > peakBytes) {
+					peakBytes = bytes;
+				}
+				timer = setTimeout(() => sample(pid), SAMPLE_INTERVAL_MS);
+			});
+		};
+		child.on('spawn', () => {
 			const pid = child.pid;
-			if (pid === undefined) {
+			if (pid === undefined || settled) {
 				return;
 			}
-			const sample = (): void => {
-				if (sampling) {
-					return;    // 上一次还没回来，别把进程堆起来
-				}
-				sampling = true;
-				sampleOnce(pid, bytes => {
-					sampling = false;
-					if (bytes > peakBytes) {
-						peakBytes = bytes;
-					}
-				});
-			};
-			// 起进程后立刻采一次：跑样例的程序常常只活几百毫秒，等第一个间隔就全错过了。
-			sample();
-			timer = setInterval(sample, SAMPLE_INTERVAL_MS);
-		};
-		child.on('spawn', startSampling);
+			// 起进程后立刻查一次：跑样例的程序常常只活几百毫秒，等第一个间隔就全错过了
+			sample(pid);
+		});
 
 		const stop = (error?: Error) => {
+			if (settled) {
+				return;    // close 和超时兜底谁先到算谁，resolve 第二次没有意义
+			}
+			settled = true;
 			if (timer) {
-				clearInterval(timer);
+				clearTimeout(timer);
 				timer = undefined;
 			}
 			const note = error ? `${stderr}${error.message}\n` : stderr;
@@ -121,6 +133,9 @@ export function runSampled(program: string, args: readonly string[], cwd: string
 		const killTimer = setTimeout(() => {
 			timedOut = true;
 			child.kill();
+			// 被测程序留下攥着 stdout 的孙子进程时 close 不会来（shell 出去调别的程序就是这样）：
+			// 给一点收尾时间，到点我们自己结束，别把跑样例整个卡死在那儿
+			setTimeout(stop, KILL_GRACE_MS).unref?.();
 		}, timeoutMs);
 		child.on('error', error => { clearTimeout(killTimer); stop(error); });
 		child.on('close', () => { clearTimeout(killTimer); stop(); });
