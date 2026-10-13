@@ -37,15 +37,19 @@ export function practiceFile(): vscode.Uri | undefined {
 }
 
 /**
- * 题号之间用空格、逗号、顿号、分号、换行隔开都算（机房里有人从网页上整段复制）。
+ * 题号之间用空格、逗号、顿号、分号、句号、换行隔开都算（机房里有人从网页上整段复制）。
+ * 「1. P1001 2. P1002」这种带编号的题单也按复制的来：编号那几个 token 丢掉。
  * 顺序按写的来，重复的题号只留第一次——大小写不分，因为题面文件本来就是按大小写不敏感找的。
  */
 export function parseProblemIds(raw: string): string[] {
 	const seen = new Set<string>();
 	const ids: string[] = [];
-	for (const token of raw.split(/[\s,，、;；]+/)) {
-		const id = token.trim();
-		if (!id || seen.has(id.toLowerCase())) {
+	for (const token of raw.split(/[\s,，、;；。．)）】]+/)) {
+		if (/^\d+[.)、]$/.test(token)) {
+			continue;   // 「1.」「2)」这种题单编号
+		}
+		const id = normalizeProblemId(token);
+		if (!isSafeProblemId(id) || seen.has(id.toLowerCase())) {
 			continue;
 		}
 		seen.add(id.toLowerCase());
@@ -57,10 +61,29 @@ export function parseProblemIds(raw: string): string[] {
 	return ids;
 }
 
-/** 分钟数：空着算「不设时限」，填了就得是范围内的整数。 */
+/** 一道题的编号不该被当文件名用：带斜杠、点点、或结尾带句点的都拒掉。 */
+export function isSafeProblemId(id: string): boolean {
+	return id.length > 0 && id !== '.' && id !== '..' && !/[\\/:*?"<>|]/.test(id) && !id.endsWith('.');
+}
+
+/**
+ * Codeforces 的题号在网页和「拉取题面」的提示里写成 `1660/C` 或 `1660-C`，而题面文件叫 `1660C.md`。
+ * 不收口的话同一道题在清单里就是第三个名字：勾打不上，点一次白拉一遍网络。
+ * AtCoder 的 `ABC123_A` 以字母开头，不在这条规则里，不会被拆开。
+ */
+export function normalizeProblemId(id: string): string {
+	const trimmed = id.trim();
+	const cf = /^(\d{3,6})[/\-_]([A-Za-z]{1,2})$/.exec(trimmed);
+	if (cf) {
+		return `${cf[1]}${cf[2].toUpperCase()}`;
+	}
+	return /^[0-9]/.test(trimmed) ? trimmed.toUpperCase() : trimmed;
+}
+
+/** 分钟数：空着算「不设时限」，填了就得是范围内的十进制整数（0x78、1e2 这种不收）。 */
 export function parseMinutes(raw: string): number | undefined {
 	const text = raw.trim();
-	if (!text) {
+	if (!text || !/^\d+$/.test(text)) {
 		return undefined;
 	}
 	const minutes = Number(text);
@@ -69,43 +92,104 @@ export function parseMinutes(raw: string): number | undefined {
 		: undefined;
 }
 
-/** 读清单；文件不存在、不是 JSON、或者条目缺字段，都只丢掉那一条而不是让面板打不开。 */
-export async function readLists(): Promise<PracticeList[]> {
+/**
+ * 文件里认得的和认不得的分开带回来。
+ * 认不得的条目要原样写回去：这一版读不懂就顺手重写整个文件，等于把别人（或以后自己）
+ * 攒的清单删掉——那是点了「移掉一道题」之后最不该发生的副作用。
+ */
+export interface PracticeFile {
+	readonly lists: PracticeList[];
+	/** 这一版认不出结构的条目，写回时原样附上。 */
+	readonly unknown: unknown[];
+	/** 文件在、有内容，但一条都没读出来（不是 JSON、是别的形状）：这时候不许重写整个文件。 */
+	readonly unreadable: boolean;
+}
+
+export async function readPractice(): Promise<PracticeFile> {
+	const empty: PracticeFile = { lists: [], unknown: [], unreadable: false };
 	const file = practiceFile();
 	if (!file) {
-		return [];
+		return empty;
 	}
-	const text = await fs.promises.readFile(file.fsPath, 'utf8').catch(() => '');
-	if (!text) {
-		return [];
+	const raw = await fs.promises.readFile(file.fsPath).catch(() => undefined);
+	if (raw === undefined || raw.length === 0) {
+		return empty;
 	}
+	// Windows 上「UTF-8 带 BOM」存的文件很常见（PowerShell 重定向、别人手存），BOM 会让 JSON.parse 直接失败。
 	let parsed: unknown;
 	try {
-		parsed = JSON.parse(text);
+		parsed = JSON.parse(raw.toString('utf8').replace(/^\uFEFF/, ''));
 	} catch {
-		return [];
+		return { ...empty, unreadable: true };
 	}
-	const entriesField = (parsed as { lists?: unknown } | undefined)?.lists;
-	const entries = Array.isArray(entriesField) ? entriesField : [];
+	const entries = Array.isArray(parsed)
+		? parsed
+		: Array.isArray((parsed as { lists?: unknown } | undefined)?.lists)
+			? (parsed as { lists: unknown[] }).lists
+			: undefined;
+	if (!entries) {
+		return { ...empty, unreadable: true };
+	}
 	const lists: PracticeList[] = [];
+	const unknown: unknown[] = [];
 	for (const entry of entries) {
 		const list = normalizeList(entry);
 		if (list) {
 			lists.push(list);
+		} else {
+			unknown.push(entry);
 		}
 	}
-	return lists;
+	return { lists, unknown, unreadable: false };
 }
 
-/** 写整份文件；没地方写（没开工作区）时返回 false，让调用方把话说明白。 */
-export async function writeLists(lists: PracticeList[]): Promise<boolean> {
+/** 只要认得的那部分：列清单给用户看的时候用这个。 */
+export async function readLists(): Promise<PracticeList[]> {
+	return (await readPractice()).lists;
+}
+
+/**
+ * 写整份文件；返回 undefined 表示写成了，否则是人话版的失败原因（没工作区 / 存不下去）。
+ * 先写临时文件再改名：直接 writeFile 会先清空原文件，另一个窗口正好在那一刻读就拿到半截 JSON，
+ * 于是走 unreadable 那条路——一个 10 ms 的巧合就成了永久丢失。
+ */
+export async function writeLists(lists: PracticeList[], keep: readonly unknown[] = []): Promise<string | undefined> {
 	const file = practiceFile();
 	if (!file) {
-		return false;
+		return '没有打开的工作区文件夹';
 	}
-	await fs.promises.mkdir(path.dirname(file.fsPath), { recursive: true });
-	await fs.promises.writeFile(file.fsPath, `${JSON.stringify({ lists }, null, 2)}\n`, 'utf8');
-	return true;
+	const tmp = `${file.fsPath}.${process.pid}.tmp`;
+	try {
+		await fs.promises.mkdir(path.dirname(file.fsPath), { recursive: true });
+		const body = JSON.stringify({ lists: [...lists, ...keep] }, null, 2);
+		await fs.promises.writeFile(tmp, `${body}\n`, 'utf8');
+		await fs.promises.rename(tmp, file.fsPath);
+		return undefined;
+	} catch (error) {
+		await fs.promises.rm(tmp, { force: true }).catch(() => undefined);
+		return error instanceof Error ? error.message : String(error);
+	}
+}
+
+/** 加题：已有的题号（大小写不分）不重复加，超过上限的丢掉而不是整次取消。 */
+export function withExtraProblems(list: PracticeList, extra: readonly string[]): PracticeList {
+	const seen = new Set(list.problems.map(id => id.trim().toLowerCase()));
+	const problems = [...list.problems];
+	for (const id of extra) {
+		const key = id.trim().toLowerCase();
+		if (!key || seen.has(key) || problems.length >= MAX_PRACTICE_PROBLEMS) {
+			continue;
+		}
+		seen.add(key);
+		problems.push(id.trim());
+	}
+	return { ...list, problems };
+}
+
+/** 移题：只按题号认（清单里显示的就是题号，不再造一套 id）。 */
+export function withoutProblem(list: PracticeList, id: string): PracticeList {
+	const key = id.trim().toLowerCase();
+	return { ...list, problems: list.problems.filter(item => item.trim().toLowerCase() !== key) };
 }
 
 /** 同一份清单的判定：名字的大小写和前后空格都不算差别（删除和顶掉用同一条规则）。 */
@@ -120,6 +204,11 @@ export function mergeLists(lists: PracticeList[], next: PracticeList): PracticeL
 	return kept;
 }
 
+/**
+ * 认得出的一条清单。这一版看不懂的字段原样留着（下次写回还在），
+ * 时长也照文件里的值带回来——超出 5–600 的开场时会被比赛模式挡下来重新问，
+ * 但不能因为这边觉得它不合理就把学生写的那个数字抹掉。
+ */
 function normalizeList(entry: unknown): PracticeList | undefined {
 	if (!entry || typeof entry !== 'object') {
 		return undefined;
@@ -133,9 +222,10 @@ function normalizeList(entry: unknown): PracticeList | undefined {
 	if (!problems.length) {
 		return undefined;
 	}
-	const minutes = typeof raw.minutes === 'number' && Number.isInteger(raw.minutes)
-		&& raw.minutes >= PRACTICE_MINUTES_MIN && raw.minutes <= PRACTICE_MINUTES_MAX
-		? raw.minutes
-		: undefined;
-	return { name, problems, minutes, createdAt: typeof raw.createdAt === 'string' ? raw.createdAt : '' };
+	return Object.assign({}, entry, {
+		name,
+		problems,
+		minutes: typeof raw.minutes === 'number' ? raw.minutes : undefined,
+		createdAt: typeof raw.createdAt === 'string' ? raw.createdAt : ''
+	});
 }

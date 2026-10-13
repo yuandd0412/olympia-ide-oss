@@ -155,6 +155,13 @@ function minutesInRange(raw: string): number | undefined {
 		: undefined;
 }
 
+/** 集训清单带着分钟数来开场：合法就直接开场；不合法照旧问，别让一个错值静默变成 0 分钟的比赛。 */
+function requestedMinutes(raw: unknown): number | undefined {
+	return typeof raw === 'number' && Number.isInteger(raw) && raw >= CONTEST_MINUTES_MIN && raw <= CONTEST_MINUTES_MAX
+		? raw
+		: undefined;
+}
+
 async function askDuration(): Promise<number | undefined> {
 	const picked = await vscode.window.showQuickPick(
 		[
@@ -214,6 +221,7 @@ export function registerContestMode(context: vscode.ExtensionContext): vscode.Di
 	}
 
 	const command = vscode.commands.registerCommand(CMD.contestMode, async (minutes?: unknown) => {
+		const requested = requestedMinutes(minutes);
 		if (endsAt !== undefined) {
 			const left = remainingMs() as number;
 			if (left > 0) {
@@ -221,17 +229,23 @@ export function registerContestMode(context: vscode.ExtensionContext): vscode.Di
 					`比赛还在进行（剩余 ${format(left)}）。要结束比赛模式吗？`, '结束比赛模式');
 				if (action) {
 					stop(context, false);
+					// 收尾之后又带着新的时长来（清单上点了「开始这一场」）：那就开新的一场。
+					if (requested !== undefined) {
+						start(context, requested);
+					}
 				}
 				return;
 			}
 			stop(context, false);
+			if (requested === undefined) {
+				return;
+			}
+			// 时间已过但还没收尾：从清单点「开始这一场」就是要再来一场，不该只把上一场清掉让人再点一次。
+			start(context, requested);
 			return;
 		}
-		// 集训清单带着时长来开场：清单上写的分钟数就是一场比赛，不该再多问一次。
-		// 数字不合法就照旧问，别让一个错值静默变成 0 分钟的比赛。
-		if (typeof minutes === 'number' && Number.isInteger(minutes)
-			&& minutes >= CONTEST_MINUTES_MIN && minutes <= CONTEST_MINUTES_MAX) {
-			start(context, minutes);
+		if (requested !== undefined) {
+			start(context, requested);
 			return;
 		}
 		const asked = await askDuration();
