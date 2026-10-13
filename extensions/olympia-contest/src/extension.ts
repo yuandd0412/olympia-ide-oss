@@ -17,6 +17,7 @@ import * as fs from 'fs';
 import { detectPlatform, fetchProblem, type Platform, type Problem } from './sources';
 import { renderStatement, templateFor, FORMAT_LABEL, PLATFORM_TEXT, platformText, MY_TEMPLATE_LABEL, MY_TEMPLATE_HINT, TEMPLATE_FOLDER, TEMPLATE_FILE, type ContestFormat } from './templates';
 import { readLibrary, showStatement, toPicks } from './problemLibrary';
+import { markOf, solvedMarks } from './solvedMarks';
 import { appendSample as appendSampleTo, customSamplesOf, MANUAL_EXPLAIN, pickTarget, withCustomSamples } from './statementSamples';
 import { registerCppSnippets } from './snippets';
 
@@ -125,10 +126,13 @@ async function openCached(): Promise<void> {
 		vscode.window.showInformationMessage('还没有缓存的题面，先用「拉取题面」（Ctrl+Alt+P）抓一道吧。');
 		return;
 	}
-	const picks = toPicks(entries, vscode.workspace.workspaceFolders?.[0]?.uri.fsPath);
+	// 做过的题打个勾：题库刷到一半回来接着做，靠记忆挑「哪道还没 AC」是最亏的。
+	const marks = await solvedMarks();
+	const solved = entries.filter(entry => markOf(marks, entry.id)).length;
+	const picks = toPicks(entries, vscode.workspace.workspaceFolders?.[0]?.uri.fsPath, marks);
 	const picked = await vscode.window.showQuickPick(picks, {
-		title: `题面库（缓存了 ${entries.length} 道题）`,
-		placeHolder: '按题号或标题搜，例如 P1001、并查集',
+		title: solved ? `题面库（缓存 ${entries.length} 道，已 AC ${solved} 道）` : `题面库（缓存了 ${entries.length} 道题）`,
+		placeHolder: solved ? '按题号或标题搜；敲 AC 只看做出来的题' : '按题号或标题搜，例如 P1001、并查集',
 		matchOnDescription: true,
 		matchOnDetail: true,
 		ignoreFocusOut: true,

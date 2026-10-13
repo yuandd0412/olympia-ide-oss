@@ -15,6 +15,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 import { metaOf, platformText, type ProblemMeta } from './templates';
+import { markOf, type SolvedMark } from './solvedMarks';
 
 export interface LibraryEntry extends ProblemMeta {
 	readonly file: string;
@@ -24,7 +25,13 @@ export interface LibraryEntry extends ProblemMeta {
 /** quick pick 的一项：把 entry 带在身上，选中之后不用再按文件名去找。 */
 export interface LibraryPick extends vscode.QuickPickItem {
 	readonly entry: LibraryEntry;
+	/** AC 过几次（0 = 没做过）。留着而不是只留那份文字，将来「只看做出来的」要按它筛。 */
+	readonly solvedTimes: number;
 }
+
+/** 做出来的题在列表里的样子：一眼扫过去就知道哪道不用再碰。 */
+const SOLVED_PREFIX = '✓ ';
+const solvedText = (mark: SolvedMark): string => mark.times > 1 ? `已 AC ${mark.times} 次` : '已 AC';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -58,13 +65,18 @@ export function sortByRecent(entries: readonly LibraryEntry[]): LibraryEntry[] {
 	return [...entries].sort((a, b) => b.mtimeMs - a.mtimeMs || a.id.localeCompare(b.id, 'en'));
 }
 
-export function toPicks(entries: readonly LibraryEntry[], workspaceRoot?: string): LibraryPick[] {
-	return entries.map(entry => ({
-		entry,
-		label: `${entry.id} ${entry.title}`.trim(),
-		description: summaryOf(entry),
-		detail: `${relative(entry.file, workspaceRoot)} · 拉取于 ${ago(entry.mtimeMs)}`,
-	}));
+export function toPicks(entries: readonly LibraryEntry[], workspaceRoot?: string, marks: ReadonlyMap<string, SolvedMark> = new Map()): LibraryPick[] {
+	return entries.map(entry => {
+		const solved = markOf(marks, entry.id);
+		const summary = summaryOf(entry);
+		return {
+			entry,
+			solvedTimes: solved?.times ?? 0,
+			label: `${solved ? SOLVED_PREFIX : ''}${entry.id} ${entry.title}`.trim(),
+			description: solved ? `${summary} · ${solvedText(solved)}` : summary,
+			detail: `${relative(entry.file, workspaceRoot)} · 拉取于 ${ago(entry.mtimeMs)}`,
+		};
+	});
 }
 
 /** 一行能看完的题面摘要；时限内存照题面原文写，不做单位换算。 */
