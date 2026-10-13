@@ -62,6 +62,8 @@ export const FORMAT_LABEL: Record<ContestFormat, string> = {
  */
 export const TEMPLATE_FOLDER = '.olympia';
 export const TEMPLATE_FILE = 'template.cpp';
+/** 题面默认目录：跟着 Olympia 那个文件夹走，改一处就整个产品一起挪。 */
+export const DEFAULT_PROBLEMS_DIR = `${TEMPLATE_FOLDER}/problems`;
 export const MY_TEMPLATE_LABEL = '我的模板';
 export const MY_TEMPLATE_HINT = `${TEMPLATE_FOLDER}/${TEMPLATE_FILE}，你自己写的那份`;
 

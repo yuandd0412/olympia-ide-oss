@@ -11,7 +11,9 @@
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
 
-const DEFAULT_PROBLEMS_DIR = '.olympia/problems';
+/** Olympia 放在工程里的那个文件夹：题面、模板、解题记录都在它下面，挪一次全跟着挪。 */
+export const OLYMPIA_FOLDER = '.olympia';
+const DEFAULT_PROBLEMS_DIR = `${OLYMPIA_FOLDER}/problems`;
 /** 题面文件名去掉后缀就是题号；机房里有人存成 P1001.MD，所以按大小写不敏感剥。 */
 export function stripStatementExtension(name: string): string {
 	return name.toLowerCase().endsWith(STATEMENT_EXTENSION) ? name.slice(0, -STATEMENT_EXTENSION.length) : name;
@@ -19,6 +21,14 @@ export function stripStatementExtension(name: string): string {
 
 /** 题面后缀：列目录、监听、去掉后缀拿题号，都在这个扩展里，所以只有这一个值。 */
 export const STATEMENT_EXTENSION = '.md';
+
+/**
+ * 我的模板的位置。文件是 olympia-contest 建的（那边叫 `TEMPLATE_FOLDER` / `TEMPLATE_FILE`），
+ * 这边只是面板要在 tooltip 里把路径说给学生听。两个扩展不能互相 import 源码，所以这一处只能是
+ * 抄一份——由 test-my-template.mjs 拿 contest 编译产物里那两个常量拼出来对着比，改了那边忘了
+ * 这边会在跑检查时红。
+ */
+export const TEMPLATE_PATH_LABEL = `${OLYMPIA_FOLDER}/template.cpp`;
 
 /** 题面目录；没打开工作区时是 undefined（不是错误，只是没地方读）。 */
 export function problemsDir(): vscode.Uri | undefined {

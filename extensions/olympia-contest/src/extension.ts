@@ -15,7 +15,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { detectPlatform, fetchProblem, type Platform, type Problem } from './sources';
-import { renderStatement, templateFor, FORMAT_LABEL, PLATFORM_TEXT, platformText, MY_TEMPLATE_LABEL, MY_TEMPLATE_HINT, TEMPLATE_FOLDER, TEMPLATE_FILE, STATEMENT_EXTENSION, type ContestFormat } from './templates';
+import { renderStatement, templateFor, FORMAT_LABEL, PLATFORM_TEXT, platformText, MY_TEMPLATE_LABEL, MY_TEMPLATE_HINT, TEMPLATE_FOLDER, TEMPLATE_FILE, DEFAULT_PROBLEMS_DIR, STATEMENT_EXTENSION, type ContestFormat } from './templates';
 import { readLibrary, showStatement, toPicks } from './problemLibrary';
 import { markOf, solvedMarks } from './solvedMarks';
 import { appendSample as appendSampleTo, customSamplesOf, MANUAL_EXPLAIN, pickTarget, withCustomSamples } from './statementSamples';
@@ -24,7 +24,7 @@ import { registerCppSnippets } from './snippets';
 function cfg() {
 	const c = vscode.workspace.getConfiguration('olympia.problem');
 	return {
-		problemsDir: c.get<string>('problemsDir', '.olympia/problems'),
+		problemsDir: c.get<string>('problemsDir', DEFAULT_PROBLEMS_DIR),
 		templateOnPull: c.get<boolean>('templateOnPull', false),
 		timeoutMs: c.get<number>('requestTimeoutMs', 15000),
 		cfMetadata: c.get<boolean>('cfMetadata', false),
@@ -237,7 +237,7 @@ async function readMyTemplate(): Promise<string | undefined> {
 async function editMyTemplate(): Promise<void> {
 	const file = myTemplateFile();
 	if (!file) {
-		await vscode.window.showWarningMessage('先打开一个文件夹，我的模板存在工程里的 .olympia/template.cpp。');
+		await vscode.window.showWarningMessage(`先打开一个文件夹，我的模板存在工程里的 ${TEMPLATE_FOLDER}/${TEMPLATE_FILE}。`);
 		return;
 	}
 	if (!fs.existsSync(file.fsPath)) {

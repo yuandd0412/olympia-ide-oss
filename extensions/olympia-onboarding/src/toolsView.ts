@@ -15,9 +15,9 @@ import { CMD, KEYS } from './commands';
 import { activeTarget, renderFlags, targetSummary } from './ojTargets';
 import { resolveCompiler } from './toolchain';
 import { PRECHECK_SOURCE, SOURCE_FILES } from './precheck';
-import { statementFiles, watchStatements } from './problemFiles';
+import { statementFiles, watchStatements, TEMPLATE_PATH_LABEL } from './problemFiles';
 import { contestSummary, isContestRunning, onContestChange } from './contestMode';
-import { onSolveLogChange, readSolves, solveSummary } from './solveLog';
+import { onSolveLogChange, readSolves, solveSummary, SOLVES_PATH_LABEL } from './solveLog';
 import { VERDICT_CODES } from './judgeSamples';
 
 interface Section {
@@ -165,7 +165,7 @@ class OlympiaToolsProvider implements vscode.TreeDataProvider<TreeEntry> {
 					{ kind: 'action', id: 'openStatement', label: '打开题面库', icon: 'book', command: CMD.problemOpenStatement, key: KEYS.openStatement, tooltip: '缓存过的题面都在这里，按题号或标题搜；跑样例 AC 过的题带个勾，敲 AC 只看做出来的。' },
 					{ kind: 'action', id: 'addSample', label: '给这道题加一组自定义样例', icon: 'add', command: CMD.appendSample, tooltip: '在题面的样例区末尾加一组空的占位样例，填完再跑样例。自己加的样例和题面存在一起，跟着工程走。' },
 					{ kind: 'action', id: 'template', label: '插入赛制模板', icon: 'file-code', command: CMD.templateInsert, key: KEYS.templateInsert },
-					{ kind: 'action', id: 'templateEdit', label: '编辑我的模板', icon: 'edit', command: CMD.templateEdit, tooltip: '模板存在工程的 .olympia/template.cpp 里，改完保存就算数：插模板（Ctrl+Alt+T）和拉题面新建的文件都先用你自己这一份。' }
+					{ kind: 'action', id: 'templateEdit', label: '编辑我的模板', icon: 'edit', command: CMD.templateEdit, tooltip: `模板存在工程的 ${TEMPLATE_PATH_LABEL} 里，改完保存就算数：插模板（Ctrl+Alt+T）和拉题面新建的文件都先用你自己这一份。` }
 				];
 			case 'coach':
 				return [
@@ -208,7 +208,7 @@ class OlympiaToolsProvider implements vscode.TreeDataProvider<TreeEntry> {
 			{
 				kind: 'state', id: 'solves', label: '解题记录', value: this.solves,
 				icon: 'checklist', command: CMD.solveLog,
-				tooltip: '跑样例判成 AC 就记一条（耗时、峰值内存），存进工程的 .olympia/solves.json，跟着文件夹走。点击看最近记录与连续打卡。'
+				tooltip: `跑样例判成 AC 就记一条（耗时、峰值内存），存进工程的 ${SOLVES_PATH_LABEL}，跟着文件夹走。点击看最近记录与连续打卡。`
 			},
 			// 只在比赛里出现：平时多一行状态是噪音。
 			...(contest ? [{

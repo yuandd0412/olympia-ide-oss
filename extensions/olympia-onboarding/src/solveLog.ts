@@ -13,7 +13,7 @@ import * as vscode from 'vscode';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { CMD } from './commands';
-import { problemsDir, STATEMENT_EXTENSION } from './problemFiles';
+import { OLYMPIA_FOLDER, problemsDir, STATEMENT_EXTENSION } from './problemFiles';
 import { formatMb as formatPeak } from './memoryProbe';
 
 export interface SolveRecord {
@@ -26,8 +26,9 @@ export interface SolveRecord {
 	readonly peakBytes?: number;
 }
 
-const SOLVES_FOLDER = '.olympia';
 const SOLVES_FILE = 'solves.json';
+/** 文案里要说这条路径的时候都用它，不要另抄一遍：改的是写文件那一边，说的也得跟着改。 */
+export const SOLVES_PATH_LABEL = `${OLYMPIA_FOLDER}/${SOLVES_FILE}`;
 /** 只留最近这么多条：再多的文件读起来慢，也没有人翻三百天以前。 */
 const MAX_RECORDS = 200;
 const RECORD_SETTING = 'train.recordSolves';
@@ -41,7 +42,7 @@ export function titleOf(markdown: string): string {
 
 function solvesPath(): vscode.Uri | undefined {
 	const folder = vscode.workspace.workspaceFolders?.[0];
-	return folder ? vscode.Uri.joinPath(folder.uri, SOLVES_FOLDER, SOLVES_FILE) : undefined;
+	return folder ? vscode.Uri.joinPath(folder.uri, OLYMPIA_FOLDER, SOLVES_FILE) : undefined;
 }
 
 function dayKey(at: string | number | Date): string {
@@ -173,7 +174,7 @@ export function registerSolveLog(context: vscode.ExtensionContext): vscode.Dispo
 		const records = await readSolves();
 		if (!records.length) {
 			await vscode.window.showInformationMessage(
-				`还没有解题记录。跑样例（Ctrl+Alt+J）判成 AC 的时候会自动记一条，记录存在工程的 ${SOLVES_FOLDER}/${SOLVES_FILE} 里。`
+				`还没有解题记录。跑样例（Ctrl+Alt+J）判成 AC 的时候会自动记一条，记录存在工程的 ${SOLVES_PATH_LABEL} 里。`
 			);
 			return;
 		}
