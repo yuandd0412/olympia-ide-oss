@@ -30,6 +30,9 @@ export const STATEMENT_EXTENSION = '.md';
  */
 export const TEMPLATE_PATH_LABEL = `${OLYMPIA_FOLDER}/template.cpp`;
 
+/** 集训清单（一份命名题单 + 时长）的位置；文件由 olympia-contest 写，理由同上。 */
+export const PRACTICE_PATH_LABEL = `${OLYMPIA_FOLDER}/practice.json`;
+
 /** 题面目录；没打开工作区时是 undefined（不是错误，只是没地方读）。 */
 export function problemsDir(): vscode.Uri | undefined {
 	const folder = vscode.workspace.workspaceFolders?.[0];

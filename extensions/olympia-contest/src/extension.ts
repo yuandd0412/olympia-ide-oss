@@ -17,7 +17,8 @@ import * as fs from 'fs';
 import { detectPlatform, fetchProblem, type Platform, type Problem } from './sources';
 import { renderStatement, templateFor, FORMAT_LABEL, PLATFORM_TEXT, platformText, MY_TEMPLATE_LABEL, MY_TEMPLATE_HINT, TEMPLATE_FOLDER, TEMPLATE_FILE, DEFAULT_PROBLEMS_DIR, STATEMENT_EXTENSION, type ContestFormat } from './templates';
 import { readLibrary, showStatement, toPicks } from './problemLibrary';
-import { markOf, solvedMarks } from './solvedMarks';
+import { markOf, solvedMarks, type SolvedMark } from './solvedMarks';
+import { MAX_PRACTICE_PROBLEMS, PRACTICE_FILE, PRACTICE_MINUTES_MAX, PRACTICE_MINUTES_MIN, isSameName, mergeLists, parseMinutes, parseProblemIds, readLists, writeLists, type PracticeList } from './practiceList';
 import { appendSample as appendSampleTo, customSamplesOf, MANUAL_EXPLAIN, pickTarget, withCustomSamples } from './statementSamples';
 import { registerCppSnippets } from './snippets';
 
@@ -139,6 +140,172 @@ async function openCached(): Promise<void> {
 	});
 	if (!picked) { return; }
 	await showStatement(vscode.Uri.file(picked.entry.file));
+}
+
+/** 比赛模式在 olympia-onboarding 那边；清单只是把时长交给它，计时和锁 AI 都归它。 */
+const CONTEST_MODE_COMMAND = 'olympia.contestMode';
+
+/** 清单菜单里的一行：要么是个题号，要么是「开始这一场」「删掉这份清单」这类动作。 */
+interface PracticePick extends vscode.QuickPickItem {
+	readonly action?: 'start' | 'delete';
+	readonly problemId?: string;
+	readonly list?: PracticeList;
+}
+
+function acCount(list: PracticeList, marks: ReadonlyMap<string, SolvedMark>): number {
+	return list.problems.filter(id => markOf(marks, id)).length;
+}
+
+/** 目录里已经拉过的题号（小写）。决定点一道题是「打开」还是「去拉」用的就是这个。 */
+async function cachedProblemIds(root: string): Promise<ReadonlySet<string>> {
+	const names = await fs.promises.readdir(root).catch(() => []);
+	return new Set(names
+		.filter(name => name.toLowerCase().endsWith(STATEMENT_EXTENSION))
+		.map(name => name.slice(0, -STATEMENT_EXTENSION.length).toLowerCase()));
+}
+
+function problemHint(id: string, marks: ReadonlyMap<string, SolvedMark>, cached: ReadonlySet<string>): string {
+	const mark = markOf(marks, id);
+	const where = cached.has(id.trim().toLowerCase()) ? '题面在本地' : '还没拉过题面，点了去拉';
+	return mark ? `已 AC ${mark.times} 次 · ${where}` : where;
+}
+
+/** 一道题：本地有题面就打开，没有就直接去拉（题号认不出平台时让学生挑，和「拉取题面」同一条路）。 */
+async function openOrPull(id: string, root: string | undefined): Promise<void> {
+	if (root) {
+		const file = path.join(root, `${id}${STATEMENT_EXTENSION}`);
+		if (fs.existsSync(file)) {
+			await showStatement(vscode.Uri.file(file));
+			return;
+		}
+	}
+	const platform = detectPlatform(id);
+	if (platform) {
+		await pullProblem({ id, platform });
+		return;
+	}
+	const ref = await askProblemRef(id);
+	if (ref) {
+		await pullProblem(ref);
+	}
+}
+
+/** 三步输入：名字 → 题号 → 时长。任何一步取消都算没建，不留半份清单。 */
+async function createPracticeList(): Promise<PracticeList | undefined> {
+	const name = await vscode.window.showInputBox({
+		title: '新建集训清单',
+		prompt: '给这份清单起个名字，例如「CSP-J 模拟 3」。同名清单会被这一份顶掉，改题目不用先删。',
+		placeHolder: 'CSP-J 模拟 3',
+		ignoreFocusOut: true,
+		validateInput: value => value.trim() ? undefined : '名字不能空着',
+	});
+	if (!name) { return undefined; }
+
+	const typed = await vscode.window.showInputBox({
+		title: `${name.trim()}：这一场的题目`,
+		prompt: `题号之间用空格隔开，例如 P1001 P7076 1660C（逗号、顿号、换行隔开也算，最多 ${MAX_PRACTICE_PROBLEMS} 题）。`,
+		placeHolder: 'P1001 P1002 P1308',
+		ignoreFocusOut: true,
+	});
+	if (typed === undefined) { return undefined; }
+	const problems = parseProblemIds(typed);
+	if (!problems.length) {
+		void vscode.window.showWarningMessage('清单里一道题都没有：题号要写成 P1001 P1002 这样。');
+		return undefined;
+	}
+
+	const minutesText = await vscode.window.showInputBox({
+		title: '这一场多少分钟',
+		prompt: '留空表示不设时限，开场时再问；也可以先空着，之后靠「比赛模式」（Ctrl+Alt+C）自己选时长。',
+		placeHolder: '120',
+		ignoreFocusOut: true,
+		validateInput: value => !value.trim() || parseMinutes(value) !== undefined
+			? undefined
+			: `要写 ${PRACTICE_MINUTES_MIN}–${PRACTICE_MINUTES_MAX} 之间的整数，或者留空`,
+	});
+	if (minutesText === undefined) { return undefined; }
+
+	const list: PracticeList = { name: name.trim(), problems, minutes: parseMinutes(minutesText), createdAt: new Date().toISOString() };
+	if (!await writeLists(mergeLists(await readLists(), list))) {
+		void vscode.window.showWarningMessage(`先打开一个文件夹：清单存在工程的 ${TEMPLATE_FOLDER}/${PRACTICE_FILE} 里，跟着工程走到机房。`);
+		return undefined;
+	}
+	return list;
+}
+
+/** 选中一份清单之后的菜单：开场、逐题、删掉。 */
+async function showPractice(list: PracticeList, marks: ReadonlyMap<string, SolvedMark>): Promise<void> {
+	const root = await problemsRoot();
+	const cached = root ? await cachedProblemIds(root) : new Set<string>();
+	const done = acCount(list, marks);
+	const picks: PracticePick[] = [
+		{
+			label: '开始这一场',
+			description: list.minutes ? `${list.minutes} 分钟，期间 AI 教练只给提示` : '现在问时长',
+			action: 'start',
+		},
+		...list.problems.map(id => ({
+			label: markOf(marks, id) ? `✓ ${id}` : id,
+			description: problemHint(id, marks, cached),
+			problemId: id,
+		})),
+		{ label: '删掉这份清单', description: '题面和解题记录都留着，删的只是这份单子', action: 'delete' },
+	];
+	const picked = await vscode.window.showQuickPick(picks, {
+		title: `${list.name}（${list.problems.length} 题 · 已 AC ${done} 道）`,
+		placeHolder: '点一道题就打开它的题面（没拉过的会先去拉）',
+		matchOnDescription: true,
+		ignoreFocusOut: true,
+	});
+	if (!picked) { return; }
+
+	if (picked.action === 'start') {
+		await vscode.commands.executeCommand(CONTEST_MODE_COMMAND, list.minutes);
+		return;
+	}
+	if (picked.action === 'delete') {
+		const confirmed = await vscode.window.showWarningMessage(
+			`删掉清单「${list.name}」？题面和解题记录都不动，删的只是这份题目单。`, '删除');
+		if (confirmed) {
+			const rest = (await readLists()).filter(item => !isSameName(item.name, list.name));
+			await writeLists(rest);
+			void vscode.window.showInformationMessage(`清单「${list.name}」删掉了。`);
+		}
+		return;
+	}
+	if (picked.problemId) {
+		await openOrPull(picked.problemId, root);
+	}
+}
+
+async function showPracticeLists(): Promise<void> {
+	const lists = await readLists();
+	const marks = await solvedMarks();
+	const picks: PracticePick[] = [
+		...lists.map(list => ({
+			label: list.name,
+			description: `${list.problems.length} 题 · 已 AC ${acCount(list, marks)}`,
+			detail: list.minutes ? `一场 ${list.minutes} 分钟` : '不设时限',
+			list,
+		})),
+		{ label: '新建集训清单…', description: '名字 + 题号 + 时长，存进工程的 practice.json' },
+	];
+	const picked = await vscode.window.showQuickPick(picks, {
+		title: lists.length ? `集训清单（${lists.length} 份）` : '集训清单',
+		placeHolder: lists.length ? '选一份清单：开始这一场、逐题看题面，或者删掉它' : '还没有清单，起个名字建一份',
+		matchOnDescription: true,
+		matchOnDetail: true,
+		ignoreFocusOut: true,
+	});
+	if (!picked) { return; }
+	if (picked.list) {
+		await showPractice(picked.list, marks);
+		return;
+	}
+	const created = await createPracticeList();
+	if (created) {
+		await showPractice(created, await solvedMarks());
+	}
 }
 
 /** 对拍抓到的那组数据传过来时带这些字段；从命令面板直接调用时一个都没有。 */
@@ -337,6 +504,13 @@ export function activate(context: vscode.ExtensionContext): void {
 		vscode.commands.registerCommand('olympia.template.editMy', editMyTemplate),
 		vscode.commands.registerCommand('olympia.problem.openStatement', openCached),
 		vscode.commands.registerCommand('olympia.problem.appendSample', appendSample),
+		vscode.commands.registerCommand('olympia.practice.open', showPracticeLists),
+		vscode.commands.registerCommand('olympia.practice.new', async () => {
+			const created = await createPracticeList();
+			if (created) {
+				await showPractice(created, await solvedMarks());
+			}
+		}),
 	);
 
 	context.subscriptions.push(registerCppSnippets());

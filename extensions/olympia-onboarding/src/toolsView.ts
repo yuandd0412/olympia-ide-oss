@@ -15,7 +15,7 @@ import { CMD, KEYS } from './commands';
 import { activeTarget, renderFlags, targetSummary } from './ojTargets';
 import { resolveCompiler } from './toolchain';
 import { PRECHECK_SOURCE, SOURCE_FILES } from './precheck';
-import { statementFiles, watchStatements, TEMPLATE_PATH_LABEL } from './problemFiles';
+import { PRACTICE_PATH_LABEL, statementFiles, watchStatements, TEMPLATE_PATH_LABEL } from './problemFiles';
 import { contestSummary, isContestRunning, onContestChange } from './contestMode';
 import { onSolveLogChange, readSolves, solveSummary, SOLVES_PATH_LABEL } from './solveLog';
 import { VERDICT_CODES } from './judgeSamples';
@@ -164,6 +164,7 @@ class OlympiaToolsProvider implements vscode.TreeDataProvider<TreeEntry> {
 					{ kind: 'action', id: 'pullClipboard', label: '从剪贴板拉取题号', icon: 'clippy', command: CMD.problemPullFromClipboard, key: KEYS.problemPullFromClipboard },
 					{ kind: 'action', id: 'openStatement', label: '打开题面库', icon: 'book', command: CMD.problemOpenStatement, key: KEYS.openStatement, tooltip: '缓存过的题面都在这里，按题号或标题搜；跑样例 AC 过的题带个勾，敲 AC 只看做出来的。' },
 					{ kind: 'action', id: 'addSample', label: '给这道题加一组自定义样例', icon: 'add', command: CMD.appendSample, tooltip: '在题面的样例区末尾加一组空的占位样例，填完再跑样例。自己加的样例和题面存在一起，跟着工程走。' },
+					{ kind: 'action', id: 'practice', label: '集训清单', icon: 'list-unordered', command: CMD.practiceOpen, key: KEYS.practice, tooltip: `一份起了名字的题目单 + 时长：选中它就能「开始这一场」，计时直接从清单的分钟数来；逐题点一下就是打开题面（没拉过的先去拉）。做过的题带 ✓。清单存在工程的 ${PRACTICE_PATH_LABEL} 里，跟着文件夹走到机房。` },
 					{ kind: 'action', id: 'template', label: '插入赛制模板', icon: 'file-code', command: CMD.templateInsert, key: KEYS.templateInsert },
 					{ kind: 'action', id: 'templateEdit', label: '编辑我的模板', icon: 'edit', command: CMD.templateEdit, tooltip: `模板存在工程的 ${TEMPLATE_PATH_LABEL} 里，改完保存就算数：插模板（Ctrl+Alt+T）和拉题面新建的文件都先用你自己这一份。` }
 				];

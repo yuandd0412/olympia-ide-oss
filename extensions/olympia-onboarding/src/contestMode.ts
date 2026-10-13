@@ -213,7 +213,7 @@ export function registerContestMode(context: vscode.ExtensionContext): vscode.Di
 		}
 	}
 
-	const command = vscode.commands.registerCommand(CMD.contestMode, async () => {
+	const command = vscode.commands.registerCommand(CMD.contestMode, async (minutes?: unknown) => {
 		if (endsAt !== undefined) {
 			const left = remainingMs() as number;
 			if (left > 0) {
@@ -227,9 +227,16 @@ export function registerContestMode(context: vscode.ExtensionContext): vscode.Di
 			stop(context, false);
 			return;
 		}
-		const minutes = await askDuration();
-		if (minutes) {
+		// 集训清单带着时长来开场：清单上写的分钟数就是一场比赛，不该再多问一次。
+		// 数字不合法就照旧问，别让一个错值静默变成 0 分钟的比赛。
+		if (typeof minutes === 'number' && Number.isInteger(minutes)
+			&& minutes >= CONTEST_MINUTES_MIN && minutes <= CONTEST_MINUTES_MAX) {
 			start(context, minutes);
+			return;
+		}
+		const asked = await askDuration();
+		if (asked) {
+			start(context, asked);
 		}
 	});
 

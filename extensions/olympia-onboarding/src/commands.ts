@@ -37,6 +37,8 @@ export const CMD = {
 	templateEdit: 'olympia.template.editMy',
 	/** 解题记录：跑样例 AC 之后写一条，面板那一行点开就是清单。 */
 	solveLog: 'olympia.train.solveLog',
+	/** 集训清单：一份命名题单 + 时长，由 olympia-contest 实现，面板只是给它一个常驻入口。 */
+	practiceOpen: 'olympia.practice.open',
 	aiSettings: 'olympia.ai.settings',
 	/** Olympia 自己的设置页：把三个扩展清单里的设置项收进一屏。 */
 	settings: 'olympia.settings',
@@ -56,6 +58,7 @@ export const KEYS = {
 	problemPull: 'Ctrl+Alt+P',
 	problemPullFromClipboard: 'Ctrl+Alt+V',
 	openStatement: 'Ctrl+Alt+O',
+	practice: 'Ctrl+Alt+L',
 	templateInsert: 'Ctrl+Alt+T',
 	settings: 'Ctrl+Alt+,'
 } as const;

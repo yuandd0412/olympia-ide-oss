@@ -60,6 +60,17 @@
 				"title": "给这道题加一组自定义样例",
 				"category": "Olympia",
 				"enablement": "true"
+			},
+			{
+				"command": "olympia.practice.open",
+				"title": "集训清单",
+				"category": "Olympia",
+				"icon": "$(list-unordered)"
+			},
+			{
+				"command": "olympia.practice.new",
+				"title": "新建集训清单",
+				"category": "Olympia"
 			}
 		],
 		"menus": {
@@ -86,6 +97,14 @@
 				},
 				{
 					"command": "olympia.problem.appendSample",
+					"when": "true"
+				},
+				{
+					"command": "olympia.practice.open",
+					"when": "true"
+				},
+				{
+					"command": "olympia.practice.new",
 					"when": "true"
 				}
 			],
@@ -138,6 +157,11 @@
 				"key": "ctrl+alt+o",
 				"mac": "cmd+alt+o",
 				"when": "editorTextFocus"
+			},
+			{
+				"command": "olympia.practice.open",
+				"key": "ctrl+alt+l",
+				"mac": "cmd+alt+l"
 			}
 		],
 		"configuration": {
