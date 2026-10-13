@@ -141,7 +141,7 @@ class OlympiaToolsProvider implements vscode.TreeDataProvider<TreeEntry> {
 			case 'build':
 				return [
 					{ kind: 'action', id: 'compileAndRun', label: '编译并运行', icon: 'play', command: CMD.compileAndRun, key: KEYS.compileAndRun, tooltip: '按当前评测机参数编译，然后运行程序' },
-					{ kind: 'action', id: 'compile', label: '只编译', icon: 'tools', command: CMD.compile, key: KEYS.compile },
+					{ kind: 'action', id: 'compile', label: '编译当前文件', icon: 'tools', command: CMD.compile, key: KEYS.compile, tooltip: '按当前档位编译，不运行；命令行的完整参数会写进输出面板' },
 					{ kind: 'action', id: 'judge', label: '按评测机编译（-O2）', icon: 'server-process', command: CMD.compileJudgeAccurate, key: KEYS.compileJudgeAccurate, tooltip: '打开优化并套用评测机开关，用来复现「本地过、评测机超时」之外的那类差异' },
 					{ kind: 'action', id: 'precheck', label: '提交前体检', icon: 'check', command: CMD.preSubmitCheck, key: KEYS.preSubmitCheck, tooltip: '只报会在评测机上编译失败的写法：`#pragma GCC optimize`、MSVC 保留字、C++17 起删除的设施' },
 					{ kind: 'action', id: 'judgeSamples', label: '跑样例（本地评测）', icon: 'checklist', command: CMD.judgeSamples, key: KEYS.judgeSamples, tooltip: `用拉下来的题面样例跑当前文件，按 token 比对，给出 ${VERDICT_CODES}` },
@@ -159,6 +159,7 @@ class OlympiaToolsProvider implements vscode.TreeDataProvider<TreeEntry> {
 			case 'coach':
 				return [
 					{ kind: 'action', id: 'aiSettings', label: 'AI 设置（地址 / 密钥 / 模型）', icon: 'rocket', command: CMD.aiSettings },
+					{ kind: 'action', id: 'settings', label: '全部设置（编译 / 评测 / 对拍 / 题面）', icon: 'gear', command: CMD.settings, key: KEYS.settings, tooltip: '一屏改完 Olympia 的所有开关，说明就写在每一项下面；改的是 settings.json 里同样的键。' },
 					{ kind: 'action', id: 'env', label: '环境自检', icon: 'search', command: CMD.checkEnvironment, key: KEYS.checkEnvironment },
 					{ kind: 'action', id: 'website', label: '打开官网与文档', icon: 'globe', command: CMD.openWebsite }
 				];

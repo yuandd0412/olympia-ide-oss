@@ -34,6 +34,8 @@ export const CMD = {
 	appendSample: 'olympia.problem.appendSample',
 	templateInsert: 'olympia.template.insert',
 	aiSettings: 'olympia.ai.settings',
+	/** Olympia 自己的设置页：把三个扩展清单里的设置项收进一屏。 */
+	settings: 'olympia.settings',
 	showProblems: 'workbench.actions.view.problems'
 } as const;
 
@@ -50,5 +52,6 @@ export const KEYS = {
 	problemPull: 'Ctrl+Alt+P',
 	problemPullFromClipboard: 'Ctrl+Alt+V',
 	openStatement: 'Ctrl+Alt+O',
-	templateInsert: 'Ctrl+Alt+T'
+	templateInsert: 'Ctrl+Alt+T',
+	settings: 'Ctrl+Alt+,'
 } as const;

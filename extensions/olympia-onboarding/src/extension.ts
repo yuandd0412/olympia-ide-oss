@@ -25,6 +25,7 @@ import { registerStatusBar } from './statusBar';
 import { registerStressTest } from './stressTest';
 import { registerContestMode } from './contestMode';
 import { registerSampleJudge } from './judgeSamples';
+import { registerSettingsPanel } from './settingsPanel';
 import { CMD } from './commands';
 
 const WEBSITE = 'https://olympia.dpdns.org';
@@ -259,6 +260,7 @@ export function activate(context: vscode.ExtensionContext): void {
 	registerStressTest(context);
 	registerContestMode(context);
 	registerSampleJudge(context);
+	context.subscriptions.push(registerSettingsPanel());
 
 	// run on save, silently: the Problems panel is the surface, not a modal
 	context.subscriptions.push(

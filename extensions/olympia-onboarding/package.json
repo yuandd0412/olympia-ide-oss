@@ -28,12 +28,12 @@
 		"commands": [
 			{
 				"command": "olympia.checkEnvironment",
-				"title": "环境自检：检测内置编译器",
+				"title": "环境自检",
 				"category": "Olympia"
 			},
 			{
 				"command": "olympia.openWebsite",
-				"title": "打开 Olympia 官网",
+				"title": "打开官网与文档",
 				"category": "Olympia"
 			},
 			{
@@ -67,19 +67,19 @@
 			},
 			{
 				"command": "olympia.compile",
-				"title": "编译当前文件（按评测机参数）",
+				"title": "编译当前文件",
 				"category": "Olympia",
 				"icon": "$(tools)"
 			},
 			{
 				"command": "olympia.compileJudgeAccurate",
-				"title": "按评测机编译（强制 -O2）",
+				"title": "按评测机编译（-O2）",
 				"category": "Olympia",
 				"icon": "$(server-process)"
 			},
 			{
 				"command": "olympia.compileAndRun",
-				"title": "编译并运行（本地样例测试）",
+				"title": "编译并运行",
 				"category": "Olympia",
 				"icon": "$(play)"
 			},
@@ -88,6 +88,12 @@
 				"title": "刷新 Olympia 工具面板",
 				"category": "Olympia",
 				"icon": "$(refresh)"
+			},
+			{
+				"command": "olympia.settings",
+				"title": "全部设置（编译 / 评测 / 对拍 / 题面）",
+				"category": "Olympia",
+				"icon": "$(gear)"
 			}
 		],
 		"viewsContainers": {
@@ -191,6 +197,11 @@
 				"command": "olympia.checkEnvironment",
 				"key": "ctrl+alt+d",
 				"mac": "cmd+alt+d"
+			},
+			{
+				"command": "olympia.settings",
+				"key": "ctrl+alt+comma",
+				"mac": "cmd+alt+,"
 			}
 		],
 		"walkthroughs": [

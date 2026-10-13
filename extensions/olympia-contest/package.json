@@ -30,29 +30,29 @@
 			{
 				"command": "olympia.problem.pull",
 				"title": "拉取题面...",
-				"category": "Olympia 竞赛",
+				"category": "Olympia",
 				"icon": "$(cloud-download)"
 			},
 			{
 				"command": "olympia.problem.pullFromClipboard",
-				"title": "从剪贴板题号拉取题面",
-				"category": "Olympia 竞赛"
+				"title": "从剪贴板拉取题号",
+				"category": "Olympia"
 			},
 			{
 				"command": "olympia.template.insert",
 				"title": "插入赛制模板...",
-				"category": "Olympia 竞赛",
+				"category": "Olympia",
 				"icon": "$(file-code)"
 			},
 			{
 				"command": "olympia.problem.openStatement",
-				"title": "打开题面库（已缓存的题面）",
-				"category": "Olympia 竞赛"
+				"title": "打开题面库",
+				"category": "Olympia"
 			},
 			{
 				"command": "olympia.problem.appendSample",
 				"title": "给这道题加一组自定义样例",
-				"category": "Olympia 竞赛",
+				"category": "Olympia",
 				"enablement": "true"
 			}
 		],
