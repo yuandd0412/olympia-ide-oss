@@ -17,6 +17,7 @@ import { resolveCompiler } from './toolchain';
 import { PRECHECK_SOURCE, SOURCE_FILES } from './precheck';
 import { statementFiles, watchStatements } from './problemFiles';
 import { contestSummary, isContestRunning, onContestChange } from './contestMode';
+import { onSolveLogChange, readSolves, solveSummary } from './solveLog';
 import { VERDICT_CODES } from './judgeSamples';
 
 interface Section {
@@ -64,10 +65,12 @@ class OlympiaToolsProvider implements vscode.TreeDataProvider<TreeEntry> {
 
 	private compiler: CompilerState = { label: COMPILER_MISSING, icon: 'debug-disconnect' };
 	private library = LIBRARY_UNKNOWN;
+	private solves = LIBRARY_UNKNOWN;
 
 	constructor() {
 		void this.refreshCompiler();
 		void this.refreshLibrary();
+		void this.refreshSolves();
 	}
 
 	async refreshCompiler(): Promise<void> {
@@ -85,6 +88,12 @@ class OlympiaToolsProvider implements vscode.TreeDataProvider<TreeEntry> {
 		this.fire();
 	}
 
+	/** 解题记录：一次读文件，数字与连续天数都在 solveLog 里算。 */
+	async refreshSolves(): Promise<void> {
+		this.solves = solveSummary(await readSolves());
+		this.fire();
+	}
+
 	/** 只重画树，不重新探测编译器：倒计时每秒刷新走这条，别顺带 spawn g++。 */
 	fire(): void {
 		this._onDidChangeTreeData.fire(undefined);
@@ -93,6 +102,7 @@ class OlympiaToolsProvider implements vscode.TreeDataProvider<TreeEntry> {
 	refresh(): void {
 		void this.refreshCompiler();
 		void this.refreshLibrary();
+		void this.refreshSolves();
 		this.fire();
 	}
 
@@ -194,6 +204,11 @@ class OlympiaToolsProvider implements vscode.TreeDataProvider<TreeEntry> {
 					? '缓存目录里还没有题面，点击拉一道题的题面。'
 					: '点击打开题面库：按题号或标题搜，选中就在编辑器里打开。跑样例用的就是这些题面。'
 			},
+			{
+				kind: 'state', id: 'solves', label: '解题记录', value: this.solves,
+				icon: 'checklist', command: CMD.solveLog,
+				tooltip: '跑样例判成 AC 就记一条（耗时、峰值内存），存进工程的 .olympia/solves.json，跟着文件夹走。点击看最近记录与连续打卡。'
+			},
 			// 只在比赛里出现：平时多一行状态是噪音。
 			...(contest ? [{
 				kind: 'state' as const, id: 'contest', label: '比赛', value: contest,
@@ -231,7 +246,8 @@ export function registerToolsView(context: vscode.ExtensionContext): vscode.Disp
 		vscode.window.onDidChangeActiveTextEditor(() => provider.refresh()),
 		vscode.languages.onDidChangeDiagnostics(() => provider.refresh()),
 		// 拉完题面数字就该变，不该等学生切个文件才刷新
-		watchStatements(() => void provider.refreshLibrary())
+		watchStatements(() => void provider.refreshLibrary()),
+		onSolveLogChange(() => void provider.refreshSolves())
 	);
 	// 比赛倒计时每秒一跳，只要重画树，不要顺带重新探测编译器
 	onContestChange(() => provider.fire());

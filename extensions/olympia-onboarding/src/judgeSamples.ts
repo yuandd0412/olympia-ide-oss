@@ -18,6 +18,7 @@ import { CMD } from './commands';
 import { statementFiles } from './problemFiles';
 import { runProcess } from './stressTest';
 import { formatMb, runSampled } from './memoryProbe';
+import { recordSolve, titleOf } from './solveLog';
 
 const LOCAL_MARGIN = 3;
 const RUN_TIMEOUT_SLACK_MS = 500;
@@ -204,6 +205,15 @@ export function verdictOf(results: readonly CaseResult[]): Verdict {
 	return results.reduce<Verdict>((worst, r) => severityOf(r.verdict) > severityOf(worst) ? r.verdict : worst, 'AC');
 }
 
+/** 解题记录用「最慢那组」当耗时、「整场最高」当峰值内存：这两项才是评测机在乎的。 */
+function worstOf(results: readonly CaseResult[]): { ms: number; peakBytes?: number } {
+	const peakBytes = results.reduce<number | undefined>(
+		(best, r) => r.peakBytes !== undefined && (best === undefined || r.peakBytes > best) ? r.peakBytes : best,
+		undefined
+	);
+	return { ms: Math.max(0, ...results.map(r => r.ms)), peakBytes };
+}
+
 /** 换一道题来测：清掉这份文件记住的选择，再重新问一次。 */
 async function repick(context: vscode.ExtensionContext, source: vscode.Uri): Promise<void> {
 	await rememberStatement(context, source, undefined);
@@ -302,6 +312,14 @@ export function registerSampleJudge(context: vscode.ExtensionContext): vscode.Di
 		const overall = verdictOf(results);
 		const passed = results.filter(r => r.verdict === 'AC').length;
 		log.appendLine(`--- ${overall} · ${passed}/${results.length} 组通过 ---`);
+		if (overall === 'AC') {
+			await recordSolve({
+				problem: basename(statement.fsPath).replace(/\.md$/i, ''),
+				title: titleOf(markdown),
+				at: new Date().toISOString(),
+				...worstOf(results)
+			});
+		}
 		const message = `样例判定 ${verdictText(overall)}：通过 ${passed}/${results.length} 组。`;
 		// 自动同名匹配上的题面没有「换一道题」这一说；用记住的或手动选的必须留一个出口，
 		// 不然选错一次就再也改不过来。

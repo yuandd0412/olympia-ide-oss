@@ -33,6 +33,8 @@ export const CMD = {
 	/** 对拍抓到的那组数据写回题面；同样由 olympia-contest 实现，参数是输入与期望输出。 */
 	appendSample: 'olympia.problem.appendSample',
 	templateInsert: 'olympia.template.insert',
+	/** 解题记录：跑样例 AC 之后写一条，面板那一行点开就是清单。 */
+	solveLog: 'olympia.train.solveLog',
 	aiSettings: 'olympia.ai.settings',
 	/** Olympia 自己的设置页：把三个扩展清单里的设置项收进一屏。 */
 	settings: 'olympia.settings',

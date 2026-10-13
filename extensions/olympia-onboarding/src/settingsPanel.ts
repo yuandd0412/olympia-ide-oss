@@ -31,10 +31,11 @@ const GROUP_LABELS: Readonly<Record<string, string>> = {
 	stress: '对拍',
 	problem: '题面与题库',
 	templates: '代码模板',
+	train: '解题记录与打卡',
 	debug: 'VS Code 自带入口',
 	ai: 'AI 教练'
 };
-const GROUP_ORDER = ['compiler', 'judge', 'check', 'stress', 'problem', 'templates', 'debug', 'ai'];
+const GROUP_ORDER = ['compiler', 'judge', 'check', 'stress', 'problem', 'templates', 'train', 'debug', 'ai'];
 const GROUP_FALLBACK = '其他';
 
 interface SettingItem {

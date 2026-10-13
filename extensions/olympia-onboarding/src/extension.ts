@@ -25,6 +25,7 @@ import { registerStatusBar } from './statusBar';
 import { registerStressTest } from './stressTest';
 import { registerContestMode } from './contestMode';
 import { registerSampleJudge } from './judgeSamples';
+import { registerSolveLog } from './solveLog';
 import { registerSettingsPanel } from './settingsPanel';
 import { CMD } from './commands';
 
@@ -260,6 +261,7 @@ export function activate(context: vscode.ExtensionContext): void {
 	registerStressTest(context);
 	registerContestMode(context);
 	registerSampleJudge(context);
+	registerSolveLog(context);
 	context.subscriptions.push(registerSettingsPanel());
 
 	// run on save, silently: the Problems panel is the surface, not a modal

@@ -90,6 +90,12 @@
 				"icon": "$(refresh)"
 			},
 			{
+				"command": "olympia.train.solveLog",
+				"title": "解题记录",
+				"category": "Olympia",
+				"icon": "$(checklist)"
+			},
+			{
 				"command": "olympia.settings",
 				"title": "全部设置（编译 / 评测 / 对拍 / 题面）",
 				"category": "Olympia",
@@ -419,6 +425,18 @@
 					"default": 0,
 					"minimum": 0,
 					"markdownDescription": "跑样例时判 MLE 用的内存上限（MB）。**0 表示按题面里写的内存限制判**；题面也没写就只报峰值内存、不判 MLE。采样只会少报、不会多报，所以不会出现「其实没超却判 MLE」。"
+				},
+				"olympia.train.recordSolves": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "跑样例判成 AC 时，往工程里的 `.olympia/solves.json` 记一条（题号、耗时、峰值内存、时间）。面板上「解题记录」那一行和连续打卡都由它算。关掉只是不再写新记录，已有的记录不动。"
+				},
+				"olympia.train.dailyGoal": {
+					"type": "number",
+					"default": 3,
+					"minimum": 1,
+					"maximum": 50,
+					"markdownDescription": "每天打算 AC 几道题，面板那一行按「今日 x/N」显示。只影响这一行数字，不会弹提醒，也不会打断你。"
 				},
 				"olympia.debug.showEntryPoints": {
 					"type": "boolean",
