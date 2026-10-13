@@ -44,6 +44,7 @@ type CONTEXT_KEY_STATES = 'connected' | 'connecting' | 'disconnected';
 export const REMOTE_TUNNEL_CONNECTION_STATE_KEY = 'remoteTunnelConnection';
 export const REMOTE_TUNNEL_CONNECTION_STATE = new RawContextKey<CONTEXT_KEY_STATES>(REMOTE_TUNNEL_CONNECTION_STATE_KEY, 'disconnected');
 const REMOTE_TUNNEL_HAS_LINK = new RawContextKey<boolean>('remoteTunnelHasLink', false);
+const REMOTE_TUNNEL_COMMANDS_AVAILABLE = ContextKeyExpr.false();
 
 const REMOTE_TUNNEL_USED_STORAGE_KEY = 'remoteTunnelServiceUsed';
 const REMOTE_TUNNEL_PROMPTED_PREVIEW_STORAGE_KEY = 'remoteTunnelServicePromptedPreview';
@@ -568,6 +569,7 @@ export class RemoteTunnelWorkbenchContribution extends Disposable implements IWo
 					precondition: ContextKeyExpr.equals(REMOTE_TUNNEL_CONNECTION_STATE_KEY, 'disconnected'),
 					menu: [{
 						id: MenuId.CommandPalette,
+						when: REMOTE_TUNNEL_COMMANDS_AVAILABLE,
 					},
 					{
 						id: MenuId.AccountsContext,
@@ -702,7 +704,7 @@ export class RemoteTunnelWorkbenchContribution extends Disposable implements IWo
 					category: REMOTE_TUNNEL_CATEGORY,
 					menu: [{
 						id: MenuId.CommandPalette,
-						when: ContextKeyExpr.notEquals(REMOTE_TUNNEL_CONNECTION_STATE_KEY, ''),
+						when: REMOTE_TUNNEL_COMMANDS_AVAILABLE,
 					}]
 				});
 			}
@@ -745,7 +747,7 @@ export class RemoteTunnelWorkbenchContribution extends Disposable implements IWo
 					precondition: ContextKeyExpr.notEquals(REMOTE_TUNNEL_CONNECTION_STATE_KEY, 'disconnected'),
 					menu: [{
 						id: MenuId.CommandPalette,
-						when: ContextKeyExpr.notEquals(REMOTE_TUNNEL_CONNECTION_STATE_KEY, ''),
+						when: REMOTE_TUNNEL_COMMANDS_AVAILABLE,
 					}]
 				});
 			}
@@ -771,7 +773,7 @@ export class RemoteTunnelWorkbenchContribution extends Disposable implements IWo
 					category: REMOTE_TUNNEL_CATEGORY,
 					menu: [{
 						id: MenuId.CommandPalette,
-						when: ContextKeyExpr.notEquals(REMOTE_TUNNEL_CONNECTION_STATE_KEY, ''),
+						when: REMOTE_TUNNEL_COMMANDS_AVAILABLE,
 					}]
 				});
 			}
@@ -790,7 +792,7 @@ export class RemoteTunnelWorkbenchContribution extends Disposable implements IWo
 					category: REMOTE_TUNNEL_CATEGORY,
 					menu: [{
 						id: MenuId.CommandPalette,
-						when: ContextKeyExpr.notEquals(REMOTE_TUNNEL_CONNECTION_STATE_KEY, ''),
+						when: REMOTE_TUNNEL_COMMANDS_AVAILABLE,
 					}]
 				});
 			}
@@ -813,10 +815,7 @@ export class RemoteTunnelWorkbenchContribution extends Disposable implements IWo
 					),
 					menu: [{
 						id: MenuId.CommandPalette,
-						when: ContextKeyExpr.and(
-							ContextKeyExpr.equals(REMOTE_TUNNEL_CONNECTION_STATE_KEY, 'connected'),
-							REMOTE_TUNNEL_HAS_LINK.isEqualTo(true),
-						),
+						when: REMOTE_TUNNEL_COMMANDS_AVAILABLE,
 					}]
 				});
 			}
