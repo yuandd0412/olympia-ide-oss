@@ -66,6 +66,12 @@
 				"icon": "$(checklist)"
 			},
 			{
+				"command": "olympia.judge.compareOutput",
+				"title": "对比期望输出",
+				"category": "Olympia",
+				"icon": "$(diff)"
+			},
+			{
 				"command": "olympia.compile",
 				"title": "编译当前文件",
 				"category": "Olympia",
@@ -198,6 +204,11 @@
 				"key": "ctrl+alt+j",
 				"mac": "cmd+alt+j",
 				"when": "editorTextFocus"
+			},
+			{
+				"command": "olympia.judge.compareOutput",
+				"key": "ctrl+alt+k",
+				"mac": "cmd+alt+k"
 			},
 			{
 				"command": "olympia.checkEnvironment",

@@ -19,6 +19,8 @@ export const CMD = {
 	compileJudgeAccurate: 'olympia.compileJudgeAccurate',
 	preSubmitCheck: 'olympia.preSubmitCheck',
 	judgeSamples: 'olympia.judgeSamples',
+	/** 最近一次跑样例里 WA 的那一组：并排打开「期望 / 得到」。 */
+	judgeCompare: 'olympia.judge.compareOutput',
 	stressTest: 'olympia.stressTest',
 	contestMode: 'olympia.contestMode',
 	/** 比赛模式的状态查询口：AI 教练在别的扩展里，只能靠命令问回来。 */
@@ -54,6 +56,7 @@ export const KEYS = {
 	compileJudgeAccurate: 'Ctrl+Shift+F9',
 	preSubmitCheck: 'Ctrl+Alt+Enter',
 	judgeSamples: 'Ctrl+Alt+J',
+	compareOutput: 'Ctrl+Alt+K',
 	stressTest: 'Ctrl+Alt+S',
 	contestMode: 'Ctrl+Alt+C',
 	checkEnvironment: 'Ctrl+Alt+D',

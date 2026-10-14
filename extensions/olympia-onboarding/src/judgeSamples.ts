@@ -73,6 +73,178 @@ function normalize(text: string): string {
 	return text.split(/\s+/).filter(Boolean).join(' ');
 }
 
+/** 一行里写进日志的最长长度：判定输出可能是一整行 10^6 个字符，日志不该被它撑爆。 */
+const LOG_LINE_CLIP = 160;
+
+function clip(line: string): string {
+	return line.length <= LOG_LINE_CLIP ? line : `${line.slice(0, LOG_LINE_CLIP)}…（共 ${line.length} 字符）`;
+}
+
+/**
+ * 按行切开比较用的形态：`\r\n` 与 `\n` 同价，末尾那个换行不算空行——
+ * 几乎所有题面的期望输出都以换行收尾，把它算成一行会永远报「多/少一行」。
+ */
+function linesOf(text: string): string[] {
+	const rows = text.replace(/\r\n?/g, '\n').split('\n');
+	while (rows.length > 0 && rows[rows.length - 1] === '') {
+		rows.pop();
+	}
+	return rows;
+}
+
+const NUMERIC = /^-?\d+(\.\d+)?$/;
+
+export interface CaseDiff {
+	/** token 序列是否相同（判定就是按这个算 AC 的，相同则不会有 WA）。 */
+	readonly sameTokens: boolean;
+	/** 第一个内容不同的行，1 起始；0 表示逐行看不出差别。 */
+	readonly firstDiffLine: number;
+	readonly expectedLines: number;
+	readonly gotLines: number;
+	readonly expectedLine: string;
+	readonly gotLine: string;
+	/** 一句中文诊断，永远不为空。 */
+	readonly hint: string;
+}
+
+/**
+ * 「哪一组错了、错在第几行、错成什么样」——把这两个字符串变成学生能直接照着改代码的信息。
+ * 老版本 Tauri 的评测面板有逐用例的 期望/实际 对照，这里补上等价物：诊断按
+ * 「没输出 → 只少了尾巴 → 多了尾巴 → 顺序不同 → 定位到第一个不同的词」由粗到细排。
+ */
+export function compareCase(expected: string, got: string): CaseDiff {
+	const want = linesOf(expected);
+	const have = linesOf(got);
+	const sameTokens = normalize(expected) === normalize(got);
+	let firstDiffLine = 0;
+	for (let i = 0; i < Math.max(want.length, have.length); i++) {
+		if ((want[i] ?? '') !== (have[i] ?? '')) {
+			firstDiffLine = i + 1;
+			break;
+		}
+	}
+	const expectedLine = want[firstDiffLine - 1] ?? '';
+	const gotLine = have[firstDiffLine - 1] ?? '';
+	return {
+		sameTokens,
+		firstDiffLine,
+		expectedLines: want.length,
+		gotLines: have.length,
+		expectedLine,
+		gotLine,
+		hint: hintOf(want, have, firstDiffLine, sameTokens, got, expectedLine, gotLine),
+	};
+}
+
+function hintOf(want: string[], have: string[], firstDiffLine: number, sameTokens: boolean, got: string, expectedLine: string, gotLine: string): string {
+	if (got.trim() === '') {
+		return '程序没有任何输出：先确认 main 里真的写了 cout，以及不是在读入之前就退出了。';
+	}
+	if (sameTokens) {
+		return '按空格切出来的内容其实一样，只是换行和空格的位置不同——评测机也按空白分隔比对，所以这组算过。';
+	}
+	const common = Math.min(want.length, have.length);
+	let shared = 0;
+	while (shared < common && want[shared] === have[shared]) {
+		shared++;
+	}
+	if (have.length < want.length && shared === have.length) {
+		return `只输出了前 ${have.length} 行，第 ${have.length + 1} 行开始没了：常见于循环少跑一次，或者中途 return / break。`;
+	}
+	if (have.length > want.length && shared === want.length) {
+		return `前 ${want.length} 行都对，多了 ${have.length - want.length} 行：常见于把提示语（例如「请输入：」）也输出了。`;
+	}
+	const wantSet = [...want].sort().join('\n');
+	const haveSet = [...have].sort().join('\n');
+	if (wantSet === haveSet) {
+		return `每一行的内容都在期望里出现过，只是顺序不同（期望 ${want.length} 行、得到 ${have.length} 行）。`;
+	}
+	if (firstDiffLine === 0) {
+		return `行数是期望 ${want.length} 行、得到 ${have.length} 行，但逐行看没有哪一行不同。`;
+	}
+	if (gotLine === '') {
+		return `第 ${firstDiffLine} 行没有输出，期望这一行是「${clip(expectedLine)}」。`;
+	}
+	if (expectedLine === '') {
+		return `第 ${firstDiffLine} 行多输出了「${clip(gotLine)}」。`;
+	}
+	const wantWords = expectedLine.split(/\s+/).filter(Boolean);
+	const haveWords = gotLine.split(/\s+/).filter(Boolean);
+	if (wantWords.length !== haveWords.length) {
+		return `第 ${firstDiffLine} 行的词数不同：期望 ${wantWords.length} 个，得到 ${haveWords.length} 个。`;
+	}
+	const at = wantWords.findIndex((word, i) => word !== haveWords[i]);
+	const where = at < 0 ? wantWords.length : at + 1;
+	if (at >= 0 && NUMERIC.test(wantWords[at]) && NUMERIC.test(haveWords[at])) {
+		return `第 ${firstDiffLine} 行第 ${where} 个数不同：期望 ${wantWords[at]}，得到 ${haveWords[at]}。`;
+	}
+	return `第 ${firstDiffLine} 行第 ${where} 个词不同：期望「${clip(at >= 0 ? wantWords[at] : '')}」，得到「${clip(at >= 0 ? haveWords[at] : '')}」。`;
+}
+
+/**
+ * 期望 ↔ 得到的整份对照走 VS Code 自带的并排差异编辑器：`vscode.diff` 收两个文档 URI，
+ * 而这两个文档的内容由一个内存 content provider 供出去。这样不用往学生的工作区
+ * 写临时文件（机房那台机器上多半也没权限），也不用自己画 diff。
+ */
+const DIFF_SCHEME = 'olympiaSample';
+const diffTexts = new Map<string, string>();
+
+function diffUri(name: string): vscode.Uri {
+	return vscode.Uri.from({ scheme: DIFF_SCHEME, path: `/${name}` });
+}
+
+function putDiffText(name: string, text: string): vscode.Uri {
+	diffTexts.set(name, text);
+	return diffUri(name);
+}
+
+function ensureTrailingNewline(text: string): string {
+	return text.endsWith('\n') ? text : `${text}\n`;
+}
+
+/** 最近一次跑样例里判 WA 的那些组：命令面板和通知按钮都用它。 */
+interface FailedCase {
+	readonly number: number;
+	readonly expected: string;
+	readonly got: string;
+	readonly diff: CaseDiff;
+}
+
+let failedCases: FailedCase[] = [];
+let failedStatement = '';
+
+async function openCaseDiff(item: FailedCase): Promise<void> {
+	const left = putDiffText(`sample-${item.number}-expected.txt`, ensureTrailingNewline(item.expected));
+	const right = putDiffText(`sample-${item.number}-got.txt`, ensureTrailingNewline(item.got));
+	await vscode.commands.executeCommand('vscode.diff', left, right, `样例 ${item.number}：期望 ↔ 得到 · ${failedStatement}`);
+}
+
+/** 「对比期望输出」：一组失败就直接开，多组先让人挑（默认第一个就是最先出错的那组）。 */
+async function compareLastRun(): Promise<boolean> {
+	if (!failedCases.length) {
+		await vscode.window.showInformationMessage('最近这一次跑样例没有 WA 的组：要么全过，要么还没跑过。按 Ctrl+Alt+J 先跑一次。');
+		return false;
+	}
+	if (failedCases.length === 1) {
+		await openCaseDiff(failedCases[0]);
+		return true;
+	}
+	const picked = await vscode.window.showQuickPick(
+		failedCases.map(item => ({
+			label: `样例 ${item.number}`,
+			description: item.diff.hint,
+			detail: `期望 ${item.diff.expectedLines} 行 · 得到 ${item.diff.gotLines} 行`,
+			item
+		})),
+		{ title: `哪一组样例的期望 ↔ 实际（${failedStatement}）`, placeHolder: '第一组就是最先出错的那组', ignoreFocusOut: true }
+	);
+	if (!picked) {
+		return false;
+	}
+	await openCaseDiff(picked.item);
+	return true;
+}
+
 /** 从题面 Markdown 里把「### 样例 N」下面的输入 / 输出代码块读出来。 */
 export function parseSamples(markdown: string): { samples: Sample[]; timeLimitMs: number; memoryLimitMb: number } {
 	const samples: Sample[] = [];
@@ -256,6 +428,10 @@ export function registerSampleJudge(context: vscode.ExtensionContext): vscode.Di
 		const plan = planCompile(source);
 		const log = output();
 		log.clear();
+		// 「对比期望输出」是命令面板里的常驻入口，它只能看到上一次跑的结果：每次开跑先清空，
+		// 免得换了题目之后还把上一道题的 WA 组端出来。
+		failedCases = [];
+		failedStatement = basename(statement.fsPath);
 		log.show(true);
 		log.appendLine(`题面：${vscode.workspace.asRelativePath(statement, false)} · 样例 ${samples.length} 组 · 时限 ${timeLimitMs} ms（本地按 ${LOCAL_MARGIN} 倍余量）`);
 		if (choice.how === 'remembered') {
@@ -290,14 +466,22 @@ export function registerSampleJudge(context: vscode.ExtensionContext): vscode.Di
 					const overMemory = limitMb > MEMORY_LIMIT_UNSET
 						&& ran.peakBytes !== undefined
 						&& ran.peakBytes > limitMb * 1024 * 1024;
+					const diff = compareCase(sample.expected, ran.stdout);
 					const verdict: Verdict = ran.timedOut ? 'TLE' : overMemory ? 'MLE' : ran.failed ? 'RE'
-						: normalize(ran.stdout) === normalize(sample.expected) ? 'AC' : 'WA';
+						: diff.sameTokens ? 'AC' : 'WA';
 					results.push({ index: sample.number, verdict, got: ran.stdout, detail: ran.stderr, ms, peakBytes: ran.peakBytes });
 					const peak = ran.peakBytes === undefined ? '' : ` · 峰值内存 ${formatMb(ran.peakBytes)}`;
 					log.appendLine(`样例 ${sample.number}：${verdict} · ${ms} ms${peak}`);
 					if (verdict === 'WA') {
-						log.appendLine(`  期望：${normalize(sample.expected).slice(0, 200)}`);
-						log.appendLine(`  得到：${normalize(ran.stdout).slice(0, 200)}`);
+						// 判定和诊断共用同一次比较：分成两处写过一次「按 token 比」一次「按行比」，
+						// 就会出现「通知说 AC、对照里全是差异」这种自相矛盾的结果。
+						failedCases.push({ number: sample.number, expected: sample.expected, got: ran.stdout, diff });
+						log.appendLine(`  ${diff.hint}`);
+						if (diff.firstDiffLine > 0 && !diff.sameTokens) {
+							log.appendLine(`  第 ${diff.firstDiffLine} 行 · 期望：${clip(diff.expectedLine)}`);
+							log.appendLine(`  第 ${diff.firstDiffLine} 行 · 得到：${clip(diff.gotLine)}`);
+						}
+						log.appendLine(`  整份对照：期望 ${diff.expectedLines} 行、得到 ${diff.gotLines} 行 —— 通知里点「对比期望输出」（Ctrl+Alt+K）并排看。`);
 					}
 					if (verdict === 'MLE') {
 						log.appendLine(`  峰值 ${formatMb(ran.peakBytes ?? 0)}，限制 ${limitMb} MB`);
@@ -324,6 +508,7 @@ export function registerSampleJudge(context: vscode.ExtensionContext): vscode.Di
 		// 自动同名匹配上的题面没有「换一道题」这一说；用记住的或手动选的必须留一个出口，
 		// 不然选错一次就再也改不过来。
 		const actions = [
+			...(failedCases.length ? ['对比期望输出'] : []),
 			...(overall === 'AC' ? [] : ['查看输出']),
 			'继续对拍',
 			...(choice.how === 'exact' ? [] : ['换一道题'])
@@ -331,7 +516,9 @@ export function registerSampleJudge(context: vscode.ExtensionContext): vscode.Di
 		const action = overall === 'AC'
 			? await vscode.window.showInformationMessage(message, ...actions)
 			: await vscode.window.showErrorMessage(message, ...actions);
-		if (action === '继续对拍') {
+		if (action === '对比期望输出') {
+			await compareLastRun();
+		} else if (action === '继续对拍') {
 			await vscode.commands.executeCommand(CMD.stressTest);
 		} else if (action === '查看输出') {
 			log.show(true);
@@ -340,6 +527,11 @@ export function registerSampleJudge(context: vscode.ExtensionContext): vscode.Di
 		}
 	});
 
-	context.subscriptions.push(command);
+	const compare = vscode.commands.registerCommand(CMD.judgeCompare, compareLastRun);
+	const provider = vscode.workspace.registerTextDocumentContentProvider(DIFF_SCHEME, {
+		provideTextDocumentContent: uri => diffTexts.get(uri.path.replace(/^\//, '')) ?? ''
+	});
+
+	context.subscriptions.push(command, compare, provider);
 	return command;
 }
