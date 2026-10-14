@@ -140,7 +140,7 @@ export function renderStatement(p: {
 	if (p.timeLimit) { meta.push(`${FIELD.timeLimit}：${p.timeLimit}`); }
 	if (p.memoryLimit) { meta.push(`${FIELD.memoryLimit}：${p.memoryLimit}`); }
 	if (p.tags.length) { meta.push(`${FIELD.tags}：${p.tags.join('、')}`); }
-	L.push(`> ${meta.join(' ｜ ')}`, `> 原文链接：${p.url}`, '');
+	L.push(`> ${meta.join(' ｜ ')}`, `> ${FIELD.sourceLink}：${p.url}`, '');
 	L.push('## 题目描述', '', p.statement || '_（未能解析出题面，请点击原文链接查看）_', '');
 
 	if (p.inputFormat) { L.push('## 输入格式', '', p.inputFormat, ''); }
@@ -170,7 +170,7 @@ export const platformText = (platform: string): string => PLATFORM_TEXT[platform
  * 题面 Markdown 的字段名。写的人（`renderStatement`）和读的人（本地题库）共用这一张表：
  * 改了字段名只改这里，否则题库会静默读不出标题，页面上只剩一个题号。
  */
-export const FIELD = { source: '来源', difficulty: '难度', timeLimit: '时限', memoryLimit: '内存', tags: '标签' } as const;
+export const FIELD = { source: '来源', difficulty: '难度', timeLimit: '时限', memoryLimit: '内存', tags: '标签', sourceLink: '原文链接' } as const;
 /** 题面文件的后缀：写下它的是 `renderStatement` 那条路，读回来的是题面库，两边共用这一个值。 */
 export const STATEMENT_EXTENSION = '.md';
 export const SAMPLE_HEADING = '### 样例';
@@ -189,6 +189,8 @@ export interface ProblemMeta {
 	readonly difficulty?: string;
 	readonly timeLimit?: string;
 	readonly memoryLimit?: string;
+	/** 题面页脚那行原文链接；手写的题面没有它。 */
+	readonly url?: string;
 	readonly sampleCount: number;
 }
 
@@ -219,6 +221,7 @@ export function metaOf(markdown: string, fallbackId: string): ProblemMeta {
 		difficulty: fields.get(FIELD.difficulty),
 		timeLimit: fields.get(FIELD.timeLimit),
 		memoryLimit: fields.get(FIELD.memoryLimit),
+		url: fields.get(FIELD.sourceLink),
 		sampleCount: [...markdown.matchAll(new RegExp(`^${SAMPLE_HEADING}`, 'gm'))].length,
 	};
 }

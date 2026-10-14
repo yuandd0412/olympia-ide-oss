@@ -30,6 +30,8 @@ export const CMD = {
 	problemPullFromClipboard: 'olympia.problem.pullFromClipboard',
 	/** 题面库：由 olympia-contest 注册，面板和这里只是点它一下。 */
 	problemOpenStatement: 'olympia.problem.openStatement',
+	/** 打开原题网页：交题、看数据范围都要回网页，链接本来就写在题面里。 */
+	openSourceProblem: 'olympia.problem.openSource',
 	/** 对拍抓到的那组数据写回题面；同样由 olympia-contest 实现，参数是输入与期望输出。 */
 	appendSample: 'olympia.problem.appendSample',
 	templateInsert: 'olympia.template.insert',
@@ -58,6 +60,7 @@ export const KEYS = {
 	problemPull: 'Ctrl+Alt+P',
 	problemPullFromClipboard: 'Ctrl+Alt+V',
 	openStatement: 'Ctrl+Alt+O',
+	openSource: 'Ctrl+Alt+U',
 	practice: 'Ctrl+Alt+L',
 	templateInsert: 'Ctrl+Alt+T',
 	settings: 'Ctrl+Alt+,'

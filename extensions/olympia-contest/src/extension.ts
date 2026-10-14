@@ -197,6 +197,43 @@ async function openOrPull(id: string, root: string | undefined, cached: Readonly
 	}
 }
 
+/**
+ * 打开这道题的原题网页。交题、看数据范围、看别人题解都得回到网页上，而链接本来就写在题面页脚那行里，
+ * 不该让学生再去复制粘贴一遍。认题的顺序和「加一组样例」同一条路：当前打开的文件名能对上题号就直接用，
+ * 对不上才去题面库里挑一道。
+ */
+async function openProblemSource(): Promise<boolean> {
+	const root = await problemsRoot();
+	if (!root) { return false; }
+	const entries = await readLibrary(root);
+	if (!entries.length) {
+		vscode.window.showInformationMessage('题面库里还没有题面：先按 Ctrl+Alt+P 拉一道题，原题链接就在拉回来的那份文件里。');
+		return false;
+	}
+	const active = vscode.window.activeTextEditor?.document.uri.fsPath;
+	const target = await pickTarget(entries, active ? path.basename(active) : undefined, async list => {
+		const picked = await vscode.window.showQuickPick(toPicks(list, vscode.workspace.workspaceFolders?.[0]?.uri.fsPath), {
+			title: '打开哪道题的原网页',
+			placeHolder: `题面库里缓存了 ${list.length} 道，选一道去它的原题页`,
+			matchOnDescription: true,
+			matchOnDetail: true,
+			ignoreFocusOut: true,
+		});
+		return picked?.entry;
+	});
+	if (!target) { return false; }
+	// 只把 http(s) 交给系统：题面是学生能改的文本，手改一行「原文链接：file:///…」不该被当成命令执行。
+	if (!target.url || !/^https?:\/\//i.test(target.url)) {
+		vscode.window.showWarningMessage(`「${target.id}」这份题面里没有可用的原文链接（手写的题面通常没有）。按 Ctrl+Alt+P 重新拉一份就有了。`);
+		return false;
+	}
+	if (!await vscode.env.openExternal(vscode.Uri.parse(target.url))) {
+		vscode.window.showWarningMessage(`系统没有接手这个链接：${target.url}`);
+		return false;
+	}
+	return true;
+}
+
 /** 时长那两处输入（新建、改时长）共用一条判定，免得提示和采纳各说各话。 */
 function validateMinutes(value: string): string | undefined {
 	return !value.trim() || parseMinutes(value) !== undefined
@@ -615,6 +652,7 @@ export function activate(context: vscode.ExtensionContext): void {
 		// 面板和命令面板里给一条直达入口：想改模板的人不该先被问「插哪个模板」。
 		vscode.commands.registerCommand('olympia.template.editMy', editMyTemplate),
 		vscode.commands.registerCommand('olympia.problem.openStatement', openCached),
+		vscode.commands.registerCommand('olympia.problem.openSource', openProblemSource),
 		vscode.commands.registerCommand('olympia.problem.appendSample', appendSample),
 		vscode.commands.registerCommand('olympia.practice.open', showPracticeLists),
 		vscode.commands.registerCommand('olympia.practice.new', async () => {

@@ -56,6 +56,12 @@
 				"category": "Olympia"
 			},
 			{
+				"command": "olympia.problem.openSource",
+				"title": "打开原题网页",
+				"category": "Olympia",
+				"icon": "$(link-external)"
+			},
+			{
 				"command": "olympia.problem.appendSample",
 				"title": "给这道题加一组自定义样例",
 				"category": "Olympia",
@@ -96,6 +102,10 @@
 					"when": "true"
 				},
 				{
+					"command": "olympia.problem.openSource",
+					"when": "true"
+				},
+				{
 					"command": "olympia.problem.appendSample",
 					"when": "true"
 				},
@@ -124,6 +134,13 @@
 				{
 					"command": "olympia.problem.pull",
 					"group": "7_modification@1"
+				}
+			],
+			"editor/context": [
+				{
+					"command": "olympia.problem.openSource",
+					"when": "resourceLangId == cpp || resourceLangId == c || resourceLangId == markdown",
+					"group": "1_olympia@1"
 				}
 			],
 			"editor/title/context": [
@@ -156,6 +173,12 @@
 				"command": "olympia.problem.openStatement",
 				"key": "ctrl+alt+o",
 				"mac": "cmd+alt+o",
+				"when": "editorTextFocus"
+			},
+			{
+				"command": "olympia.problem.openSource",
+				"key": "ctrl+alt+u",
+				"mac": "cmd+alt+u",
 				"when": "editorTextFocus"
 			},
 			{

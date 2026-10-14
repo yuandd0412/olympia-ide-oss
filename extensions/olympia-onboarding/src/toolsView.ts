@@ -163,6 +163,7 @@ class OlympiaToolsProvider implements vscode.TreeDataProvider<TreeEntry> {
 					{ kind: 'action', id: 'pull', label: '拉取题面', icon: 'cloud-download', command: CMD.problemPull, key: KEYS.problemPull },
 					{ kind: 'action', id: 'pullClipboard', label: '从剪贴板拉取题号', icon: 'clippy', command: CMD.problemPullFromClipboard, key: KEYS.problemPullFromClipboard },
 					{ kind: 'action', id: 'openStatement', label: '打开题面库', icon: 'book', command: CMD.problemOpenStatement, key: KEYS.openStatement, tooltip: '缓存过的题面都在这里，按题号或标题搜；跑样例 AC 过的题带个勾，敲 AC 只看做出来的。' },
+					{ kind: 'action', id: 'openSource', label: '打开原题网页', icon: 'link-external', command: CMD.openSourceProblem, key: KEYS.openSource, tooltip: '当前这道题的原题页面：交题、看数据范围、看别人提交的题解都在这里。链接就写在题面里，不用再去浏览器里翻。' },
 					{ kind: 'action', id: 'addSample', label: '给这道题加一组自定义样例', icon: 'add', command: CMD.appendSample, tooltip: '在题面的样例区末尾加一组空的占位样例，填完再跑样例。自己加的样例和题面存在一起，跟着工程走。' },
 					{ kind: 'action', id: 'practice', label: '集训清单', icon: 'list-unordered', command: CMD.practiceOpen, key: KEYS.practice, tooltip: `一份起了名字的题目单 + 时长：选中它就能「开始这一场」，计时直接从清单的分钟数来；加题、移题、改时长就在这份菜单里改，不用重建一份新的。逐题点一下就是打开题面（没拉过的先去拉），做过的题带 ✓。清单存在工程的 ${PRACTICE_PATH_LABEL} 里，跟着文件夹走到机房。` },
 					{ kind: 'action', id: 'template', label: '插入赛制模板', icon: 'file-code', command: CMD.templateInsert, key: KEYS.templateInsert },
