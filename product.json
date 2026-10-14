@@ -109,7 +109,12 @@
 		"nlsBaseUrl": ""
 	},
 	"linkProtectionTrustedDomains": [
-		"https://open-vsx.org"
+		"https://open-vsx.org",
+		"https://olympia.dpdns.org",
+		"https://github.com",
+		"https://www.luogu.com.cn",
+		"https://codeforces.com",
+		"https://atcoder.jp"
 	],
 	"builtInExtensions": [],
 	"onboardingKeymaps": [
