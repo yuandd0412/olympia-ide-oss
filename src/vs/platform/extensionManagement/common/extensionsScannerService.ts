@@ -111,69 +111,21 @@ interface IBuiltInExtensionControl {
 /**
  * Olympia IDE: built-in extension folders that must never be discovered.
  *
- * Keys are lower-cased directory names inside the built-in extensions folder.
- * `copilot` is the GitHub Copilot provider. Olympia IDE targets competition users,
- * who have no use for a subscription-gated assistant, and the extension spends
- * seconds per activation retrying `https://api.github.com` sign-in sessions, which
- * shows up as repeated "extension host is unresponsive" during workbench startup.
+ * The ids are product data — `olympiaExcludedBuiltInExtensions` in product.json — and the packaging
+ * stream reads the same key, so the two consumers can no longer drift apart. They had: the local
+ * copy here named a `prompt` folder that does not exist, while `extensions/prompt-basics` shipped.
  *
- * The chat / MCP / agent *service singletons* live under
- * `src/vs/workbench/contrib/chat` and are independent of this provider, so the
- * chat UI infrastructure is untouched by excluding it here.
+ * Directory names are matched lower-cased because this folder is scanned entry by entry, and in
+ * dev mode it is the only thing keeping a trimmed extension out. Dropping `copilot` here for
+ * instance would bring back the GitHub Copilot provider, which spends seconds per activation
+ * retrying `https://api.github.com` sign-in sessions; that shows up as repeated "extension host is
+ * unresponsive" during workbench startup. The chat / MCP / agent *service singletons* live under
+ * `src/vs/workbench/contrib/chat` and are independent of that provider, so the chat UI
+ * infrastructure is untouched by excluding it.
  */
-const OLYMPIA_EXCLUDED_EXTENSION_DIRS = new Set<string>([
-	'copilot',
-	'git',
-	'git-base',
-	'github',
-	'github-authentication',
-	'merge-conflict',
-	'microsoft-authentication',
-	'ms-vscode.js-debug',
-	'ms-vscode.js-debug-companion',
-	'ms-vscode.vscode-js-profile-table',
-	'npm',
-	'jake',
-	'grunt',
-	'gulp',
-	'dotenv',
-	'docker',
-	'simple-browser',
-	'media-preview',
-	'php',
-	'php-language-features',
-	'bat',
-	'clojure',
-	'coffeescript',
-	'dart',
-	'csharp',
-	'fsharp',
-	'go',
-	'groovy',
-	'handlebars',
-	'hlsl',
-	'ini',
-	'java',
-	'julia',
-	'latex',
-	'less',
-	'log',
-	'lua',
-	'objective-c',
-	'perl',
-	'prompt',
-	'pug',
-	'python',
-	'r',
-	'razor',
-	'restructuredtext',
-	'ruby',
-	'rust',
-	'scss',
-	'shaderlab',
-	'sql',
-	'swift',
-]);
+function getExcludedBuiltInExtensionDirs(productService: IProductService): Set<string> {
+	return new Set((productService.olympiaExcludedBuiltInExtensions ?? []).map(id => id.toLowerCase()));
+}
 
 function getProductBuiltInExtensionsEnabledWithAutoUpdates(productService: IProductService, environmentService: IEnvironmentService): Set<string> {
 	const result = new Set<string>();
@@ -657,6 +609,7 @@ class ExtensionsScanner extends Disposable {
 
 	private readonly productQuality: string | undefined;
 	private readonly productBuiltInExtensionsEnabledWithAutoUpdates: Set<string>;
+	private readonly productExcludedBuiltInExtensionDirs: Set<string>;
 
 	constructor(
 		@IExtensionsProfileScannerService protected readonly extensionsProfileScannerService: IExtensionsProfileScannerService,
@@ -669,6 +622,7 @@ class ExtensionsScanner extends Disposable {
 		super();
 		this.productQuality = productService.quality;
 		this.productBuiltInExtensionsEnabledWithAutoUpdates = getProductBuiltInExtensionsEnabledWithAutoUpdates(productService, environmentService);
+		this.productExcludedBuiltInExtensionDirs = getExcludedBuiltInExtensionDirs(productService);
 	}
 
 	async scanExtensions(input: ExtensionScannerInput): Promise<IRelaxedScannedExtension[]> {
@@ -696,7 +650,7 @@ class ExtensionsScanner extends Disposable {
 				// from the packaging stream (build/lib/extensions.ts) is not enough -- the
 				// extension would still be discovered here and would keep the extension host
 				// busy retrying `https://api.github.com` sign-in sessions on every startup.
-				if (OLYMPIA_EXCLUDED_EXTENSION_DIRS.has(basename(c.resource).toLowerCase())) {
+				if (this.productExcludedBuiltInExtensionDirs.has(basename(c.resource).toLowerCase())) {
 					this.logService.trace('Olympia: skipping excluded built-in extension folder', basename(c.resource));
 					return null;
 				}

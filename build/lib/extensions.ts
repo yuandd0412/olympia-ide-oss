@@ -315,78 +315,27 @@ const nativeExtensions = [
 	'microsoft-authentication',
 ];
 
-const excludedExtensions = [
-	'copilot',
-	'vscode-api-tests',
-	'vscode-colorize-tests',
-	'vscode-colorize-perf-tests',
-	'vscode-test-resolver',
-	'ms-vscode.node-debug',
-	'ms-vscode.node-debug2',
-
-	// ---------------------------------------------------------------------
-	// OLYMPIA-TRIM: extensions that carry no value for an OI / ICPC student.
-	// Competition work is single-file C++ (occasionally Python) compiled with a
-	// local toolchain; none of the following is ever activated in that workflow.
-	//
-	// The list only removes the extension from the built-in manifest. Sources stay
-	// under `extensions/`, so dropping an entry is a one-line revert.
-	//
-	// --- version control -------------------------------------------------
-	'git',
-	'git-base',
-	'github',
-	'github-authentication',
-	'merge-conflict',
-	// --- accounts / JS toolchain ------------------------------------------
-	'microsoft-authentication',
-	'ms-vscode.js-debug',
-	'ms-vscode.js-debug-companion',
-	'ms-vscode.vscode-js-profile-table',
-	'npm',
-	'jake',
-	'grunt',
-	'gulp',
-	'dotenv',
-	// --- web / media / containers -----------------------------------------
-	'docker',
-	'simple-browser',
-	'media-preview',
-	// --- languages an OI student never opens ------------------------------
-	'php',
-	'php-language-features',
-	'bat',
-	'clojure',
-	'coffeescript',
-	'dart',
-	'csharp',
-	'fsharp',
-	'go',
-	'groovy',
-	'handlebars',
-	'hlsl',
-	'ini',
-	'java',
-	'julia',
-	'latex',
-	'less',
-	'log',
-	'lua',
-	'objective-c',
-	'perl',
-	'prompt',
-	'pug',
-	'python',
-	'r',
-	'razor',
-	'restructuredtext',
-	'ruby',
-	'rust',
-	'scss',
-	'shaderlab',
-	'sql',
-	'swift',
-];
+/**
+ * OLYMPIA-TRIM: built-in extensions that carry no value for an OI / ICPC student.
+ *
+ * The list itself lives in product.json as 'olympiaExcludedBuiltInExtensions', because two
+ * separate worlds must agree on it: the packaging stream below compares against the folder names
+ * under 'extensions/', while the runtime scanner compares against the directory names inside the
+ * built-in extensions folder — in dev mode that folder is scanned directory by directory, so
+ * trimming only the package would leave the extension loading anyway. Hand-copied twice the list
+ * drifted: 'prompt' named no folder at all and 'extensions/prompt-basics' shipped. One product key
+ * removes the drift, and 'scripts/oneoff/check-built-in-trim.mjs' fails if a dead entry comes back.
+ *
+ * An entry only keeps an extension out of the built-in set; its sources stay under 'extensions/', so
+ * reverting one trim is a one-line edit in product.json.
+ */
+function excludedExtensionsFromProduct(product: { [key: string]: unknown }): string[] {
+	const list = product.olympiaExcludedBuiltInExtensions;
+	if (!Array.isArray(list) || list.length === 0) {
+		throw new Error('product.json: olympiaExcludedBuiltInExtensions must be a non-empty array, otherwise every upstream built-in extension ships.');
+	}
+	return list.filter((id): id is string => typeof id === 'string' && id.length > 0);
+}
 
 const marketplaceWebExtensionsExclude = new Set([
 	'ms-vscode.node-debug',
@@ -398,6 +347,7 @@ const marketplaceWebExtensionsExclude = new Set([
 
 const productJson = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, '../../product.json'), 'utf8'));
 const builtInExtensions: IExtensionDefinition[] = productJson.builtInExtensions || [];
+const excludedExtensions = excludedExtensionsFromProduct(productJson);
 const webBuiltInExtensions: IExtensionDefinition[] = productJson.webBuiltInExtensions || [];
 
 type ExtensionKind = 'ui' | 'workspace' | 'web';

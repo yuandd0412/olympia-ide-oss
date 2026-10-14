@@ -262,6 +262,16 @@ export interface IProductConfiguration {
 	}>;
 	readonly extensionsForceVersionByQuality?: readonly string[];
 	readonly builtInExtensionsEnabledWithAutoUpdates: readonly string[];
+
+	/**
+	 * Olympia fork: directory names of built-in extensions that must not reach the product.
+	 *
+	 * Consumed twice — by the packaging stream (`build/lib/extensions.ts`, against the folder names
+	 * under `extensions/`) and by the runtime scanner (against the built-in extensions folder it
+	 * walks entry by entry). It is product data rather than a constant in either file because a list
+	 * copied into both drifted once.
+	 */
+	readonly olympiaExcludedBuiltInExtensions?: readonly string[];
 	readonly sessionsWindowAllowedExtensions?: readonly string[];
 
 	readonly msftInternalDomains?: string[];

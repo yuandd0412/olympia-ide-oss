@@ -54,14 +54,14 @@ const BUNDLED_TOOLCHAIN_DIR = path.join(root, '.build', 'toolchain');
 /**
  * Whether the product deliberately excludes the built-in Copilot extension.
  *
- * Olympia removes it (see `excludedExtensions` in build/lib/extensions.ts and
- * `OLYMPIA_EXCLUDED_EXTENSION_DIRS` in extensionsScannerService.ts), so several upstream packaging
- * steps that assume Copilot is present have to be skipped. The test is on the packaged extension
- * list rather than on the exclusion array, because `excludedExtensions` is not exported and the
- * extension set is what the packaging pipeline actually acts on.
+ * Olympia removes it through `olympiaExcludedBuiltInExtensions` in product.json — the one table both
+ * the packaging stream and the runtime scanner read — so several upstream packaging steps that
+ * assume Copilot is present have to be skipped. Asking that table rather than the download list
+ * matters: `builtInExtensions` is empty in this product, so a test written against it answers
+ * "excluded" even after the table stops excluding anything.
  */
 function isCopilotExcludedFromProduct(): boolean {
-	return !(product.builtInExtensions as { name?: string }[]).some(ext => ext.name === 'copilot');
+	return product.olympiaExcludedBuiltInExtensions?.includes('copilot') ?? false;
 }
 const commit = getVersion(root);
 const packageLock = JSON.parse(fs.readFileSync(path.join(root, 'package-lock.json'), 'utf8')) as {
