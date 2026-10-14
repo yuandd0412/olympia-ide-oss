@@ -282,7 +282,9 @@ import './contrib/sash/browser/sash.contribution.js';
 
 // Git
 import './contrib/git/browser/git.contributions.js';
-import './contrib/github/browser/githubLinkPresentation.contribution.js';
+// Olympia 产品裁剪：不注册 GitHub 链接呈现。它会为 github.com 的链接注册一个「登录 GitHub」的入口，
+// 而这个构建里没有能登录的 GitHub 认证提供方，点了只会走到报错；教练回答里的 GitHub 链接也不该被当 PR 渲染。
+// 文件本身留着（它的单元测试直接 import 那个类），少了这一行就是少了一个 workbench 贡献。
 
 // SCM
 import './contrib/scm/browser/scm.contribution.js';

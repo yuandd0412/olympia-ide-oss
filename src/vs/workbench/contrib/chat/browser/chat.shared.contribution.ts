@@ -483,7 +483,7 @@ configurationRegistry.registerConfiguration({
 			],
 			// allow-any-unicode-next-line
 			markdownDescription: nls.localize('chat.agentsControl.enabled', "控制“智能体状态”指示器在标题栏命令中心中的显示方式。设置为 `hidden` 时，不显示指示器。其他值显示指示器，并自动启用 {0}。未读和正在进行会话指示器要求启用 {1}。", '`#window.commandCenter#`', '`#chat.viewSessions.enabled#`'),
-			default: 'compact',
+			default: 'hidden',
 			tags: ['experimental']
 		},
 		[ChatConfiguration.UnifiedAgentsBar]: {
