@@ -52,3 +52,27 @@ export const SHOW_LOG_COMMAND = 'olympia.coach.showLog';
 
 /** 比赛是否进行中，由 olympia-onboarding 的这条命令回答；比赛时教练不出场。 */
 export const CONTEST_STATE_COMMAND = 'olympia.contest.isRunning';
+
+// ------------------------------------------------------------------ 题面字段抽取（olympia-contest 调用）
+// 这一组值来自退役的 Tauri 版 `frontend/src-tauri/src/enrich.rs`，照搬不改：
+// 抓取之后让模型把残缺的字段补一次，只补空的，任何时候都不盖掉爬虫已经拿到的东西。
+
+/**
+ * 「补题面」的命令 id。写在题面里的键只有这一条路能跨过扩展边界：密钥存在本扩展的
+ * SecretStorage，`context.secrets` 是每扩展隔离的，olympia-contest 读不到，所以 HTTP 调用留在这边。
+ * 这条命令不是给人点的，所以不进 package.json 的命令面板。
+ */
+export const EXTRACT_COMMAND = 'olympia.ai.extract';
+
+/** 整轮抽取的墙上时钟预算：严格那一次和它的重试共用，慢服务绝不该把拉题面卡住。 */
+export const EXTRACT_TOTAL_BUDGET_MS = 45000;
+
+/** 结构化抽取不是聊天：温度压低，一次最多 4096 个 token。 */
+export const EXTRACT_TEMPERATURE = 0.1;
+export const EXTRACT_MAX_TOKENS = 4096;
+
+/** 题面原文进提示词之前先截断，不把没有上限的正文发出去。 */
+export const EXTRACT_INPUT_CHAR_CAP = 12000;
+
+/** 两次请求都带这一句 system；`response_format` 只在严格那一次带。 */
+export const EXTRACT_SYSTEM_PROMPT = 'You extract contest problem fields as strict JSON only.';

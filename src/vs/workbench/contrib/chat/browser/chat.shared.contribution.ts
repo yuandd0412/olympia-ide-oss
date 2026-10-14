@@ -371,10 +371,10 @@ configurationRegistry.registerConfiguration({
 				nls.localize('dictation.model.mai.label', "MAI — Cloud"),
 			],
 			markdownEnumDescriptions: [
-				nls.localize('dictation.model.nemotronMultilingual', "NVIDIA Nemotron 3.5 multilingual streaming RNN-T, run on-device through Microsoft Foundry Local. Works offline; no audio leaves the device. Automatic language selection follows the Voice Mode language setting; when that setting is Automatic, dictation uses the configured display language when supported, then the system or browser locale, with model detection as a fallback. Downloaded on first use and cached on disk."),
+				nls.localize('dictation.model.nemotronMultilingual', "NVIDIA Nemotron 3.5 多语种流式 RNN-T，通过 Microsoft Foundry Local 在本机运行。可离线使用，音频不会离开这台机器。语言跟随语音模式的设置自动选择：该设置为“自动”时，先按显示语言，其次按系统或浏览器的区域设置，最后回落到模型自行识别。首次使用时下载并缓存在磁盘上。"),
 				nls.localize('dictation.model.mai', "Cloud transcription through the same Microsoft AI voice service used by Voice Mode. Requires a network connection and GitHub sign-in; audio is streamed to the service."),
 			],
-			markdownDescription: nls.localize('dictation.model', "The model used for dictation. On-device models download on first use and run locally through Microsoft Foundry Local; the cloud option streams audio to the Microsoft AI voice service. On the web, user and default on-device selections use cloud transcription because local transcription is unsupported. If policy requires on-device transcription, dictation is unavailable on the web."),
+			markdownDescription: nls.localize('dictation.model', "听写使用的模型。本机模型在首次使用时下载，并通过 Microsoft Foundry Local 在本机运行；云端选项会把音频流式送到 Microsoft 的语音服务。在网页版里，用户选择与默认的“本机”方案会改用云端转写，因为本机转写在网页上不被支持；如果策略要求本机转写，网页版就没有听写可用。"),
 			default: isWeb ? DICTATION_MAI_MODEL_ID : DEFAULT_LOCAL_TRANSCRIPTION_MODEL,
 			tags: ['experimental'],
 			experiment: { mode: 'auto' },
@@ -1994,10 +1994,14 @@ configurationRegistry.registerConfiguration({
 		},
 		[ChatMicrosoftAuthenticationEnabledSettingId]: {
 			type: 'boolean',
-			markdownDescription: nls.localize('chat.microsoftAuthentication.enabled', "When enabled, sign-in dialogs offer \"Continue with Microsoft\". Signing in with Microsoft exchanges your Microsoft account for the GitHub access your organization has linked to it. The resulting GitHub sign-in lasts for the current window session only and is not saved."),
+			markdownDescription: nls.localize('chat.microsoftAuthentication.enabled', "启用后，登录对话框会提供“使用 Microsoft 账户继续”，用它换取组织绑定的 GitHub 身份，且仅对当前窗口有效。Olympia 走自己的服务地址与密钥（BYOK），不接 Microsoft / GitHub 账户，这一项保持关闭即可。"),
 			default: false,
 			scope: ConfigurationScope.APPLICATION,
 			tags: ['experimental', 'advanced'],
+			// OLYMPIA-TRIM: 读它的是 chatSetupRunner.ts 那段「登录对话框要提供哪几个按钮」。
+			// 本产品 product.json 里 byokOnly: true，不走 Microsoft / GitHub 账户，所以默认的 false 就是终态。
+			// 我先前想把它 included: false 藏起来（以为是个没人读的死开关），是判断错了：
+			// 它有活的读者，只是在本产品里永远不该开启。留在设置里、用说明讲清楚，比藏掉更诚实。
 			// Read when a sign-in dialog opens, so `startup` keeps the offered buttons stable for the
 			// life of the window instead of changing under a dialog the user already has open.
 			experiment: { mode: 'startup' }

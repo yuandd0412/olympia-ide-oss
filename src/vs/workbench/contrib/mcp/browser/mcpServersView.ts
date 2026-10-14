@@ -274,7 +274,7 @@ export class McpServersListView extends AbstractExtensionsListView<IWorkbenchMcp
 		const description = dom.append(welcomeContent, dom.$('.mcp-welcome-description'));
 		const markdownResult = this._register(this.markdownRendererService.render(
 			new MarkdownString(
-				localize('mcp.welcome.descriptionWithLink', "直接从 VS Code 浏览并安装[模型上下文协议(MCP)服务器](https://code.visualstudio.com/docs/copilot/customization/mcp-servers)，以通过用于连接数据库、调用 API 和执行专门任务的额外工具扩展智能体模式。"),
+				localize('mcp.welcome.descriptionWithLink', "浏览并安装模型上下文协议（MCP）服务器，让智能体模式能连接数据库、调用 API、执行专门任务的额外工具。"),
 				{ isTrusted: { enabledCommands: ['workbench.action.openSettings'] } },
 			)
 				.appendMarkdown('\n\n')

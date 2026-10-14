@@ -16,6 +16,7 @@
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
 import { registerCoachParticipant } from './coach';
+import { registerExtractCommand } from './extract';
 import { listModels, registerModelPicker } from './model';
 import { registerProvider } from './provider';
 import { registerSettingsPanel } from './settingsPanel';
@@ -32,6 +33,8 @@ export function activate(context: vscode.ExtensionContext): void {
 	registerSettingsPanel(context, log);
 	registerCoachParticipant(context);
 	registerModelPicker(context);
+	// 拉题面之后的「只补空」那一趟：密钥只有这一边读得到，所以命令在这边注册。
+	registerExtractCommand(context, log);
 
 	context.subscriptions.push(vscode.commands.registerCommand('olympia.coach.debug.extensionState', async () => {
 		const models = await listModels();

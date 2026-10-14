@@ -20,6 +20,7 @@ import { readLibrary, showStatement, toPicks } from './problemLibrary';
 import { markOf, solvedMarks, type SolvedMark } from './solvedMarks';
 import { MAX_PRACTICE_PROBLEMS, PRACTICE_FILE, PRACTICE_MINUTES_MAX, PRACTICE_MINUTES_MIN, isSameName, mergeLists, parseMinutes, parseProblemIds, practiceFile, readLists, readPractice, withExtraProblems, withoutProblem, writeLists, type PracticeList } from './practiceList';
 import { appendSample as appendSampleTo, customSamplesOf, MANUAL_EXPLAIN, pickTarget, withCustomSamples } from './statementSamples';
+import { enrichProblem } from './enrich';
 import { registerCppSnippets } from './snippets';
 
 function cfg() {
@@ -87,6 +88,9 @@ async function pullProblem(ref: { id: string; platform: Platform }): Promise<voi
 		async () => {
 			try {
 				const problem = await fetchProblem(ref.id, ref.platform, timeoutMs, cfMetadata);
+				// 抓回来的题面看着残缺时，让学生自己配的模型补一次空。只填空着的地方，
+				// 模型离线/超时/回散文都只是「没有 AI 这一趟」，绝不影响写出去的那份题面。
+				const filled = await enrichProblem(problem);
 				const uri = await writeProblem(problem);
 				if (!uri) { return; }
 
@@ -108,8 +112,10 @@ async function pullProblem(ref: { id: string; platform: Platform }): Promise<voi
 					);
 					if (open) { await vscode.env.openExternal(vscode.Uri.parse(problem.url)); }
 				} else {
+					// 只说真的补了的那几块：什么都没补就不提 AI，免得学生以为题面被动过。
+					const aiNote = filled.length ? `，AI 补全了 ${filled.join('、')}` : '';
 					vscode.window.showInformationMessage(
-						`已拉取 ${problem.id} ${problem.title || ''}（${problem.samples.length} 组样例）`.trim(),
+						`已拉取 ${problem.id} ${problem.title || ''}（${problem.samples.length} 组样例）${aiNote}`.trim(),
 					);
 				}
 			} catch (err: any) {
