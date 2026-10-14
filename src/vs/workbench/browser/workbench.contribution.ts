@@ -502,7 +502,7 @@ const registry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Con
 				'patternProperties': {
 					'.*': { 'type': 'boolean' }
 				},
-				'markdownDescription': localize('exclude', "配置要从本地文件历史记录中排除的文件路径或 [glob 模式](https://aka.ms/vscode-glob-patterns)。除非使用绝对路径，否则 glob 模式始终相对于工作区文件夹的路径进行求值。修改此设置不会影响已有的本地文件历史记录条目。"),
+				'markdownDescription': localize('exclude', "配置要从本地文件历史记录中排除的文件路径或 `glob 模式`。除非使用绝对路径，否则 glob 模式始终相对于工作区文件夹的路径进行求值。修改此设置不会影响已有的本地文件历史记录条目。"),
 				'scope': ConfigurationScope.RESOURCE
 			},
 			'workbench.localHistory.mergeWindow': {

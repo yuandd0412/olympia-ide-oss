@@ -165,7 +165,7 @@ export class DynamicEditorConfigurations extends Disposable implements IWorkbenc
 			properties: {
 				[editorsAssociationsSettingId]: {
 					type: 'object',
-					markdownDescription: localize('editor.editorAssociations', "将 [glob 模式](https://aka.ms/vscode-glob-patterns)配置到编辑器(例如 `\"*.hex\": \"hexEditor.hexedit\"`)。这些优先于默认行为。"),
+					markdownDescription: localize('editor.editorAssociations', "将 `glob 模式`配置到编辑器(例如 `\"*.hex\": \"hexEditor.hexedit\"`)。这些优先于默认行为。"),
 					patternProperties: {
 						'.*': {
 							type: 'string',
@@ -186,7 +186,7 @@ export class DynamicEditorConfigurations extends Disposable implements IWorkbenc
 			properties: {
 				[diffEditorsAssociationsSettingId]: {
 					type: 'object',
-					markdownDescription: localize('editor.diffEditorAssociations', "将 [glob 模式](https://aka.ms/vscode-glob-patterns)配置为编辑器以打开差异视图(例如 `\"*.md\": \"vscode.markdown.preview.editor\"`)。这些设置会覆盖差异视图的 `workbench.editorAssociations`。"),
+					markdownDescription: localize('editor.diffEditorAssociations', "将 `glob 模式`配置为编辑器以打开差异视图(例如 `\"*.md\": \"vscode.markdown.preview.editor\"`)。这些设置会覆盖差异视图的 `workbench.editorAssociations`。"),
 					patternProperties: {
 						'.*': {
 							type: 'string',

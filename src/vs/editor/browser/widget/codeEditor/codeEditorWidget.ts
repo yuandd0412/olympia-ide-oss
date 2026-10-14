@@ -1813,7 +1813,7 @@ export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeE
 					if (e.reachedMaxCursorCount) {
 
 						const multiCursorLimit = this.getOption(EditorOption.multiCursorLimit);
-						const message = nls.localize('cursors.maximum', "已将光标数限制为 {0}。请考虑使用 [查找和替换](https://code.visualstudio.com/docs/editor/codebasics#_find-and-replace)进行较大的更改或增加编辑器多光标限制设置。", multiCursorLimit);
+						const message = nls.localize('cursors.maximum', "已将光标数限制为 {0}。请考虑使用 `查找和替换`进行较大的更改或增加编辑器多光标限制设置。", multiCursorLimit);
 						this._notificationService.prompt(Severity.Warning, message, [
 							{
 								label: 'Find and Replace',

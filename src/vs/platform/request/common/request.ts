@@ -268,7 +268,7 @@ function registerProxyConfigurations(useHostProxy = true, useHostProxyDefault = 
 				'http.useLocalProxyConfiguration': {
 					type: 'boolean',
 					default: useHostProxyDefault,
-					markdownDescription: localize('useLocalProxy', "控制是否在远程扩展主机中使用本地代理配置。此设置仅在 [remote development](https://aka.ms/vscode-remote). 期间用作远程设置"),
+					markdownDescription: localize('useLocalProxy', "控制是否在远程扩展主机中使用本地代理配置。此设置仅在远程开发期间用作远程设置"),
 					restricted: true
 				},
 			}
@@ -298,33 +298,33 @@ function registerProxyConfigurations(useHostProxy = true, useHostProxyDefault = 
 				'http.proxy': {
 					type: 'string',
 					pattern: '^(https?|socks|socks4a?|socks5h?)://([^:]*(:[^@]*)?@)?([^:]+|\\[[:0-9a-fA-F]+\\])(:\\d+)?/?$|^$',
-					markdownDescription: localize('proxy', "要使用的代理设置。如果未设置，则将从“http_proxy”和“https_proxy”环境变量继承。在 [remote development](https://aka.ms/vscode-remote) 禁用 {0} 设置时，可在本地设置和远程设置中单独配置此设置。", '`#http.useLocalProxyConfiguration#`'),
+					markdownDescription: localize('proxy', "要使用的代理设置。如果未设置，则将从“http_proxy”和“https_proxy”环境变量继承。在远程开发期间禁用 {0} 设置时，可在本地设置和远程设置中单独配置此设置。", '`#http.useLocalProxyConfiguration#`'),
 					restricted: true,
 					agentHost: { key: 'http.proxy', scope: AgentHostConfigurationSyncScope.Ambient, transform: value => typeof value === 'string' ? value : '' },
 				},
 				'http.proxyStrictSSL': {
 					type: 'boolean',
 					default: true,
-					markdownDescription: localize('strictSSL', "控制是否应根据提供的 CA 列表验证代理服务器证书。在 [remote development](https://aka.ms/vscode-remote) 禁用 {0} 设置时，可在本地设置和远程设置中单独配置此设置。", '`#http.useLocalProxyConfiguration#`'),
+					markdownDescription: localize('strictSSL', "控制是否应根据提供的 CA 列表验证代理服务器证书。在远程开发期间禁用 {0} 设置时，可在本地设置和远程设置中单独配置此设置。", '`#http.useLocalProxyConfiguration#`'),
 					restricted: true
 				},
 				'http.proxyKerberosServicePrincipal': {
 					type: 'string',
-					markdownDescription: localize('proxyKerberosServicePrincipal', "使用 HTTP 代理替代 Kerberos 身份验证的主体服务名称。未设置此项时，将使用基于代理主机名的默认值。在 [remote development](https://aka.ms/vscode-remote) 禁用 {0} 设置时，可在本地设置和远程设置中单独配置此设置。", '`#http.useLocalProxyConfiguration#`'),
+					markdownDescription: localize('proxyKerberosServicePrincipal', "使用 HTTP 代理替代 Kerberos 身份验证的主体服务名称。未设置此项时，将使用基于代理主机名的默认值。在远程开发期间禁用 {0} 设置时，可在本地设置和远程设置中单独配置此设置。", '`#http.useLocalProxyConfiguration#`'),
 					restricted: true,
 					agentHost: { key: 'http.proxyKerberosServicePrincipal', scope: AgentHostConfigurationSyncScope.Ambient, transform: value => typeof value === 'string' ? value : '' },
 				},
 				'http.noProxy': {
 					type: 'array',
 					items: { type: 'string' },
-					markdownDescription: localize('noProxy', "指定应为其忽略 HTTP/HTTPS 请求的代理设置的域名。在 [remote development](https://aka.ms/vscode-remote) 禁用 {0} 设置时，可在本地设置和远程设置中单独配置此设置。", '`#http.useLocalProxyConfiguration#`'),
+					markdownDescription: localize('noProxy', "指定应为其忽略 HTTP/HTTPS 请求的代理设置的域名。在远程开发期间禁用 {0} 设置时，可在本地设置和远程设置中单独配置此设置。", '`#http.useLocalProxyConfiguration#`'),
 					restricted: true,
 					agentHost: { key: 'http.noProxy', scope: AgentHostConfigurationSyncScope.Ambient, transform: value => Array.isArray(value) ? value : [] },
 				},
 				'http.proxyAuthorization': {
 					type: ['null', 'string'],
 					default: null,
-					markdownDescription: localize('proxyAuthorization', "要作为每个网络请求的 “Proxy-Authorization” 标头发送的值。在 [remote development](https://aka.ms/vscode-remote) 禁用 {0} 设置时，可在本地设置和远程设置中单独配置此设置。", '`#http.useLocalProxyConfiguration#`'),
+					markdownDescription: localize('proxyAuthorization', "要作为每个网络请求的 “Proxy-Authorization” 标头发送的值。在远程开发期间禁用 {0} 设置时，可在本地设置和远程设置中单独配置此设置。", '`#http.useLocalProxyConfiguration#`'),
 					restricted: true
 				},
 				'http.proxySupport': {
@@ -337,20 +337,20 @@ function registerProxyConfigurations(useHostProxy = true, useHostProxyDefault = 
 						localize('proxySupportOverride', "为扩展启用代理支持，覆盖请求选项。"),
 					],
 					default: 'override',
-					markdownDescription: localize('proxySupport', "对扩展使用代理支持。在 [remote development](https://aka.ms/vscode-remote) 禁用 {0} 设置时，可在本地设置和远程设置中单独配置此设置。", '`#http.useLocalProxyConfiguration#`'),
+					markdownDescription: localize('proxySupport', "对扩展使用代理支持。在远程开发期间禁用 {0} 设置时，可在本地设置和远程设置中单独配置此设置。", '`#http.useLocalProxyConfiguration#`'),
 					restricted: true
 				},
 				'http.systemCertificates': {
 					type: 'boolean',
 					default: true,
-					markdownDescription: localize('systemCertificates', "控制是否应从 OS 加载 CA 证书。在 Windows 和 macOS 上，关闭此功能后需要重新加载窗口。在 [remote development](https://aka.ms/vscode-remote) 禁用 {0} 设置时，可在本地设置和远程设置中单独配置此设置。", '`#http.useLocalProxyConfiguration#`'),
+					markdownDescription: localize('systemCertificates', "控制是否应从 OS 加载 CA 证书。在 Windows 和 macOS 上，关闭此功能后需要重新加载窗口。在远程开发期间禁用 {0} 设置时，可在本地设置和远程设置中单独配置此设置。", '`#http.useLocalProxyConfiguration#`'),
 					restricted: true
 				},
 				'http.systemCertificatesNode': {
 					type: 'boolean',
 					tags: ['experimental'],
 					default: systemCertificatesNodeDefault,
-					markdownDescription: localize('systemCertificatesNode', "控制是否应使用 Node.js 内置支持加载系统证书。更改此设置后请重新加载窗口。在[远程开发](https://aka.ms/vscode-remote)期间禁用 {0} 设置时，可在本地设置和远程设置中分别配置此设置。", '`#http.useLocalProxyConfiguration#`'),
+					markdownDescription: localize('systemCertificatesNode', "控制是否应使用 Node.js 内置支持加载系统证书。更改此设置后请重新加载窗口。在远程开发期间禁用 {0} 设置时，可在本地设置和远程设置中分别配置此设置。", '`#http.useLocalProxyConfiguration#`'),
 					restricted: true,
 					experiment: {
 						mode: 'auto'
@@ -360,19 +360,19 @@ function registerProxyConfigurations(useHostProxy = true, useHostProxyDefault = 
 					type: 'boolean',
 					tags: ['experimental'],
 					default: false,
-					markdownDescription: localize('systemCertificatesV2', "控制是否应启用从 OS 实验性加载 CA 证书。这使用的方法比默认实现更常见。在 [remote development](https://aka.ms/vscode-remote) 禁用 {0} 设置时，可在本地设置和远程设置中单独配置此设置。", '`#http.useLocalProxyConfiguration#`'),
+					markdownDescription: localize('systemCertificatesV2', "控制是否应启用从 OS 实验性加载 CA 证书。这使用的方法比默认实现更常见。在远程开发期间禁用 {0} 设置时，可在本地设置和远程设置中单独配置此设置。", '`#http.useLocalProxyConfiguration#`'),
 					restricted: true
 				},
 				'http.fetchAdditionalSupport': {
 					type: 'boolean',
 					default: true,
-					markdownDescription: localize('fetchAdditionalSupport', "控制是否应扩展 Node.js 提取实现并提供额外支持。启用相应的设置时，当前将添加代理支持 ({1}) 和系统证书 ({2})。在 [remote development](https://aka.ms/vscode-remote) 禁用 {0} 设置时，可在本地设置和远程设置中单独配置此设置。", '`#http.useLocalProxyConfiguration#`', '`#http.proxySupport#`', '`#http.systemCertificates#`'),
+					markdownDescription: localize('fetchAdditionalSupport', "控制是否应扩展 Node.js 提取实现并提供额外支持。启用相应的设置时，当前将添加代理支持 ({1}) 和系统证书 ({2})。在远程开发期间禁用 {0} 设置时，可在本地设置和远程设置中单独配置此设置。", '`#http.useLocalProxyConfiguration#`', '`#http.proxySupport#`', '`#http.systemCertificates#`'),
 					restricted: true
 				},
 				'http.webSocketAdditionalSupport': {
 					type: 'boolean',
 					default: true,
-					markdownDescription: localize('webSocketAdditionalSupport', "控制是否应通过其他支持扩展内置的 WebSocket 实现。当前，当启用相应设置时，会添加代理支持({1})和系统证书({2})。在[远程开发](https://aka.ms/vscode-remote)期间禁用 {0} 设置时，可在本地设置和远程设置中分别配置此设置。", '`#http.useLocalProxyConfiguration#`', '`#http.proxySupport#`', '`#http.systemCertificates#`'),
+					markdownDescription: localize('webSocketAdditionalSupport', "控制是否应通过其他支持扩展内置的 WebSocket 实现。当前，当启用相应设置时，会添加代理支持({1})和系统证书({2})。在远程开发期间禁用 {0} 设置时，可在本地设置和远程设置中分别配置此设置。", '`#http.useLocalProxyConfiguration#`', '`#http.proxySupport#`', '`#http.systemCertificates#`'),
 					restricted: true
 				},
 				'http.experimental.networkInterfaceCheckInterval': {
@@ -380,7 +380,7 @@ function registerProxyConfigurations(useHostProxy = true, useHostProxyDefault = 
 					default: 300,
 					minimum: -1,
 					tags: ['experimental'],
-					markdownDescription: localize('networkInterfaceCheckInterval', "控制检查网络接口更改以使代理缓存失效的时间间隔(秒)。设置为 -1 可禁用。在[远程开发](https://aka.ms/vscode-remote)期间禁用 {0} 设置时，可在本地设置和远程设置中分别配置此设置。", '`#http.useLocalProxyConfiguration#`'),
+					markdownDescription: localize('networkInterfaceCheckInterval', "控制检查网络接口更改以使代理缓存失效的时间间隔(秒)。设置为 -1 可禁用。在远程开发期间禁用 {0} 设置时，可在本地设置和远程设置中分别配置此设置。", '`#http.useLocalProxyConfiguration#`'),
 					restricted: true,
 					experiment: {
 						mode: 'auto'

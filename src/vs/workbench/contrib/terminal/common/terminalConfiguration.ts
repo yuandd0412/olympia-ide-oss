@@ -620,7 +620,7 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
 	},
 	[TerminalSettingId.ShellIntegrationEnabled]: {
 		restricted: true,
-		markdownDescription: localize('terminal.integrated.shellIntegration.enabled', "决定是否自动注入 shell 集成，以支持增强的命令跟踪和当前工作目录检测等功能。 \n\nShell 集成的工作方式是在 shell 中注入一段启动脚本。该脚本让 Olympia IDE 能够了解终端内部正在发生的事情。\n\n受支持的 shell：\n\n- Linux/macOS：bash、fish、pwsh、zsh\n - Windows：pwsh、git bash\n\n此设置仅在创建终端时生效，因此你需要重启终端才能让它起作用。\n\n 请注意，如果你在终端配置中定义了自定义参数、启用了 {1}、使用了 [复杂的 bash PROMPT_COMMAND](https://code.visualstudio.com/docs/editor/integrated-terminal#_complex-bash-promptcommand)，或者存在其它不受支持的配置，脚本注入可能无法正常工作。要关闭这些装饰，请参阅 {0}。", '`#terminal.integrated.shellIntegration.decorationsEnabled#`', '`#editor.accessibilitySupport#`'),
+		markdownDescription: localize('terminal.integrated.shellIntegration.enabled', "决定是否自动注入 shell 集成，以支持增强的命令跟踪和当前工作目录检测等功能。 \n\nShell 集成的工作方式是在 shell 中注入一段启动脚本。该脚本让 Olympia IDE 能够了解终端内部正在发生的事情。\n\n受支持的 shell：\n\n- Linux/macOS：bash、fish、pwsh、zsh\n - Windows：pwsh、git bash\n\n此设置仅在创建终端时生效，因此你需要重启终端才能让它起作用。\n\n 请注意，如果你在终端配置中定义了自定义参数、启用了 {1}、使用了 `复杂的 bash PROMPT_COMMAND`，或者存在其它不受支持的配置，脚本注入可能无法正常工作。要关闭这些装饰，请参阅 {0}。", '`#terminal.integrated.shellIntegration.decorationsEnabled#`', '`#editor.accessibilitySupport#`'),
 		type: 'boolean',
 		default: true
 	},

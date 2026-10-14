@@ -72,14 +72,14 @@ const snippetSchemaProperties: IJSONSchemaMap = {
 		type: ['string', 'array']
 	},
 	include: {
-		markdownDescription: nls.localize('snippetSchema.json.include', "[glob 模式](https://aka.ms/vscode-glob-patterns) 的列表，包含特定文件的代码片段，例如 `[\"**/*.test.ts\", \"*.spec.ts\"]` 或 `\"**/*.spec.ts\"`。如果模式包含路径分隔符，则匹配文件的绝对路径，否则匹配文件的名称。可以通过 `exclude` 属性排除匹配的文件。"),
+		markdownDescription: nls.localize('snippetSchema.json.include', "`glob 模式` 的列表，包含特定文件的代码片段，例如 `[\"**/*.test.ts\", \"*.spec.ts\"]` 或 `\"**/*.spec.ts\"`。如果模式包含路径分隔符，则匹配文件的绝对路径，否则匹配文件的名称。可以通过 `exclude` 属性排除匹配的文件。"),
 		type: ['string', 'array'],
 		items: {
 			type: 'string'
 		}
 	},
 	exclude: {
-		markdownDescription: nls.localize('snippetSchema.json.exclude', "[glob 模式](https://aka.ms/vscode-glob-patterns) 的列表，从特定文件中排除代码片段，例如 `[\"**/*.min.js\"]` 或 `\"*.min.js\"`。如果模式包含路径分隔符，则匹配文件的绝对路径，否则匹配文件的名称。排除模式优先于 `include` 模式。"),
+		markdownDescription: nls.localize('snippetSchema.json.exclude', "`glob 模式` 的列表，从特定文件中排除代码片段，例如 `[\"**/*.min.js\"]` 或 `\"*.min.js\"`。如果模式包含路径分隔符，则匹配文件的绝对路径，否则匹配文件的名称。排除模式优先于 `include` 模式。"),
 		type: ['string', 'array'],
 		items: {
 			type: 'string'

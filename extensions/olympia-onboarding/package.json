@@ -458,7 +458,7 @@
 				"olympia.debug.showEntryPoints": {
 					"type": "boolean",
 					"default": false,
-					"markdownDescription": "显示 VS Code 自带的「运行或调试」按钮和「运行」菜单。Olympia 默认关闭：F9 走内置编译运行，安装包里没有调试器。需要单步调试时再打开。"
+					"markdownDescription": "显示「运行」菜单里的调试入口项。Olympia 默认关闭：F9 走内置编译运行，安装包里不带调试器。打开它也只是把菜单项放回来，侧栏那个「运行与调试」图标不会回来（本产品不随包 js-debug）；要单步调试得自己装扩展。"
 				},
 				"olympia.check.enabled": {
 					"type": "boolean",

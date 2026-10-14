@@ -730,7 +730,7 @@ Registry.as<IConfigurationRegistry>(Extensions.Configuration)
 			[AllowedExtensionsConfigKey]: {
 				// Note: Type is set only to object because to support policies generation during build time, where single type is expected.
 				type: 'object',
-				markdownDescription: localize('extensions.allowed', "指定允许使用的扩展列表。这有助于通过限制使用未经授权的扩展来维护安全且一致的开发环境。有关如何配置此设置的详细信息，请访问 [Configure Allowed Extensions](https://aka.ms/vscode/enterprise/extensions/allowed) 部分。"),
+				markdownDescription: localize('extensions.allowed', "指定允许使用的扩展列表。这有助于通过限制使用未经授权的扩展来维护安全且一致的开发环境。"),
 				default: '*',
 				defaultSnippets: [{
 					body: {},

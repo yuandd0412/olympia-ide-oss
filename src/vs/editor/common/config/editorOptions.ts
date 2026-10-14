@@ -6518,7 +6518,7 @@ export const EditorOptions = {
 					'- `ctrlCmd` refers to a value the setting can take and should not be localized.',
 					'- `Control` and `Command` refer to the modifier keys Ctrl or Cmd on the keyboard and can be localized.'
 				]
-			}, "用来通过鼠标添加多个光标的修饰键。跳转到定义和打开链接的鼠标操作会相应调整，以免与[多光标修饰键](https://code.visualstudio.com/docs/editor/codebasics#_multicursor-modifier)冲突。")
+			}, "用来通过鼠标添加多个光标的修饰键。跳转到定义和打开链接的鼠标操作会相应调整，以免与`多光标修饰键`冲突。")
 		}
 	)),
 	mouseMiddleClickAction: register(new EditorStringEnumOption(

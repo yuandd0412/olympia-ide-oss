@@ -131,7 +131,7 @@ export class WorkspaceTrustRequestHandler extends Disposable implements IWorkben
 				this.workspaceContextService.getWorkbenchState() !== WorkbenchState.EMPTY ?
 					localize('openLooseFileWorkspaceDetails', "你正尝试在受信任的工作区中打开不受信任的文件。") :
 					localize('openLooseFileWindowDetails', "你正尝试在受信任的窗口中打开不受信任的文件。"),
-				localize('openLooseFileLearnMore', "如果不想打开不受信任的文件，则建议在新窗口中通过受限模式打开它们，因为这些文件可能是恶意文件。请参阅[我们的文档](https://aka.ms/vscode-workspace-trust)，了解详细信息。")
+				localize('openLooseFileLearnMore', "如果不想打开不受信任的文件，则建议在新窗口中通过受限模式打开它们，因为这些文件可能是恶意文件。关于受限模式的说明见 Olympia 官网的文档页。")
 			];
 
 			// Dialog
@@ -171,7 +171,7 @@ export class WorkspaceTrustRequestHandler extends Disposable implements IWorkben
 			// Details
 			const markdownDetails = [
 				options?.message ?? localize('resourcesTrustDetails', "你正尝试打开一个不受信任的文件夹。你信任此内容的作者吗？"),
-				localize('resourcesTrustLearnMore', "如果不信任这些文件的作者，则建议不要继续，因为这些文件可能是恶意文件。请参阅[我们的文档](https://aka.ms/vscode-workspace-trust)，了解详细信息。"),
+				localize('resourcesTrustLearnMore', "如果不信任这些文件的作者，则建议不要继续，因为这些文件可能是恶意文件。关于受限模式的说明见 Olympia 官网的文档页。"),
 				`\`${this.labelService.getUriLabel(options.uri)}\``
 			];
 
@@ -227,7 +227,7 @@ export class WorkspaceTrustRequestHandler extends Disposable implements IWorkben
 			// Dialog
 			const markdownDetails = [
 				{ markdown: new MarkdownString(details) },
-				{ markdown: new MarkdownString(localize('immediateTrustRequestLearnMore', "如果不信任这些文件的作者，则建议不要继续，因为这些文件可能是恶意文件。请参阅[我们的文档](https://aka.ms/vscode-workspace-trust)，了解详细信息。")) }
+				{ markdown: new MarkdownString(localize('immediateTrustRequestLearnMore', "如果不信任这些文件的作者，则建议不要继续，因为这些文件可能是恶意文件。关于受限模式的说明见 Olympia 官网的文档页。")) }
 			];
 			const sessionsTrustNote = getSessionsWindowTrustNote(this.environmentService, this.productService, this.useWorkspaceLanguage);
 			if (sessionsTrustNote) {
@@ -411,7 +411,7 @@ export class WorkspaceTrustUXHandler extends Disposable implements IWorkbenchCon
 				!isSingleFolderWorkspace ?
 					localize('workspaceStartupTrustDetails', "{0} 提供的功能可能会自动执行此工作区中的文件。", this.productService.nameShort) :
 					localize('folderStartupTrustDetails', "{0} 提供的功能可能会自动执行此文件夹中的文件。", this.productService.nameShort),
-				learnMoreString ?? localize('startupTrustRequestLearnMore', "如果不信任这些文件的作者，则建议继续使用受限模式，因为这些文件可能是恶意文件。请参阅[我们的文档](https://aka.ms/vscode-workspace-trust)，了解详细信息。"),
+				learnMoreString ?? localize('startupTrustRequestLearnMore', "如果不信任这些文件的作者，则建议继续使用受限模式，因为这些文件可能是恶意文件。关于受限模式的说明见 Olympia 官网的文档页。"),
 				!isEmptyWindow ?
 					`\`${this.labelService.getWorkspaceLabel(workspaceIdentifier, { verbose: Verbosity.LONG })}\`` : '',
 			];
@@ -570,10 +570,6 @@ export class WorkspaceTrustUXHandler extends Disposable implements IWorkbenchCon
 				{
 					label: localize('restrictedModeBannerManage', "管理"),
 					href: 'command:' + MANAGE_TRUST_COMMAND_ID
-				},
-				{
-					label: localize('restrictedModeBannerLearnMore', "了解更多"),
-					href: 'https://aka.ms/vscode-workspace-trust'
 				}
 			];
 

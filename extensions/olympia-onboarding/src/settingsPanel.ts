@@ -32,7 +32,7 @@ const GROUP_LABELS: Readonly<Record<string, string>> = {
 	problem: '题面与题库',
 	templates: '代码模板',
 	train: '解题记录与打卡',
-	debug: 'VS Code 自带入口',
+	debug: '编辑器自带入口',
 	ai: 'AI 教练'
 };
 const GROUP_ORDER = ['compiler', 'judge', 'check', 'stress', 'problem', 'templates', 'train', 'debug', 'ai'];
@@ -323,7 +323,7 @@ function renderHtml(nonce: string, cspSource: string, items: readonly SettingIte
 	<input type="text" id="filter" placeholder="搜一下，例如「对拍」「内存」「-O2」" />
 	${body}
 	<footer>
-		<button id="openSettings" class="secondary">在 VS Code 设置里搜索 olympia</button>
+		<button id="openSettings" class="secondary">在设置页里搜 olympia</button>
 		<span class="note" id="note"></span>
 	</footer>
 </body>
