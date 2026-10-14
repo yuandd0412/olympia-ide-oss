@@ -401,20 +401,12 @@ export const tocData: ITOCEntry<string> = {
 					label: localize('keyboard', "键盘"),
 					settings: ['keyboard.*']
 				},
-				{
-					id: 'application/update',
-					label: localize('update', "更新"),
-					settings: ['update.*']
-				},
+				// Olympia 产品裁剪：更新走官网手动下载、没有订阅制设置同步服务，所以这两节
+				// 不再出现在设置树里（`update.*` / `settingsSync.*` 仍可搜到，导航里留着只会被点进去）。
 				{
 					id: 'application/telemetry',
 					label: localize('telemetry', "遥测"),
 					settings: ['telemetry.*']
-				},
-				{
-					id: 'application/settingsSync',
-					label: localize('settingsSync', "设置同步"),
-					settings: ['settingsSync.*']
 				},
 				{
 					id: 'application/network',

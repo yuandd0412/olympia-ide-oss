@@ -16,6 +16,7 @@ import { isAbsolute } from '../../../../base/common/path.js';
 import { IUriIdentityService } from '../../../../platform/uriIdentity/common/uriIdentity.js';
 import { IHostService } from '../../../services/host/browser/host.js';
 import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
+import product from '../../../../platform/product/common/product.js';
 
 export class WorkspaceWatcher extends Disposable {
 
@@ -82,8 +83,15 @@ export class WorkspaceWatcher extends Disposable {
 				Severity.Warning,
 				localize('enospcError', "无法监视文件更改。请按照说明链接解决此问题。"),
 				[{
-					label: localize('learnMore', "指令"),
-					run: () => this.openerService.open(URI.parse('https://go.microsoft.com/fwlink/?linkid=867693'))
+					// 上游那条是微软的短链跳转，指向 Linux 的 inotify 限额说明：本产品只出
+					// Windows，学生点了只会撞「是否信任此链接」对话框。改指向自家文档（出厂信任域名里已有）。
+					label: localize('learnMore', "查看说明"),
+					run: async () => {
+						const docs = product.documentationUrl;
+						if (docs) {
+							await this.openerService.open(URI.parse(docs));
+						}
+					}
 				}],
 				{
 					sticky: true,

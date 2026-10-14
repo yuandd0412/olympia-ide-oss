@@ -152,7 +152,7 @@ configurationRegistry.registerConfiguration({
 	'properties': {
 		[FILES_EXCLUDE_CONFIG]: {
 			'type': 'object',
-			'markdownDescription': nls.localize('exclude', "配置用于排除文件和文件夹的 [glob 模式](https://aka.ms/vscode-glob-patterns)。例如，资源管理器会根据此设置决定显示或隐藏哪些文件和文件夹。搜索专用的排除项请参阅 search.exclude 设置；依据 .gitignore 忽略文件请参阅 explorer.excludeGitIgnore 设置。"),
+			'markdownDescription': nls.localize('exclude', "配置用于排除文件和文件夹的 `glob 模式`。例如，资源管理器会根据此设置决定显示或隐藏哪些文件和文件夹。搜索专用的排除项请参阅 search.exclude 设置；依据 .gitignore 忽略文件请参阅 explorer.excludeGitIgnore 设置。"),
 			'default': {
 				...{ '**/.git': true, '**/.svn': true, '**/.hg': true, '**/.jj': true, '**/.DS_Store': true, '**/Thumbs.db': true },
 				...(isWeb ? { '**/*.crswap': true /* filter out swap files used for local file access */ } : undefined)
@@ -182,7 +182,7 @@ configurationRegistry.registerConfiguration({
 		},
 		[FILES_ASSOCIATIONS_CONFIG]: {
 			'type': 'object',
-			'markdownDescription': nls.localize('associations', "配置文件与语言之间关联关系的 [glob 模式](https://aka.ms/vscode-glob-patterns)（例如 \"*.extension\": \"html\"）。模式中若包含路径分隔符，则按文件的绝对路径匹配，否则按文件名匹配。这些关联的优先级高于已安装语言的默认关联。"),
+			'markdownDescription': nls.localize('associations', "配置文件与语言之间关联关系的 `glob 模式`（例如 \"*.extension\": \"html\"）。模式中若包含路径分隔符，则按文件的绝对路径匹配，否则按文件名匹配。这些关联的优先级高于已安装语言的默认关联。"),
 			'additionalProperties': {
 				'type': 'string'
 			}
@@ -288,7 +288,7 @@ configurationRegistry.registerConfiguration({
 		'files.autoSaveWhenNoErrors': {
 			'type': 'boolean',
 			'default': false,
-			'markdownDescription': nls.localize('autoSaveWhenNoErrors', "启用后，编辑器的[自动保存](https://code.visualstudio.com/docs/editor/codebasics#_save-auto-save)将仅限于在触发自动保存的那一刻没有报出任何错误的文件。仅在启用 {0} 后生效。", '`#files.autoSave#`'),
+			'markdownDescription': nls.localize('autoSaveWhenNoErrors', "启用后，编辑器的`自动保存`将仅限于在触发自动保存的那一刻没有报出任何错误的文件。仅在启用 {0} 后生效。", '`#files.autoSave#`'),
 			scope: ConfigurationScope.LANGUAGE_OVERRIDABLE
 		},
 		'files.watcherExclude': {
@@ -306,7 +306,7 @@ configurationRegistry.registerConfiguration({
 				'*/.git/subtree-cache/**': true,
 				'*/.hg/store/**': true
 			},
-			'markdownDescription': nls.localize('watcherExclude', "配置要从文件监视中排除的路径或 [glob 模式](https://aka.ms/vscode-glob-patterns)。路径既可以是相对于被监视文件夹的相对路径，也可以是绝对路径；glob 模式则始终相对于被监视文件夹进行匹配。如果你发现文件监视进程占用了大量 CPU，请确保把不太关心的大文件夹（例如构建输出目录）排除在外。"),
+			'markdownDescription': nls.localize('watcherExclude', "配置要从文件监视中排除的路径或 `glob 模式`。路径既可以是相对于被监视文件夹的相对路径，也可以是绝对路径；glob 模式则始终相对于被监视文件夹进行匹配。如果你发现文件监视进程占用了大量 CPU，请确保把不太关心的大文件夹（例如构建输出目录）排除在外。"),
 			'scope': ConfigurationScope.RESOURCE
 		},
 		'files.watcherInclude': {
@@ -329,7 +329,7 @@ configurationRegistry.registerConfiguration({
 				'.*': { 'type': 'boolean' }
 			},
 			'default': {},
-			'markdownDescription': nls.localize('filesReadonlyInclude', "配置要标记为只读的路径或 [glob 模式](https://aka.ms/vscode-glob-patterns)。除非使用绝对路径，否则 glob 模式始终相对于工作区文件夹的路径进行求值。你可以通过 files.readonlyExclude 设置排除匹配的路径。来自只读文件系统提供程序的文件无论此设置如何都始终是只读的。"),
+			'markdownDescription': nls.localize('filesReadonlyInclude', "配置要标记为只读的路径或 `glob 模式`。除非使用绝对路径，否则 glob 模式始终相对于工作区文件夹的路径进行求值。你可以通过 files.readonlyExclude 设置排除匹配的路径。来自只读文件系统提供程序的文件无论此设置如何都始终是只读的。"),
 			'scope': ConfigurationScope.RESOURCE
 		},
 		[FILES_READONLY_EXCLUDE_CONFIG]: {
@@ -338,7 +338,7 @@ configurationRegistry.registerConfiguration({
 				'.*': { 'type': 'boolean' }
 			},
 			'default': {},
-			'markdownDescription': nls.localize('filesReadonlyExclude', "配置要从只读标记中排除的路径或 [glob 模式](https://aka.ms/vscode-glob-patterns)，它们原先是因为匹配 files.readonlyInclude 设置而被标记的。除非使用绝对路径，否则 glob 模式始终相对于工作区文件夹的路径进行求值。来自只读文件系统提供程序的文件无论此设置如何都始终是只读的。"),
+			'markdownDescription': nls.localize('filesReadonlyExclude', "配置要从只读标记中排除的路径或 `glob 模式`，它们原先是因为匹配 files.readonlyInclude 设置而被标记的。除非使用绝对路径，否则 glob 模式始终相对于工作区文件夹的路径进行求值。来自只读文件系统提供程序的文件无论此设置如何都始终是只读的。"),
 			'scope': ConfigurationScope.RESOURCE
 		},
 		[FILES_READONLY_FROM_PERMISSIONS_CONFIG]: {
@@ -454,7 +454,7 @@ configurationRegistry.registerConfiguration({
 		},
 		'explorer.autoRevealExclude': {
 			'type': 'object',
-			'markdownDescription': nls.localize('autoRevealExclude', "配置要从资源管理器的「打开时显示并选中」行为中排除的文件和文件夹路径或 [glob 模式](https://aka.ms/vscode-glob-patterns)。除非使用绝对路径，否则 glob 模式始终相对于工作区文件夹的路径进行求值。"),
+			'markdownDescription': nls.localize('autoRevealExclude', "配置要从资源管理器的「打开时显示并选中」行为中排除的文件和文件夹路径或 `glob 模式`。除非使用绝对路径，否则 glob 模式始终相对于工作区文件夹的路径进行求值。"),
 			'default': { '**/node_modules': true, '**/bower_components': true },
 			'additionalProperties': {
 				'anyOf': [

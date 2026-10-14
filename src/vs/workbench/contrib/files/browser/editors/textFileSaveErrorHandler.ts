@@ -22,6 +22,7 @@ import { FileEditorInput } from './fileEditorInput.js';
 import { SAVE_FILE_AS_LABEL } from '../fileConstants.js';
 import { INotificationService, INotificationHandle, INotificationActions, Severity } from '../../../../../platform/notification/common/notification.js';
 import { IOpenerService } from '../../../../../platform/opener/common/opener.js';
+import product from '../../../../../platform/product/common/product.js';
 import { IStorageService, StorageScope, StorageTarget } from '../../../../../platform/storage/common/storage.js';
 import { IProductService } from '../../../../../platform/product/common/productService.js';
 import { Event } from '../../../../../base/common/event.js';
@@ -213,7 +214,11 @@ class ResolveConflictLearnMoreAction extends Action {
 	}
 
 	override async run(): Promise<void> {
-		await this.openerService.open(URI.parse('https://go.microsoft.com/fwlink/?linkid=868264'));
+		// 上游这条 fwlink 指向英文的冲突处理说明，且要点开得先确认信任域；改指自家文档。
+		const docs = product.documentationUrl;
+		if (docs) {
+			await this.openerService.open(URI.parse(docs));
+		}
 	}
 }
 
