@@ -175,7 +175,8 @@ class OlympiaToolsProvider implements vscode.TreeDataProvider<TreeEntry> {
 					{ kind: 'action', id: 'aiSettings', label: 'AI 设置（地址 / 密钥 / 模型）', icon: 'rocket', command: CMD.aiSettings },
 					{ kind: 'action', id: 'settings', label: '全部设置（编译 / 评测 / 对拍 / 题面）', icon: 'gear', command: CMD.settings, key: KEYS.settings, tooltip: '一屏改完 Olympia 的所有开关，说明就写在每一项下面；改的是 settings.json 里同样的键。' },
 					{ kind: 'action', id: 'env', label: '环境自检', icon: 'search', command: CMD.checkEnvironment, key: KEYS.checkEnvironment },
-					{ kind: 'action', id: 'website', label: '打开官网与文档', icon: 'globe', command: CMD.openWebsite }
+					{ kind: 'action', id: 'website', label: '打开官网与文档', icon: 'globe', command: CMD.openWebsite },
+					{ kind: 'action', id: 'licences', label: '许可证与第三方组件', icon: 'law', command: CMD.openLicences, tooltip: '离线可读：Olympia 自己的许可、VS Code / Electron 的 MIT 文本、第三方组件声明，以及内置 MinGW 工具链那份 GPL 的书面来源说明。' }
 				];
 		}
 		return [];

@@ -40,6 +40,11 @@ export const unicodeFilter = Object.freeze<string[]>([
 	'!**/LICENSE.{txt,rtf}',
 	'!LICENSES.chromium.html',
 	'!**/LICENSE',
+	// Olympia's own component notice is Chinese legal text shipped to students: same category as
+	// the licence files above. Its encoding (UTF-8 with BOM, which the Inno wizard needs) and its
+	// indentation are owned by scripts/oneoff/check-licence-surface.mjs, not by a line-by-line
+	// unicode guard that would have to be silenced ~90 times.
+	'!NOTICE.olympia.txt',
 
 	'!**/*.{dll,exe,png,bmp,jpg,gif,scpt,cur,ttf,woff,eot,template,ico,icns,opus,wasm,tgz}',
 	'!**/test/**',
@@ -98,6 +103,8 @@ export const indentationFilter = Object.freeze<string[]>([
 	'!**/LICENSE.{txt,rtf}',
 	'!LICENSES.chromium.html',
 	'!**/LICENSE',
+	// Chinese component notice — see the comment in unicodeFilter.
+	'!NOTICE.olympia.txt',
 	'!**/*.mp3',
 	'!src/vs/base/browser/dompurify/*',
 	'!src/vs/base/common/lit-html/**',

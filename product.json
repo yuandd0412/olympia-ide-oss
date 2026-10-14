@@ -31,7 +31,7 @@
 	"darwinProfilePayloadUUID": "CF808BE7-53F3-46C6-A7E2-7EDB98A5E959",
 	"linuxDesktopName": "Olympia IDE",
 	"linuxIconName": "olympia",
-	"licenseFileName": "LICENSE",
+	"licenseFileName": "LICENSE.txt",
 	"reportIssueUrl": "https://github.com/yuandd0412/olympia-ide/issues/new",
 	"documentationUrl": "https://olympia.dpdns.org/docs/",
 	"keyboardShortcutsUrlWin": "https://olympia.dpdns.org/docs/#keys",

@@ -266,7 +266,19 @@ function packageTask(platform: string, arch: string, sourceFolderName: string, d
 				this.emit('data', file);
 			}));
 
-		const license = gulp.src([product.licenseFileName, 'ThirdPartyNotices.txt', 'licenses/**'], { base: '.', allowEmpty: true });
+		// OLYMPIA-TRIM: licence text has to actually reach the package. Upstream's line uses
+		// `allowEmpty: true`, so when `product.licenseFileName` names a file that does not exist the
+		// glob matches nothing and the option swallows it — the installed directory then had only
+		// LICENSES.chromium.html and resources/app/ThirdPartyNotices.txt, and not a single copy of the
+		// MIT text. Our Chinese component notice ships next to it now, and
+		// scripts/oneoff/check-licence-surface.mjs keeps every one of these names honest.
+		const licenceFiles = [product.licenseFileName, 'NOTICE.olympia.txt', 'ThirdPartyNotices.txt', 'licenses/**'];
+		for (const name of licenceFiles.filter(n => !n.includes('*'))) {
+			if (!fs.existsSync(path.join(root, name))) {
+				throw new Error(`product.json/build: missing licence text ${name} — the product must ship with it`);
+			}
+		}
+		const license = gulp.src(licenceFiles, { base: '.', allowEmpty: true });
 
 		// TODO the API should be copied to `out` during compile, not here
 		const api = gulp.src('src/vscode-dts/vscode.d.ts').pipe(rename('out/vscode-dts/vscode.d.ts'));

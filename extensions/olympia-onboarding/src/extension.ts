@@ -27,6 +27,7 @@ import { registerContestMode } from './contestMode';
 import { registerSampleJudge } from './judgeSamples';
 import { registerSolveLog } from './solveLog';
 import { registerSettingsPanel } from './settingsPanel';
+import { openLicenceNotices } from './licences';
 import { CMD } from './commands';
 
 const WEBSITE = 'https://olympia.dpdns.org';
@@ -247,7 +248,8 @@ export function activate(context: vscode.ExtensionContext): void {
 		vscode.commands.registerCommand(CMD.compile, () => compileCurrentFile()),
 		vscode.commands.registerCommand(CMD.compileJudgeAccurate, () => compileJudgeAccurate()),
 		vscode.commands.registerCommand(CMD.compileAndRun, () => compileAndRun()),
-		vscode.commands.registerCommand(CMD.openWebsite, () => vscode.env.openExternal(vscode.Uri.parse(WEBSITE)))
+		vscode.commands.registerCommand(CMD.openWebsite, () => vscode.env.openExternal(vscode.Uri.parse(WEBSITE))),
+		vscode.commands.registerCommand(CMD.openLicences, () => openLicenceNotices())
 	);
 	// 面板本身也要跟着扩展销毁，不然重载窗口会攒出一排同名面板
 	context.subscriptions.push({ dispose: () => environment?.dispose() });

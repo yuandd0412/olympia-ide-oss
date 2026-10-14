@@ -28,6 +28,8 @@ export const CMD = {
 	checkEnvironment: 'olympia.checkEnvironment',
 	pickCompileProfile: 'olympia.pickCompileProfile',
 	openWebsite: 'olympia.openWebsite',
+	/** 打开随安装包发出去的许可证文本（离线可读，不是 GitHub 页面）。 */
+	openLicences: 'olympia.about.openLicences',
 	problemPull: 'olympia.problem.pull',
 	problemPullFromClipboard: 'olympia.problem.pullFromClipboard',
 	/** 题面库：由 olympia-contest 注册，面板和这里只是点它一下。 */

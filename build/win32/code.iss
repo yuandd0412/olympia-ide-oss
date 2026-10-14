@@ -1,4 +1,10 @@
-#define RootLicenseFileName FileExists(RepoDir + '\LICENSE.rtf') ? 'LICENSE.rtf' : 'LICENSE.txt'
+; 安装向导的许可页由这一个宏决定。[Languages] 每行都拼上下面的 LocalizedLanguageFile，
+; 而 Inno 认 `LicenseFile` 这个参数（不认识的名字会直接报 Unrecognized parameter name），
+; 所以真正的生效路径是「按语言」那一份：让它的兜底指向随包的中文组件清单，
+; 学生装的时候读到的就是那份说明（内含 MIT 正文），而不是只有 Microsoft 的英文 MIT。
+; licenses\LICENSE-<lang>.rtf 本产品没有，所以下面那个 DirExists 分支恒为假。
+#define OlympiaNoticeFileName 'NOTICE.olympia.txt'
+#define RootLicenseFileName FileExists(RepoDir + '\' + OlympiaNoticeFileName) ? OlympiaNoticeFileName : (FileExists(RepoDir + '\LICENSE.rtf') ? 'LICENSE.rtf' : 'LICENSE.txt')
 #define LocalizedLanguageFile(Language = "") \
     DirExists(RepoDir + "\licenses") && Language != "" \
       ? ('; LicenseFile: "' + RepoDir + '\licenses\LICENSE-' + Language + '.rtf"') \
@@ -31,6 +37,11 @@ SetupIconFile={#RepoDir}\resources\win32\code.ico
 UninstallDisplayIcon={app}\{#ExeBasename}.exe
 ChangesEnvironment=true
 ChangesAssociations=true
+; 许可页的正文由顶部的 RootLicenseFileName 一处决定。Setup 段这里再显式写一遍同一个宏，
+; 是为了「按语言」那条路径万一不生效时向导仍有许可页；两处指同一份文本，
+; 就不必猜谁覆盖谁，也不会出现两份不一样的协议。同一次安装还会把
+; LICENSE.txt / ThirdPartyNotices.txt / NOTICE.olympia.txt 放进产品目录。
+LicenseFile={#RepoDir}\{#RootLicenseFileName}
 MinVersion=10.0
 SourceDir={#SourceDir}
 AppVersion={#Version}

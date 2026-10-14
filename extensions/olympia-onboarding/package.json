@@ -37,6 +37,12 @@
 				"category": "Olympia"
 			},
 			{
+				"command": "olympia.about.openLicences",
+				"title": "许可证与第三方组件",
+				"category": "Olympia",
+				"icon": "$(law)"
+			},
+			{
 				"command": "olympia.pickCompileProfile",
 				"title": "选择评测机编译配置",
 				"category": "Olympia"

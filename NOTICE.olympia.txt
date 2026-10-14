@@ -1,0 +1,143 @@
+﻿Olympia IDE —— 许可证与第三方组件说明
+==========================================
+
+这份文件随安装包一起发布，装在：
+
+    <安装目录>\resources\app\NOTICE.olympia.txt
+
+装完之后不联网也能读：在 Olympia 里点左侧「Olympia」面板最后一行
+「许可证与第三方组件」（或按 F1 搜「许可证」），会把下面提到的几份文本一起打开。
+
+
+一、Olympia 自己的代码
+----------------------
+
+Olympia IDE 是 VS Code 的一个 fork。自研部分——三个内置扩展、打包与安装脚本、官网——
+以 **GPL-3.0-or-later** 发布（与官网页脚和 product.json 里声明的同一个许可证）。
+它建立在 MIT 许可的 VS Code 之上，MIT 允许别人把改过的版本按 GPL 再发布，所以两边都不冲突：
+VS Code 那部分仍是 MIT（Copyright (c) 2015 - present Microsoft Corporation），
+全文见本文件末尾。
+
+GPL 对一个学生来说其实很轻：自己用、拿去教学、随便改，都不需要申请任何东西；
+只有一种情况要做事——你把**改过的版本**再分发出去（发给同学一个自己改出来的 Olympia 安装包），
+那时候把你改的那部分源码一起给出去就行，用 GPL-3.0 的名义。
+用内置 g++ 编译出来的 .exe 与这件事无关（下一节解释为什么）。
+
+三个自研扩展各自在自己的 package.json 里声明许可证，其中两个与产品一致，一个是例外：
+
+    olympia-coach       MIT
+    olympia-onboarding  GPL-3.0-or-later
+    olympia-contest     GPL-3.0-or-later
+
+它们以独立目录的形式随包分发（各自进程内加载，不与内核链接），所以 coach 那份 MIT 不会
+把 GPL 的部分「染淡」，内核那份 MIT 也不会把 GPL 的部分「绑紧」。源码就在安装目录
+resources\app\extensions\ 下（未压缩，直接可读），也在仓库
+https://github.com/yuandd0412/olympia-ide 里。
+
+
+二、产品里都有谁的代码
+----------------------
+
+VS Code 内核与本项目改到的那份上游源码
+    MIT，Copyright (c) 2015 - present Microsoft Corporation。
+    文本见同目录 LICENSE.txt 以及本文件末尾。
+
+Electron
+    MIT（Copyright (c) 2013-2024 Electron 贡献者）。它的版权声明与逐组件清单在
+    安装目录的 LICENSES.chromium.html 里 —— 这份文件是 Electron 随包发出的，
+    我们不删它，因为删掉就没人告诉你 Electron 里装了谁的代码。
+
+Chromium、V8、Node.js 及其依赖
+    BSD-3-Clause、Apache-2.0、ISC 等多种许可证混合，逐条列在
+    <安装目录>\LICENSES.chromium.html（这是 Chromium 要求的呈现形式，
+    这个文件必须留在安装目录里）。
+
+    resources\app\ThirdPartyNotices.txt 覆盖的是应用层那 ~166 个 npm / git 组件
+    （编辑器语法、语言服务、Markdown、mermaid 等），与上一段是两份不同的清单。
+
+随产品打包的内置扩展（41 个目录）
+    每个扩展在自己的 package.json 的 license 字段里声明许可证：除上面自研的两个
+    GPL-3.0 扩展，其余 39 个是 MIT。13 个主题（theme-*）都是 MIT，其中 vendored
+    进来的 One Dark Pro 带着自己的 LICENSE.txt
+    （resources\app\extensions\theme-one-dark-pro\LICENSE.txt，
+    Copyright (c) 2013-2022 Binaryify，未改动的配色方案）。
+    另有三个扩展自带第三方声明，随包在各自目录里，本文件不重复它们的内容：
+        mermaid-markdown-features\ThirdPartyNotices.txt   elkjs，EPL-2.0
+        terminal-suggest\ThirdPartyNotices.txt            withfig/autocomplete，MIT
+        theme-seti\ThirdPartyNotices.txt                  Seti UI 图标，MIT
+    被产品裁掉的扩展（GitHub Copilot、git、python、jupyter 等 59 个目录）
+    不在安装包里，也就跟本文件无关。
+
+界面里的中文文案
+    是把上游源码 localize 调用里的默认英文原地改写成中文，词典参考了
+    Microsoft 官方的简体中文语言包（vscode-language-pack-zh-hans）的译文。
+    语言包本身没有打进产品，只用了它的译法。
+
+内置的 C/C++ 工具链（resources\app\toolchain\mingw64，GCC 15.2.0）
+    由 MSYS2 官方的 mingw-w64-x86_64-* 包组装：gcc、gcc-libs、binutils、crt、
+    headers、libwinpthread、winpthreads-git、zlib、zstd、gettext-runtime、
+    windows-default-manifest。
+    其中 GCC 与 binutils 属于 GPL（GCC 主体 GPL-3.0，运行库 libstdc++/libgcc
+    是 GPL-3.0 附 GCC 运行时库例外条款，binutils GPL-3.0，winpthreads
+    GPL-3.0/zlib，zlib 是 zlib License，gettext-runtime LGPL-2.1+，
+    mingw-w64 的 crt 与 headers 是 ZPL-2.1 与各自的 BSD 风格声明，
+    zstd BSD-3-Clause，windows-default-manifest 是公有领域）。
+
+    GPL 要求的许可证正文**已经全部随包发出**，就在这九个目录里：
+
+        resources\app\toolchain\mingw64\share\licenses\
+            binutils  crt  gcc-libs  gettext-runtime  headers
+            libwinpthread  winpthreads  zlib  zstd
+
+    （文件名是 COPYING3、COPYING.LIB、COPYING.RUNTIME、README 这些。）
+    编译器驱动本身（g++、cc1plus）没有单独的目录，它的条款与 gcc-libs 同一份
+    GPL-3.0；gcc-libs\README 把这件事写得很清楚。
+    「GCC 运行时库例外」这一条很重要：用这套 g++ 编译出来的 .exe/.o
+    不受 GPL 传染，学生写的答案、提交的代码仍然是他自己的。
+
+    对应源码的获取途径（GPLv3 第六条的「源码」）：上面每个包的源码都在 MSYS2
+    的发行目录里，任意镜像均可，例如
+        https://mirrors.tuna.tsinghua.edu.cn/msys2/distro/x86_64/
+    找同名包的 mingw-w64-x86_64-*-src.tar.* / mingw-w64-*-*.pkg.tar.zst；
+    GCC、binutils 的上游源码在 https://gcc.gnu.org 与 https://sourceware.org/binutils/。
+    如果你拿不到网络，也可以从官网 https://olympia.dpdns.org 联系我们，
+    自这份安装发布之日起三年内，我们会按合理成本提供一份完整的机器可读源码拷贝。
+
+
+三、你要做什么
+--------------
+
+作为用户你不需要做任何事。简单说：
+
+- Olympia 自己的改动是 GPL-3.0-or-later，它包含的 VS Code 部分是 MIT：自己用、拿去教学、
+  随便改都不用来申请；只有把改过的版本再分发出去时，把改动一起公开就行。
+- 用内置的 g++ 编译出来的程序是你自己的，不受任何许可证约束。
+- 工具链那部分（GPL/LGPL）的许可证文本与源码来源如上，都在安装目录里，没有需要额外
+  下载的东西。
+
+
+四、MIT 许可证全文（英文原文为准）
+----------------------------------
+
+MIT License
+
+Copyright (c) 2015 - present Microsoft Corporation
+Copyright (c) 2026 Oler IDE Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
