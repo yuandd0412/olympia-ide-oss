@@ -45,6 +45,7 @@ export const unicodeFilter = Object.freeze<string[]>([
 	// indentation are owned by scripts/oneoff/check-licence-surface.mjs, not by a line-by-line
 	// unicode guard that would have to be silenced ~90 times.
 	'!NOTICE.olympia.txt',
+	'!GPL-3.0.txt',
 
 	'!**/*.{dll,exe,png,bmp,jpg,gif,scpt,cur,ttf,woff,eot,template,ico,icns,opus,wasm,tgz}',
 	'!**/test/**',
@@ -105,6 +106,7 @@ export const indentationFilter = Object.freeze<string[]>([
 	'!**/LICENSE',
 	// Chinese component notice — see the comment in unicodeFilter.
 	'!NOTICE.olympia.txt',
+	'!GPL-3.0.txt',
 	'!**/*.mp3',
 	'!src/vs/base/browser/dompurify/*',
 	'!src/vs/base/common/lit-html/**',

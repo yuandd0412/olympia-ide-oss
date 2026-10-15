@@ -388,6 +388,12 @@ export class ChatEntitlementService extends Disposable implements IChatEntitleme
 	readonly context: Lazy<ChatEntitlementContext> | undefined;
 	readonly requests: Lazy<ChatEntitlementRequests> | undefined;
 
+	/**
+	 * BYOK-only 没有托管助手，所以 `sentiment.hidden` 当场就该是真。只写 context key 不够：
+	 * 实测出厂包里每开一次会话，renderer.log 就落一条 `No default agent contributed`。
+	 */
+	private readonly hiddenByProduct: boolean;
+
 	constructor(
 		@IInstantiationService instantiationService: IInstantiationService,
 		@IProductService productService: IProductService,
@@ -399,6 +405,8 @@ export class ChatEntitlementService extends Disposable implements IChatEntitleme
 		@IStorageService private readonly storageService: IStorageService,
 	) {
 		super();
+
+		this.hiddenByProduct = productService.defaultChatAgent?.byokOnly === true;
 
 		const cachedUBB = this.storageService.getBoolean(ChatEntitlementService.CACHED_UBB_STORAGE_KEY, StorageScope.PROFILE);
 		this._quotas = cachedUBB !== undefined ? { usageBasedBilling: cachedUBB } : {};
@@ -702,7 +710,7 @@ export class ChatEntitlementService extends Disposable implements IChatEntitleme
 		return {
 			completed: this.contextKeyService.getContextKeyValue<boolean>(ChatEntitlementContextKeys.Setup.completed.key) === true,
 			installed: this.contextKeyService.getContextKeyValue<boolean>(ChatEntitlementContextKeys.Setup.installed.key) === true,
-			hidden: this.contextKeyService.getContextKeyValue<boolean>(ChatEntitlementContextKeys.Setup.hidden.key) === true,
+			hidden: this.hiddenByProduct || this.contextKeyService.getContextKeyValue<boolean>(ChatEntitlementContextKeys.Setup.hidden.key) === true,
 			disabledInWorkspace: this.contextKeyService.getContextKeyValue<boolean>(ChatEntitlementContextKeys.Setup.disabledInWorkspace.key) === true,
 			disabled: this.contextKeyService.getContextKeyValue<boolean>(ChatEntitlementContextKeys.Setup.disabled.key) === true,
 			untrusted: this.contextKeyService.getContextKeyValue<boolean>(ChatEntitlementContextKeys.Setup.untrusted.key) === true,

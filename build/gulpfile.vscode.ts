@@ -272,7 +272,7 @@ function packageTask(platform: string, arch: string, sourceFolderName: string, d
 		// LICENSES.chromium.html and resources/app/ThirdPartyNotices.txt, and not a single copy of the
 		// MIT text. Our Chinese component notice ships next to it now, and
 		// scripts/oneoff/check-licence-surface.mjs keeps every one of these names honest.
-		const licenceFiles = [product.licenseFileName, 'NOTICE.olympia.txt', 'ThirdPartyNotices.txt', 'licenses/**'];
+		const licenceFiles = [product.licenseFileName, 'NOTICE.olympia.txt', 'GPL-3.0.txt', 'ThirdPartyNotices.txt', 'licenses/**'];
 		const root = path.resolve(path.join(import.meta.dirname, '..'));
 		for (const name of licenceFiles.filter(n => !n.includes('*'))) {
 			if (!fs.existsSync(path.join(root, name))) {

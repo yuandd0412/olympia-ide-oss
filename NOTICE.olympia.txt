@@ -18,6 +18,13 @@ Olympia IDE 是 VS Code 的一个 fork。自研部分——三个内置扩展、
 VS Code 那部分仍是 MIT（Copyright (c) 2015 - present Microsoft Corporation），
 全文见本文件末尾。
 
+GPL-3.0 的全文也随包一起发布：
+
+    <安装目录>\resources\app\GPL-3.0.txt
+
+（GPL 要求"每一份副本都带一份许可证文本"，所以它和 MIT 那份一样要出现在安装目录里，
+不能只在网页上写一句"我们是 GPL"。）
+
 GPL 对一个学生来说其实很轻：自己用、拿去教学、随便改，都不需要申请任何东西；
 只有一种情况要做事——你把**改过的版本**再分发出去（发给同学一个自己改出来的 Olympia 安装包），
 那时候把你改的那部分源码一起给出去就行，用 GPL-3.0 的名义。
@@ -52,7 +59,7 @@ Chromium、V8、Node.js 及其依赖
     <安装目录>\LICENSES.chromium.html（这是 Chromium 要求的呈现形式，
     这个文件必须留在安装目录里）。
 
-    resources\app\ThirdPartyNotices.txt 覆盖的是应用层那 ~166 个 npm / git 组件
+    resources\app\ThirdPartyNotices.txt 覆盖的是应用层那 83 个 npm / git 组件
     （编辑器语法、语言服务、Markdown、mermaid 等），与上一段是两份不同的清单。
 
 随产品打包的内置扩展（41 个目录）

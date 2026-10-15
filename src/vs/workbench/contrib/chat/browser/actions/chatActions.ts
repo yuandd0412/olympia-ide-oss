@@ -1236,7 +1236,10 @@ export function registerChatActions() {
 				precondition: ContextKeyExpr.and(
 					ChatContextKeys.Setup.installed,
 					ChatContextKeys.Setup.disabled.negate(),
-					ChatContextKeys.Setup.untrusted.negate()
+					ChatContextKeys.Setup.untrusted.negate(),
+					// BYOK-only 的产品把 chatSetupHidden 置真，而 installed 也是真：不排掉 hidden 的话
+					// 这一项在聊天标题栏「…」里显示出来，点下去执行的是一条不存在的命令。
+					ContextKeyExpr.equals('chatSetupHidden', false),
 				),
 				menu: {
 					id: MenuId.ChatTitleBarMenu,

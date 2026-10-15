@@ -19,6 +19,7 @@ import { dirname, join } from 'path';
  */
 const LICENCE_DOCS: readonly { readonly file: string; readonly label: string }[] = [
 	{ file: 'NOTICE.olympia.txt', label: 'Olympia 许可证与第三方组件' },
+	{ file: 'GPL-3.0.txt', label: 'GPL-3.0 许可证（Olympia 自研部分）' },
 	{ file: 'LICENSE.txt', label: 'MIT 许可证' },
 	{ file: 'ThirdPartyNotices.txt', label: '第三方组件声明' },
 	{ file: 'LICENSES.chromium.html', label: 'Chromium 许可证' }
