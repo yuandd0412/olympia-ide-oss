@@ -273,6 +273,7 @@ function packageTask(platform: string, arch: string, sourceFolderName: string, d
 		// MIT text. Our Chinese component notice ships next to it now, and
 		// scripts/oneoff/check-licence-surface.mjs keeps every one of these names honest.
 		const licenceFiles = [product.licenseFileName, 'NOTICE.olympia.txt', 'ThirdPartyNotices.txt', 'licenses/**'];
+		const root = path.resolve(path.join(import.meta.dirname, '..'));
 		for (const name of licenceFiles.filter(n => !n.includes('*'))) {
 			if (!fs.existsSync(path.join(root, name))) {
 				throw new Error(`product.json/build: missing licence text ${name} — the product must ship with it`);
@@ -286,7 +287,6 @@ function packageTask(platform: string, arch: string, sourceFolderName: string, d
 		const telemetry = gulp.src('.build/telemetry/**', { base: '.build/telemetry', dot: true });
 
 		const jsFilter = util.filter(data => !data.isDirectory() && /\.js$/.test(data.path));
-		const root = path.resolve(path.join(import.meta.dirname, '..'));
 		const productionDependencies = getProductionDependencies(root);
 		const dependenciesSrc = productionDependencies.map(d => path.relative(root, d)).map(d => [`${d}/**`, `!${d}/**/{test,tests}/**`]).flat().concat('!**/*.mk');
 
