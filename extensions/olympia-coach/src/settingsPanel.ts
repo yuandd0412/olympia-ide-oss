@@ -223,11 +223,14 @@ async function showApiKeyDialog(context: vscode.ExtensionContext): Promise<void>
 		return;
 	}
 	await setApiKey(context, key);
+	// 不等这条通知：窗口没聚焦时它不进弹窗、只躺在铃铛里，promise 就一直不返回，而调用方
+	// （设置页的 onDidReceiveMessage）在它返回之后才刷新页面——密钥明明存好了，页面还写
+	// 「未设置」，用户只会再填一遍。（实测：铃铛里同时挂着「已保存」和「已清除」两条。）
 	if (key) {
 		const baseUrl = readBaseUrl();
-		await vscode.window.showInformationMessage(baseUrl ? 'API Key 已保存。' : 'API Key 已保存。还需要填写服务地址。');
+		void vscode.window.showInformationMessage(baseUrl ? 'API Key 已保存。' : 'API Key 已保存。还需要填写服务地址。');
 	} else {
-		await vscode.window.showInformationMessage('已清除 API Key。');
+		void vscode.window.showInformationMessage('已清除 API Key。');
 	}
 }
 
@@ -289,7 +292,8 @@ export function registerSettingsPanel(context: vscode.ExtensionContext, log: vsc
 					break;
 				case 'clearKey':
 					await setApiKey(context, '');
-					await vscode.window.showInformationMessage('已清除 API Key。');
+					// 同 showApiKeyDialog：等这条通知会把下面的 refresh 一起卡住。
+					void vscode.window.showInformationMessage('已清除 API Key。');
 					break;
 				case 'chooseModel': {
 					const id = typeof message.id === 'string' ? message.id : '';
