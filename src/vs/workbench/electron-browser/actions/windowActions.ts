@@ -415,7 +415,7 @@ export class FocusWindowAction extends Action2 {
 	constructor() {
 		super({
 			id: FocusWindowAction.ID,
-			title: localize2('focusWindow', "Focus Window"),
+			title: localize2('focusWindow', "聚焦当前窗口"),
 			f1: true
 		});
 	}

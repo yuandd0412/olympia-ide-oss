@@ -50,8 +50,13 @@ import { ChatAgentLocation } from '../../chat/common/constants.js';
  * 学生按 Ctrl+Shift+P 是为了找功能，不是为了一份他读不懂的日志。留在面板里只有一个作用——
  * 把「Olympia: …」挤到要翻两屏才找得到。类目名读的是 `Categories.Developer` 自己的值，
  * 所以汉化改了叫法这里跟着变，不会出现「文档里叫开发人员、过滤按另一个字符串」。
+ *
+ * 'MCP' 是第二组。上游注释写明「缩略语不做汉化」（`mcpCommands.ts` 里那个 category），
+ * 所以面板里那六行永远是大写英文开头，且全是给智能体挂外部工具用的配置命令
+ * （添加服务器 / 浏览服务器 / 从清单文件安装…）——本产品 BYOK-only，没有需要它的人。
+ * 掉的只是面板入口：`mcp.json` 里配了的服务器照旧自启，功能没被拆。
  */
-const HIDDEN_COMMAND_CATEGORIES: readonly string[] = [Categories.Developer.value];
+const HIDDEN_COMMAND_CATEGORIES: readonly string[] = [Categories.Developer.value, 'MCP'];
 /**
  * 这组里放行两条：「重新加载窗口」是手册里会让学生按的那一个（窗口不对劲时先重载，
  * 不用重开整个程序，也不丢已打开的文件）；「打开日志文件夹」是出问题让我们来查时唯一

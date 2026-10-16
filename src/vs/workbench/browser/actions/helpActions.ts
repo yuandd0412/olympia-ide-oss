@@ -17,6 +17,8 @@ import { KeybindingWeight } from '../../../platform/keybinding/common/keybinding
 import { Categories } from '../../../platform/action/common/actionCommonCategories.js';
 import { ICommandService } from '../../../platform/commands/common/commands.js';
 import { IsSessionsWindowContext } from '../../common/contextkeys.js';
+import { ContextKeyExpr } from '../../../platform/contextkey/common/contextkey.js';
+import { CONTEXT_ACCESSIBILITY_MODE_ENABLED } from '../../../platform/accessibility/common/accessibility.js';
 
 class KeybindingsReferenceAction extends Action2 {
 
@@ -319,12 +321,16 @@ class GetStartedWithAccessibilityFeatures extends Action2 {
 			title: localize2('getStartedWithAccessibilityFeatures', "无障碍功能入门"),
 			category: Categories.Help,
 			f1: true,
-			precondition: IsSessionsWindowContext.negate(),
+			// 这一条打开的是 id 为 SetupAccessibility 的演练，而那份演练自己写着
+			// `when: CONTEXT_ACCESSIBILITY_MODE_ENABLED`（见 gettingStartedContent.ts）。
+			// 菜单项原来只看是不是 sessions 窗口，所以普通学生点了它，演练页里根本没有这一页——
+			// 一个只会把人带到空页面的入口。现在两边用同一个条件：看得见就等于点得开。
+			precondition: ContextKeyExpr.and(IsSessionsWindowContext.negate(), CONTEXT_ACCESSIBILITY_MODE_ENABLED),
 			menu: {
 				id: MenuId.MenubarHelpMenu,
 				group: '1_welcome',
 				order: 6,
-				when: IsSessionsWindowContext.negate()
+				when: ContextKeyExpr.and(IsSessionsWindowContext.negate(), CONTEXT_ACCESSIBILITY_MODE_ENABLED)
 			}
 		});
 	}
