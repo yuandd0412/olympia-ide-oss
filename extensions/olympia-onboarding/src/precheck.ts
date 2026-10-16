@@ -3,10 +3,10 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 /*---------------------------------------------------------------------------------------------
- *  Olympia IDE - submission pre-flight check ("提交前体检").
+ *  Olympia IDE - submission pre-flight check ("提交前体检") — the pattern half.
  *
- *  A live syntax check for the one thing that ends a submission: the judge's compiler rejecting
- *  code that MSVC accepts. Every rule below therefore reports a *compile error*, not a style
+ *  A live check for the things that end a submission: the judge's compiler rejecting code that
+ *  MSVC accepts. Every rule below therefore reports a *compile error*, not a style
  *  opinion — findings that merely made a program score worse (freopen, mixed IO, leaks, CRLF)
  *  were removed, because a checker that cries warning on correct code teaches students to
  *  ignore the one signal that matters.
@@ -25,7 +25,9 @@ export const PRECHECK_SOURCE = '提交前体检';
 export type RuleId =
 	| 'pragmaOptimize'
 	| 'reservedWord'
-	| 'removedCpp';
+	| 'removedCpp'
+	/** 语法这一半不在这里：见 syntaxCheck.ts（真的把代码编一遍）。 */
+	| 'syntax';
 
 export interface Finding {
 	readonly rule: RuleId;

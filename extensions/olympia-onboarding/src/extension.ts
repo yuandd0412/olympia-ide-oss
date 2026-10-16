@@ -14,7 +14,8 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
-import { analyse, toDiagnostic, SOURCE_FILES } from './precheck';
+import { analyse, toDiagnostic, SOURCE_FILES, type Finding } from './precheck';
+import { syntaxCheck } from './syntaxCheck';
 import {
 	registerCompileTaskProvider, compileCurrentFile, compileJudgeAccurate, compileAndRun
 } from './compile';
@@ -201,18 +202,49 @@ export function currentCompileFlags(): string {
 
 let diagnostics: vscode.DiagnosticCollection | undefined;
 
-function runCheck(document: vscode.TextDocument, surface: 'problems' | 'quiet'): void {
+/** 正在编的文档：一次 -fsyntax-only 要一两秒，连点标签页不该堆出好几个 g++。 */
+const checking = new Set<string>();
+
+function runCheck(document: vscode.TextDocument, surface: 'problems' | 'quiet'): Promise<void> {
+	const key = document.uri.toString();
+	if (checking.has(key)) {
+		return Promise.resolve();
+	}
+	checking.add(key);
+	return runCheckNow(document, surface).finally(() => checking.delete(key));
+}
+
+async function runCheckNow(document: vscode.TextDocument, surface: 'problems' | 'quiet'): Promise<void> {
 	if (!diagnostics || !SOURCE_FILES.test(document.fileName)) {
 		return;
 	}
-	const findings = analyse(document.getText());
+	const findings: Finding[] = analyse(document.getText());
+	// 规则那半同步、语法那半要等编译器：先画出来，别让保存卡在一次 g++ 上。
+	diagnostics.set(document.uri, findings.map(toDiagnostic));
+	const syntax = await syntaxCheck(document);
+	findings.push(...syntax.findings);
+	if (syntax.blocked) {
+		// 一个没读到任何东西的工具不能给出「无问题」。
+		findings.push({
+			rule: 'syntax',
+			severity: vscode.DiagnosticSeverity.Warning,
+			message: syntax.blocked,
+			line: 0,
+			character: 0,
+			length: 1,
+			detail: '这一条不是代码的问题，是体检本身没跑完。'
+		});
+	}
 	diagnostics.set(document.uri, findings.map(toDiagnostic));
 
 	if (surface === 'quiet' || findings.length === 0) {
 		return;
 	}
-	// every rule reports something the judge's compiler rejects, so one wording is enough
-	const summary = `提交前体检：${findings.length} 处写法会在评测机上编译失败`;
+	const compileErrors = findings.filter(finding => finding.rule === 'syntax').length;
+	// 语法错误和「本地能编过、评测机编不过」是两件事，说成一句会让人去找不存在的关键字。
+	const summary = compileErrors
+		? `提交前体检：这份代码编译不过（${compileErrors} 处）`
+		: `提交前体检：${findings.length} 处写法会在评测机上编译失败`;
 	void vscode.window.showErrorMessage(summary, '查看问题', '忽略').then(choice => {
 		if (choice === '查看问题') {
 			void vscode.commands.executeCommand('workbench.actions.view.problems');
@@ -226,10 +258,10 @@ async function preSubmitCheck(): Promise<void> {
 		void vscode.window.showWarningMessage('提交前体检：请先打开要检查的源文件。');
 		return;
 	}
-	runCheck(editor.document, 'problems');
+	await runCheck(editor.document, 'problems');
 	const found = diagnostics?.get(editor.document.uri) ?? [];
 	if (found.length === 0) {
-		void vscode.window.showInformationMessage('提交前体检：没有会导致编译失败的写法，可以提交了。');
+		void vscode.window.showInformationMessage('提交前体检：语法和写法都没问题，可以提交了。');
 	}
 }
 
@@ -275,7 +307,7 @@ export function activate(context: vscode.ExtensionContext): void {
 			if (!vscode.workspace.getConfiguration('olympia').get<boolean>('check.onSave', true)) {
 				return;
 			}
-			runCheck(event.document, 'quiet');
+			void runCheck(event.document, 'quiet');
 		})
 	);
 
@@ -283,7 +315,7 @@ export function activate(context: vscode.ExtensionContext): void {
 	context.subscriptions.push(
 		vscode.window.onDidChangeActiveTextEditor(editor => {
 			if (editor && checkEnabled()) {
-				runCheck(editor.document, 'quiet');
+				void runCheck(editor.document, 'quiet');
 			}
 		})
 	);

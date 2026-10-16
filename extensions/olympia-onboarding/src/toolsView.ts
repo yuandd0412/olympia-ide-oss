@@ -153,7 +153,7 @@ class OlympiaToolsProvider implements vscode.TreeDataProvider<TreeEntry> {
 					{ kind: 'action', id: 'compileAndRun', label: '编译并运行', icon: 'play', command: CMD.compileAndRun, key: KEYS.compileAndRun, tooltip: '按当前评测机参数编译，然后运行程序' },
 					{ kind: 'action', id: 'compile', label: '编译当前文件', icon: 'tools', command: CMD.compile, key: KEYS.compile, tooltip: '按当前档位编译，不运行；命令行的完整参数会写进输出面板' },
 					{ kind: 'action', id: 'judge', label: '按评测机编译（-O2）', icon: 'server-process', command: CMD.compileJudgeAccurate, key: KEYS.compileJudgeAccurate, tooltip: '打开优化并套用评测机开关，用来复现「本地过、评测机超时」之外的那类差异' },
-					{ kind: 'action', id: 'precheck', label: '提交前体检', icon: 'check', command: CMD.preSubmitCheck, key: KEYS.preSubmitCheck, tooltip: '只报会在评测机上编译失败的写法：`#pragma GCC optimize`、MSVC 保留字、C++17 起删除的设施' },
+					{ kind: 'action', id: 'precheck', label: '提交前体检', icon: 'check', command: CMD.preSubmitCheck, key: KEYS.preSubmitCheck, tooltip: '先用评测机那套开关把这份代码编一遍（只查语法，不出可执行文件），再查只会在评测机上编译失败的写法：`#pragma GCC optimize`、MSVC 保留字、C++17 起删除的设施' },
 					{ kind: 'action', id: 'judgeSamples', label: '跑样例（本地评测）', icon: 'checklist', command: CMD.judgeSamples, key: KEYS.judgeSamples, tooltip: `用拉下来的题面样例跑当前文件，按 token 比对，给出 ${VERDICT_CODES}` },
 					{ kind: 'action', id: 'judgeCompare', label: '对比期望输出', icon: 'diff', command: CMD.judgeCompare, key: KEYS.compareOutput, tooltip: '把最近一次跑样例里判 WA 的那一组并排打开：左边是题面写的期望，右边是程序打出来的，日志里还会说错在第几行第几个数' },
 					{ kind: 'action', id: 'stressTest', label: '对拍（正解 vs 暴力）', icon: 'sync-again', command: CMD.stressTest, key: KEYS.stressTest, tooltip: '用生成器产随机数据，同时喂给正解和暴力；输出不一致就停下，并把那组数据存进 stress-fail' },
