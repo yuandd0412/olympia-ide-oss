@@ -15,6 +15,7 @@ import { IEditor } from '../../../../editor/common/editorCommon.js';
 import { AbstractEditorCommandsQuickAccessProvider } from '../../../../editor/contrib/quickAccess/browser/commandsQuickAccess.js';
 import { localize, localize2 } from '../../../../nls.js';
 import { isLocalizedString } from '../../../../platform/action/common/action.js';
+import { Categories } from '../../../../platform/action/common/actionCommonCategories.js';
 import { Action2, IMenuService, MenuId, MenuItemAction, SubmenuItemAction } from '../../../../platform/actions/common/actions.js';
 import { ICommandService } from '../../../../platform/commands/common/commands.js';
 import { IConfigurationChangeEvent, IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
@@ -40,6 +41,26 @@ import { CHAT_OPEN_ACTION_ID } from '../../chat/browser/actions/chatActions.js';
 import { ASK_QUICK_QUESTION_ACTION_ID } from '../../chat/browser/actions/chatQuickInputActions.js';
 import { IChatAgentService } from '../../chat/common/participants/chatAgents.js';
 import { ChatAgentLocation } from '../../chat/common/constants.js';
+
+/**
+ * 「开发人员」整组不进命令面板。
+ *
+ * 这一组是一百多条上游自己调试 VS Code 用的命令（切换运行时参数、打开进程资源管理器、
+ * 性能跟踪、重新加载 Web 视图、智能体主机探查器…），本产品里没有能用它们的人：
+ * 学生按 Ctrl+Shift+P 是为了找功能，不是为了一份他读不懂的日志。留在面板里只有一个作用——
+ * 把「Olympia: …」挤到要翻两屏才找得到。类目名读的是 `Categories.Developer` 自己的值，
+ * 所以汉化改了叫法这里跟着变，不会出现「文档里叫开发人员、过滤按另一个字符串」。
+ */
+const HIDDEN_COMMAND_CATEGORIES: readonly string[] = [Categories.Developer.value];
+/**
+ * 这组里放行两条：「重新加载窗口」是手册里会让学生按的那一个（窗口不对劲时先重载，
+ * 不用重开整个程序，也不丢已打开的文件）；「打开日志文件夹」是出问题让我们来查时唯一
+ * 要说清路径的入口。放行名单按命令 id 写，类目还是整组关掉。
+ */
+const KEPT_COMMANDS_IN_HIDDEN_CATEGORIES: readonly string[] = [
+	'workbench.action.reloadWindow',
+	'workbench.action.openLogsFolder',
+];
 
 export class CommandsQuickAccessProvider extends AbstractEditorCommandsQuickAccessProvider {
 
@@ -238,6 +259,11 @@ export class CommandsQuickAccessProvider extends AbstractEditorCommandsQuickAcce
 
 			// Category
 			const category = typeof action.item.category === 'string' ? action.item.category : action.item.category?.value;
+			// 整组类目按掉：见文件顶部 HIDDEN_COMMAND_CATEGORIES 的理由。放行名单在这里，
+			// 所以「重新加载窗口」这种学生真要用的一条不会被一起带走。
+			if (category && HIDDEN_COMMAND_CATEGORIES.includes(category) && !KEPT_COMMANDS_IN_HIDDEN_CATEGORIES.includes(action.item.id)) {
+				continue;
+			}
 			if (category) {
 				label = localize('commandWithCategory', "{0}: {1}", category, label);
 			}

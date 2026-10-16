@@ -37,7 +37,11 @@ export class ToggleDevToolsAction extends Action2 {
 			menu: {
 				id: MenuId.MenubarHelpMenu,
 				group: '5_tools',
-				order: 1
+				order: 1,
+				// 快捷键那条本来就有 `when: IsDevelopmentContext`，菜单项却谁都看得见：
+				// 帮助菜单里因此常驻一条「切换开发人员工具」，学生点开会开出一个 DevTools 窗口，
+				// 里面的 Console 是他唯一能敲 `alert()` 的地方。门径和快捷键对齐。
+				when: IsDevelopmentContext
 			}
 		});
 	}

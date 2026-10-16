@@ -22,6 +22,20 @@ const HIDDEN_STATUS_ENTRIES: readonly string[] = [
 	// 左下角那枚远程图标（`remoteIndicator.ts:579`，优先级=最前，所以它是学生第一眼看到的图标）。
 	// 点开是一个空的远程选择器——本产品没有远程开发，也不打算有。
 	'status.host',
+	// 转发端口图标和远程图标是两套注册（`remoteExplorer.ts:162`），只按掉 host 会留下它。
+	'status.forwardedPorts',
+	// 「按流量计费的连接」警告（`meteredConnectionStatus.ts:34`）：机房用手机热点时会自己冒出来，
+	// 而它的提示文案说的是扩展更新、设置同步、Git 自动操作——这三样本产品都没有。
+	'workbench.contrib.meteredConnectionStatus',
+	// 调试 chip（`debugStatus.ts:26`）：默认要首次会话才出现，但它是设置里一步就能常显的东西，
+	// 而调试视图整栏已经从侧栏摘掉了（olympiaActivityBar），点它只能进「选择调试环境」的空列表。
+	'status.debug',
+	// 下面三枚都是开发者工具跑起来才出现的红/进度 chip，入口在「开发人员」命令组里；
+	// 那组命令已从命令面板整组摘掉，这里是最后一道保险：万一有人从别处按响了跟踪，
+	// 状态栏最左边会出现一枚他不知道怎么关的图标。
+	'status.tracing',
+	'status.profiler',
+	'status.agentHostProfiler',
 ];
 
 /** 上游用同一个 key 控制活动栏底部的「账户」按钮（默认显示）。 */

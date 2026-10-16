@@ -172,7 +172,11 @@ const registry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Con
 			},
 			'workbench.editor.languageDetection': {
 				type: 'boolean',
-				default: true,
+				//  Olympia：默认关掉自动语言检测。竞赛写的就是 .cpp/.h/.cc，检测会在状态栏弹出
+				//  「检测到语言」那枚图标，点一下把这个文件的语言模式改掉——交上去的代码
+				//  高亮和补全突然变成另一种语言，而学生不知道自己是按了什么东西。
+				//  颜色由文件扩展名决定就够了；真要换，右下角语言模式一直在那儿可以手点。
+				default: false,
 				description: localize('workbench.editor.languageDetection', "控制文本编辑器中的语言是否会被自动检测，除非该语言已通过语言选择器显式设置。也可以按语言分别配置，以便指定哪些语言不需要关闭自动检测。这对于 Markdown 这类经常内嵌其它语言的语言很有用，因为内嵌内容可能会让语言检测误以为当前是内嵌的那种语言，而不是 Markdown。"),
 				scope: ConfigurationScope.LANGUAGE_OVERRIDABLE
 			},

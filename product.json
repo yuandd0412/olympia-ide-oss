@@ -185,12 +185,6 @@
 			"description": "默认键位映射"
 		},
 		{
-			"id": "sublime",
-			"label": "Sublime Text",
-			"extensionId": "ms-vscode.sublime-keybindings",
-			"description": "Sublime Text 键位映射"
-		},
-		{
 			"id": "intellij",
 			"label": "IntelliJ / JetBrains",
 			"extensionId": "k--kato.intellij-idea-keybindings",
@@ -207,12 +201,6 @@
 			"label": "Eclipse",
 			"extensionId": "alphabotsec.vscode-eclipse-keybindings",
 			"description": "Eclipse 键位映射"
-		},
-		{
-			"id": "notepadpp",
-			"label": "Notepad++",
-			"extensionId": "ms-vscode.notepadplusplus-keybindings",
-			"description": "Notepad++ 键位映射"
 		}
 	],
 	"onboardingThemes": [

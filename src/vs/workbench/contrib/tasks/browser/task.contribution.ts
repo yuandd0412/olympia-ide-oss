@@ -278,7 +278,11 @@ MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 		id: 'workbench.action.tasks.runTask',
 		title: nls.localize2('RunTaskAction.label', "运行任务"),
 		category: TASKS_CATEGORY
-	}
+	},
+	// 这一条是整组里唯一漏了 `when` 的：其它任务入口都挂在 TASKS_UI_AVAILABLE 上，
+	// 只有「运行任务」继续出现在面板里，按下去是一个空的任务选择器
+	// （本产品不写 tasks.json，见设置里那句「不用写 tasks.json」）。
+	when: TASKS_UI_AVAILABLE
 });
 MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 	command: {
