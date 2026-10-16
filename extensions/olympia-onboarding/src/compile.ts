@@ -296,6 +296,20 @@ export async function compileJudgeAccurate(): Promise<void> {
 }
 
 /** Compile, then run the produced binary against an optional test-data file. */
+/** 这个选项要的是真键盘输入；名字在 QuickPick 与分支两处用，所以收成常量而不是写两遍。 */
+const RUN_IN_TERMINAL_LABEL = '在终端里运行（可以手敲输入）';
+
+/**
+ * 在集成终端里跑刚编出来的程序。终端是产品里唯一有键盘 stdin 的地方：
+ * 输出面板那条路是管道，程序一 `cin >>` 就读到 EOF，看起来像"没有输出"。
+ */
+function runInTerminal(exePath: string, cwd: string): void {
+	const terminal = vscode.window.createTerminal({ cwd });
+	terminal.show(true);
+	// 不加引号，`D:\oler ide v3\P1001.exe` 会被 shell 切成两个参数。
+	terminal.sendText(`"${exePath}"`);
+}
+
 export async function compileAndRun(): Promise<void> {
 	const editor = vscode.window.activeTextEditor;
 	if (!editor || !isCompilable(editor.document.uri)) {
@@ -307,6 +321,7 @@ export async function compileAndRun(): Promise<void> {
 	const dir = dirname(sourcePath);
 	const picked = await vscode.window.showQuickPick(
 		[
+			{ label: RUN_IN_TERMINAL_LABEL, description: '在集成终端里跑，输入可以直接用键盘敲' },
 			{ label: '直接运行', description: '用空 stdin 运行，程序读不到数据' },
 			{ label: '选择测试数据文件', description: '把该文件的内容作为 stdin 输入' }
 		],
@@ -341,6 +356,13 @@ export async function compileAndRun(): Promise<void> {
 	}
 	if (build.code !== 0) {
 		void vscode.window.showErrorMessage('编译失败，详见「Olympia 编译」输出面板。');
+		return;
+	}
+
+	if (picked.label === RUN_IN_TERMINAL_LABEL) {
+		// 输出面板那条路是管道：程序一读 stdin 就拿到 EOF，`cin >>` 就那么走下去，
+		// 看起来像"程序没输出"。键盘输入只有终端有。
+		runInTerminal(plan.output, dir);
 		return;
 	}
 
