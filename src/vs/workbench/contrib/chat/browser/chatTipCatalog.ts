@@ -507,6 +507,9 @@ const ALL_TIPS: readonly ITipDefinition[] = [
  * 而这条提示在真机上正好落在「没有可用模型」那一屏的下面（截图里能看到）。
  * tip.createPrompt 是同一类：/init 换成了 /create-prompt，主语还是「智能体」，
  * 把 tip.init 藏掉之后它就顶了上来（真机截图 coach-handoff.png）。
+ * tip.troubleshoot 也是：它写着「输入 /troubleshoot <问题> 从调试日志诊断问题」，
+ * 而那一步靠的是上游智能体的 listDebugEvents 工具——本产品只有 BYOK 教练，
+ * 输进去就是一段普通文本发给模型，不会去读日志。首屏提示位不能许诺做不到的事。
  */
 const TIPS_HIDDEN_IN_OLYMPIA: readonly string[] = [
 	'tip.createAgent',
@@ -516,6 +519,7 @@ const TIPS_HIDDEN_IN_OLYMPIA: readonly string[] = [
 	'tip.copilotCli',
 	'tip.init',
 	'tip.createPrompt',
+	'tip.troubleshoot',
 ];
 
 export const TIP_CATALOG: readonly ITipDefinition[] = ALL_TIPS.filter(tip => !TIPS_HIDDEN_IN_OLYMPIA.includes(tip.id));
