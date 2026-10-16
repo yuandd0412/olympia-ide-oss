@@ -16,6 +16,7 @@ import * as fs from 'fs';
 
 import { metaOf, platformText, STATEMENT_EXTENSION, FIELD, type ProblemMeta } from './templates';
 import { markOf, type SolvedMark } from './solvedMarks';
+import { favoriteKey } from './favorites';
 
 export interface LibraryEntry extends ProblemMeta {
 	readonly file: string;
@@ -27,11 +28,20 @@ export interface LibraryPick extends vscode.QuickPickItem {
 	readonly entry: LibraryEntry;
 	/** AC 过几次（0 = 没做过）。留着而不是只留那份文字，将来「只看做出来的」要按它筛。 */
 	readonly solvedTimes: number;
+	readonly favorite: boolean;
 }
 
 /** 做出来的题在列表里的样子：一眼扫过去就知道哪道不用再碰。 */
 const SOLVED_PREFIX = '✓ ';
 const solvedText = (mark: SolvedMark): string => mark.times > 1 ? `已 AC ${mark.times} 次` : '已 AC';
+
+/**
+ * 收藏的题排在最前，标一颗 ★。星标写在 label 里不是装饰：quick pick 默认就按 label 匹配，
+ * 所以搜「★」自然只剩收藏的那几道——和「敲 AC 只看做出来的」是同一条免费的路。
+ */
+const FAVORITE_PREFIX = '★ ';
+export const FAVORITE_BUTTON: vscode.QuickInputButton = { iconPath: new vscode.ThemeIcon('star-empty'), tooltip: '收藏这道题（再点一次取消）' };
+export const UNFAVORITE_BUTTON: vscode.QuickInputButton = { iconPath: new vscode.ThemeIcon('star-full'), tooltip: '取消收藏' };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -65,18 +75,24 @@ export function sortByRecent(entries: readonly LibraryEntry[]): LibraryEntry[] {
 	return [...entries].sort((a, b) => b.mtimeMs - a.mtimeMs || a.id.localeCompare(b.id, 'en'));
 }
 
-export function toPicks(entries: readonly LibraryEntry[], workspaceRoot?: string, marks: ReadonlyMap<string, SolvedMark> = new Map()): LibraryPick[] {
-	return entries.map(entry => {
+export function toPicks(entries: readonly LibraryEntry[], workspaceRoot?: string, marks: ReadonlyMap<string, SolvedMark> = new Map(), favorites: ReadonlySet<string> = new Set()): LibraryPick[] {
+	const picks = entries.map(entry => {
 		const solved = markOf(marks, entry.id);
+		const favorite = favorites.has(favoriteKey(entry.id));
 		const summary = summaryOf(entry);
+		const tail = [summary, solved ? solvedText(solved) : undefined, favorite ? '已收藏' : undefined].filter(Boolean).join(' · ');
 		return {
 			entry,
 			solvedTimes: solved?.times ?? 0,
-			label: `${solved ? SOLVED_PREFIX : ''}${entry.id} ${entry.title}`.trim(),
-			description: solved ? `${summary} · ${solvedText(solved)}` : summary,
+			favorite,
+			label: `${favorite ? FAVORITE_PREFIX : ''}${solved ? SOLVED_PREFIX : ''}${entry.id} ${entry.title}`.trim(),
+			description: tail,
 			detail: `${relative(entry.file, workspaceRoot)} · 拉取于 ${ago(entry.mtimeMs)}`,
 		};
 	});
+	// 收藏优先，其余保持「最近拉的在前」。按钮不在这里挂：别的调用方（比如「打开原题网页」）
+	// 没有处理按钮的逻辑，挂上去就是一颗点了没反应的 ★。
+	return picks.sort((a, b) => Number(b.favorite) - Number(a.favorite));
 }
 
 /** 一行能看完的题面摘要；时限内存照题面原文写，不做单位换算。 */

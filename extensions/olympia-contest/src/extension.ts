@@ -17,7 +17,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { detectPlatform, fetchProblem, type Platform, type Problem } from './sources';
 import { renderStatement, templateFor, FORMAT_LABEL, PLATFORM_TEXT, platformText, MY_TEMPLATE_LABEL, MY_TEMPLATE_HINT, TEMPLATE_FOLDER, TEMPLATE_FILE, DEFAULT_PROBLEMS_DIR, STATEMENT_EXTENSION, type ContestFormat } from './templates';
-import { readLibrary, editStatement, toPicks } from './problemLibrary';
+import { readLibrary, editStatement, toPicks, FAVORITE_BUTTON, UNFAVORITE_BUTTON, type LibraryPick } from './problemLibrary';
+import { favoriteKey, readFavorites, toggleFavorite } from './favorites';
 import { StatementViewProvider, STATEMENT_VIEW_ID, CMD } from './statementView';
 import { markOf, solvedMarks, type SolvedMark } from './solvedMarks';
 import { MAX_PRACTICE_PROBLEMS, PRACTICE_FILE, PRACTICE_MINUTES_MAX, PRACTICE_MINUTES_MIN, isSameName, mergeLists, parseMinutes, parseProblemIds, practiceFile, readLists, readPractice, withExtraProblems, withoutProblem, writeLists, type PracticeList } from './practiceList';
@@ -151,17 +152,43 @@ async function openCached(): Promise<void> {
 		vscode.window.showInformationMessage('还没有缓存的题面，先用「拉取题面」（Ctrl+Alt+P）抓一道吧。');
 		return;
 	}
-	// 做过的题打个勾：题库刷到一半回来接着做，靠记忆挑「哪道还没 AC」是最亏的。
-	const marks = await solvedMarks();
-	const solved = entries.filter(entry => markOf(marks, entry.id)).length;
-	const picks = toPicks(entries, vscode.workspace.workspaceFolders?.[0]?.uri.fsPath, marks);
-	const picked = await vscode.window.showQuickPick(picks, {
-		title: solved ? `题面库（缓存 ${entries.length} 道，已 AC ${solved} 道）` : `题面库（缓存了 ${entries.length} 道题）`,
-		placeHolder: solved ? '按题号或标题搜；敲 AC 只看做出来的题' : '按题号或标题搜，例如 P1001、并查集',
-		matchOnDescription: true,
-		matchOnDetail: true,
-		ignoreFocusOut: true,
+	// 做过的题打个勾、收藏的题排最前：题库刷到一半回来接着做，靠记忆挑「哪道还没 AC」是最亏的。
+	// 用 createQuickPick 而不是 showQuickPick，只为行末那颗 ★ 能点——收藏要就地改，
+	// 退出去改完再进来，人就丢了刚才搜到哪儿。
+	const qp = vscode.window.createQuickPick<LibraryPick>();
+	qp.matchOnDescription = true;
+	qp.matchOnDetail = true;
+	qp.ignoreFocusOut = true;
+	const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+	const paint = async (): Promise<void> => {
+		const marks = await solvedMarks();
+		const favorites = await readFavorites();
+		const solved = entries.filter(entry => markOf(marks, entry.id)).length;
+		const starred = entries.filter(entry => favorites.has(favoriteKey(entry.id))).length;
+		qp.title = solved
+			? `题面库（缓存 ${entries.length} 道，已 AC ${solved} 道${starred ? `，收藏 ${starred} 道` : ''}）`
+			: `题面库（缓存了 ${entries.length} 道题）`;
+		// 没有记录就不要吹「已 AC 0 道」；★ 那条提示等真有了收藏再说，不然标题在教人一个空功能。
+		qp.placeholder = starred
+			? '按题号或标题搜；敲 AC 只看做出来的题，敲 ★ 只看收藏的'
+			: (solved ? '按题号或标题搜；敲 AC 只看做出来的题' : '按题号或标题搜，例如 P1001、并查集');
+		qp.items = toPicks(entries, workspaceRoot, marks, favorites)
+			.map(pick => ({ ...pick, buttons: [pick.favorite ? UNFAVORITE_BUTTON : FAVORITE_BUTTON] }));
+	};
+	const chosen = new Promise<LibraryPick | undefined>(resolve => {
+		qp.onDidAccept(() => { resolve(qp.activeItems[0]); });
+		qp.onDidHide(() => { resolve(undefined); });
 	});
+	qp.onDidTriggerItemButton(async event => {
+		const id = (event.item as LibraryPick).entry.id;
+		await toggleFavorite(id);
+		// 重画而不是就地改那一项：★、排序、标题里的「收藏 N 道」是一起的，只改一颗图标会自相矛盾。
+		await paint();
+	});
+	await paint();
+	qp.show();
+	const picked = await chosen;
+	qp.dispose();
 	if (!picked) { return; }
 	await showStatement(vscode.Uri.file(picked.entry.file));
 }
