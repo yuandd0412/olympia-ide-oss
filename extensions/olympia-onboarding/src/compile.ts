@@ -224,6 +224,73 @@ function outputChannel(): vscode.OutputChannel {
 	return buildChannel;
 }
 
+/** 链接器写不进正要生成的 exe：十有八九是上一次运行的程序还挂着等输入。 */
+const OUTPUT_LOCKED = /cannot open output file/i;
+
+/**
+ * 找出占着这个输出文件的进程。路径走环境变量而不是命令行参数：
+ * `powershell -Command "…" 参数` 会把参数当成后续脚本（-RemainingScripts 绑定错误，实测过），
+ * 拼进脚本里又要处理引号。
+ * 返回空数组只表示"没查到"，不表示"没有进程占着"——所以调用方两种情况分开说。
+ */
+function processesUsing(exePath: string): Promise<number[]> {
+	const probe = '$p=$env:OLYMPIA_LOCKED_EXE; Get-CimInstance Win32_Process | '
+		+ 'Where-Object { $_.ExecutablePath -and $_.ExecutablePath.ToLower() -eq $p.ToLower() } | '
+		+ 'ForEach-Object { $_.ProcessId }';
+	return new Promise(resolve => {
+		execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', probe],
+			{ env: { ...process.env, OLYMPIA_LOCKED_EXE: exePath }, timeout: 10000, windowsHide: true },
+			(error, stdout) => {
+				resolve(error ? [] : stdout.split(/\r?\n/).map(line => Number(line.trim())).filter(n => Number.isInteger(n) && n > 0));
+			});
+	});
+}
+
+function stopProcesses(pids: number[]): Promise<void> {
+	return Promise.all(pids.map(pid => new Promise<void>(resolve => {
+		execFile('taskkill.exe', ['/F', '/PID', String(pid)], { timeout: 5000, windowsHide: true }, () => resolve());
+	}))).then(() => undefined);
+}
+
+/**
+ * 编译一次并把命令行与诊断写进输出面板。被占住的输出文件单独处理：`ld.exe: cannot open
+ * output file P53.cpp.exe: Permission denied` 这句话对学生没有可操作性，而原因几乎总是
+ * 「在终端里运行」的那个程序还在等输入。
+ * `locked` 表示这里已经就这个原因弹过话了，调用方就别再补一条「编译失败，详见输出面板」。
+ */
+async function buildAndReport(plan: CompilePlan): Promise<{ code: number | null; stderr: string; locked: boolean }> {
+	const channel = outputChannel();
+	channel.clear();
+	channel.appendLine(renderCommandLine(plan));
+	channel.show(true);
+
+	const append = (result: { code: number | null; stderr: string }) => {
+		if (result.stderr.trim().length > 0) {
+			channel.appendLine(result.stderr);
+		}
+	};
+
+	let build = await runCompiler(plan);
+	append(build);
+	if (build.code !== 0 && OUTPUT_LOCKED.test(build.stderr)) {
+		const name = basename(plan.output);
+		const blockers = await processesUsing(plan.output);
+		if (blockers.length === 0) {
+			void vscode.window.showErrorMessage(`${name} 被占住了：先在终端里按 Ctrl+C 结束还在运行的程序，再编译。`);
+			return { ...build, locked: true };
+		}
+		const RETRY = '结束它并重试';
+		if (await vscode.window.showErrorMessage(`${name} 还在运行，链接器写不进这个文件。`, RETRY) === RETRY) {
+			await stopProcesses(blockers);
+			build = await runCompiler(plan);
+			append(build);
+			return { ...build, locked: build.code !== 0 };
+		}
+		return { ...build, locked: true };
+	}
+	return { ...build, locked: false };
+}
+
 const RUN_TIMEOUT_MS = 30000;
 
 /**
@@ -279,17 +346,11 @@ export async function compileJudgeAccurate(): Promise<void> {
 		return;
 	}
 	const plan = planCompile(editor.document.uri, '-O2');
-	const output = outputChannel();
-	output.clear();
-	output.appendLine(renderCommandLine(plan));
-	output.show(true);
-
-	const result = await runCompiler(plan);
-	if (result.stderr.trim().length > 0) {
-		output.appendLine(result.stderr);
-	}
+	const result = await buildAndReport(plan);
 	if (result.code !== 0) {
-		void vscode.window.showErrorMessage('按评测机编译失败，详见「Olympia 编译」输出面板。');
+		if (!result.locked) {
+			void vscode.window.showErrorMessage('按评测机编译失败，详见「Olympia 编译」输出面板。');
+		}
 		return;
 	}
 	void vscode.window.showInformationMessage('按评测机参数编译成功（-O2 + 评测机开关）。');
@@ -306,8 +367,12 @@ const RUN_IN_TERMINAL_LABEL = '在终端里运行（可以手敲输入）';
 function runInTerminal(exePath: string, cwd: string): void {
 	const terminal = vscode.window.createTerminal({ cwd });
 	terminal.show(true);
-	// 不加引号，`D:\oler ide v3\P1001.exe` 会被 shell 切成两个参数。
-	terminal.sendText(`"${exePath}"`);
+	// 路径要带引号：工作区目录里有空格是常态（"oler ide v3"、"Oler OI 2026"）。
+	// 但 PowerShell 里一个带引号的路径只是**一个字符串**——它会把路径原样打印出来，
+	// 根本不执行程序（真机实测过这样一次）。要执行得加调用运算符 &。cmd.exe 相反，
+	// 带引号就是执行，加了 & 反而是错的，所以按当前 shell 分两种写法。
+	const quoted = `"${exePath}"`;
+	terminal.sendText(/powershell|pwsh/i.test(vscode.env.shell ?? '') ? `& ${quoted}` : quoted);
 }
 
 export async function compileAndRun(): Promise<void> {
@@ -346,16 +411,11 @@ export async function compileAndRun(): Promise<void> {
 
 	const plan = planCompile(editor.document.uri);
 	const channel = outputChannel();
-	channel.clear();
-	channel.appendLine(renderCommandLine(plan));
-	channel.show(true);
-
-	const build = await runCompiler(plan);
-	if (build.stderr.trim().length > 0) {
-		channel.appendLine(build.stderr);
-	}
+	const build = await buildAndReport(plan);
 	if (build.code !== 0) {
-		void vscode.window.showErrorMessage('编译失败，详见「Olympia 编译」输出面板。');
+		if (!build.locked) {
+			void vscode.window.showErrorMessage('编译失败，详见「Olympia 编译」输出面板。');
+		}
 		return;
 	}
 
