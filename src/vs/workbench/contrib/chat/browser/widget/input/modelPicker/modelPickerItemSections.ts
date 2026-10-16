@@ -113,30 +113,34 @@ export function buildUnavailableStateItems(options: IBuildModelPickerItemsOption
 	const canUpgrade = !byokOnly && (entitlement === ChatEntitlement.Free || entitlement === ChatEntitlement.EDU);
 	const description = canUpgrade
 		? new MarkdownString(localize('chat.modelPicker.upgradeLink', "[Upgrade](command:workbench.action.chat.upgradePlan \" \")"), { isTrusted: true })
-		// byokOnly：「没有可用模型」这一行点不动（它只是空列表的占位），那就必须把下一步说清楚，
-		// 否则屏幕上只剩一句结论，而学生刚在设置页看见过自己的两个模型。
 		// allow-any-unicode-next-line
-		: byokOnly ? new MarkdownString(localize('chat.modelPicker.byokEmpty', "填好服务地址与密钥后，模型会自动出现在这里")) : undefined;
+		: byokOnly ? new MarkdownString(localize('chat.modelPicker.byokEmpty', "点这里填服务地址与密钥，填好后模型会自动出现在这里")) : undefined;
 	const hover = canUpgrade ? new MarkdownString('', { isTrusted: true, supportThemeIcons: true }) : undefined;
 	hover?.appendMarkdown(localize('chat.modelPicker.upgradeHover', "[Upgrade to GitHub Copilot Pro](command:workbench.action.chat.upgradePlan \" \") to use the best models."));
+	// 空列表在 BYOK 产品里是正常的首屏状态，不是错误状态。所以下面挂着配置入口时，
+	// 「没有可用模型」这一行自己就得能点——否则学生看见一句结论，还得再往下找一格才知道去哪配。
+	const goToSettings = byokOnly && !!options.manageModelsAction;
+	const noModelsLabel = goToSettings
+		// allow-any-unicode-next-line
+		? localize('chat.modelPicker.noModelsOpenSettings', "没有可用模型 · 去配置")
+		// allow-any-unicode-next-line
+		: localize('chat.modelPicker.noModels', "没有可用模型");
 	const noModelsItem: IActionListItem<IActionWidgetDropdownAction> = {
 		item: {
 			id: 'noModels',
-			enabled: false,
+			enabled: goToSettings,
 			checked: false,
 			class: undefined,
 			// allow-any-unicode-next-line
-			tooltip: localize('chat.modelPicker.noModels', "没有可用模型"),
-			// allow-any-unicode-next-line
-			label: localize('chat.modelPicker.noModels', "没有可用模型"),
-			run: () => { },
+			tooltip: noModelsLabel,
+			label: noModelsLabel,
+			run: () => { options.manageModelsAction?.run(); },
 		},
 		kind: ActionListItemKind.Action,
-		// allow-any-unicode-next-line
-		label: localize('chat.modelPicker.noModels', "没有可用模型"),
+		label: noModelsLabel,
 		description,
 		group: { title: '', icon: ThemeIcon.fromId(Codicon.blank.id) },
-		disabled: true,
+		disabled: !goToSettings,
 		hideIcon: false,
 		hover: hover ? { content: hover } : undefined,
 	};

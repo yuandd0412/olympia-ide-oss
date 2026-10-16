@@ -219,6 +219,37 @@ async function openCaseDiff(item: FailedCase): Promise<void> {
 	await vscode.commands.executeCommand('vscode.diff', left, right, `样例 ${item.number}：期望 ↔ 得到 · ${failedStatement}`);
 }
 
+/** 「问教练」往输入框里贴的期望/实际最多这么多行：再多也读不完，还会把输入框撑满。 */
+const COACH_SAMPLE_LINES = 12;
+
+function clipForCoach(text: string): string {
+	const lines = text.replace(/\r\n/g, '\n').split('\n');
+	return lines.length > COACH_SAMPLE_LINES
+		? `${lines.slice(0, COACH_SAMPLE_LINES).join('\n')}\n…（还有 ${lines.length - COACH_SAMPLE_LINES} 行）`
+		: text.trimEnd();
+}
+
+/**
+ * 把判题结果原样带进聊天框，学生不用手抄第二遍。`isPartialQuery` 是关键：
+ * 文字落在输入框里而不是直接发出去，他得先确认模型选没选上（没配密钥时发出去只会得到报错）。
+ */
+async function askCoach(problem: string, title: string, overall: Verdict, passed: number, total: number): Promise<void> {
+	const cases = failedCases.slice(0, 2).map(item => [
+		`样例 ${item.number}：${item.diff.hint}`,
+		`期望：\n${clipForCoach(item.expected)}`,
+		`我的输出：\n${clipForCoach(item.got)}`
+	].join('\n'));
+	await vscode.commands.executeCommand('workbench.action.chat.open', {
+		mode: 'ask',
+		query: [
+			`@coach ${problem}${title ? `「${title}」` : ''} 判成 ${verdictText(overall)}，${passed}/${total} 组通过。`,
+			...cases,
+			'我错在哪？'
+		].join('\n\n'),
+		isPartialQuery: true
+	});
+}
+
 /** 「对比期望输出」：一组失败就直接开，多组先让人挑（默认第一个就是最先出错的那组）。 */
 async function compareLastRun(): Promise<boolean> {
 	if (!failedCases.length) {
@@ -509,6 +540,7 @@ export function registerSampleJudge(context: vscode.ExtensionContext): vscode.Di
 		// 不然选错一次就再也改不过来。
 		const actions = [
 			...(failedCases.length ? ['对比期望输出'] : []),
+			...(overall === 'AC' ? [] : ['问教练']),
 			...(overall === 'AC' ? [] : ['查看输出']),
 			'继续对拍',
 			...(choice.how === 'exact' ? [] : ['换一道题'])
@@ -518,6 +550,14 @@ export function registerSampleJudge(context: vscode.ExtensionContext): vscode.Di
 			: await vscode.window.showErrorMessage(message, ...actions);
 		if (action === '对比期望输出') {
 			await compareLastRun();
+		} else if (action === '问教练') {
+			await askCoach(
+				stripStatementExtension(basename(statement.fsPath)),
+				titleOf(markdown),
+				overall,
+				passed,
+				results.length
+			);
 		} else if (action === '继续对拍') {
 			await vscode.commands.executeCommand(CMD.stressTest);
 		} else if (action === '查看输出') {

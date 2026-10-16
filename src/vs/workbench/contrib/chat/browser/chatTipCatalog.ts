@@ -505,6 +505,8 @@ const ALL_TIPS: readonly ITipDefinition[] = [
  * 一次只显示一条，占着它不如显示学生真会用到的（附件、计划模式、消息排队那些都留着）。
  * tip.init 也在里面：它让人去生成 AGENTS.md，那是给编码智能体看的工程约定文件，
  * 而这条提示在真机上正好落在「没有可用模型」那一屏的下面（截图里能看到）。
+ * tip.createPrompt 是同一类：/init 换成了 /create-prompt，主语还是「智能体」，
+ * 把 tip.init 藏掉之后它就顶了上来（真机截图 coach-handoff.png）。
  */
 const TIPS_HIDDEN_IN_OLYMPIA: readonly string[] = [
 	'tip.createAgent',
@@ -513,6 +515,7 @@ const TIPS_HIDDEN_IN_OLYMPIA: readonly string[] = [
 	'tip.agentsWindow',
 	'tip.copilotCli',
 	'tip.init',
+	'tip.createPrompt',
 ];
 
 export const TIP_CATALOG: readonly ITipDefinition[] = ALL_TIPS.filter(tip => !TIPS_HIDDEN_IN_OLYMPIA.includes(tip.id));
