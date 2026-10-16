@@ -48,16 +48,18 @@ export class StatementViewProvider implements vscode.WebviewViewProvider {
 	private view: vscode.WebviewView | undefined;
 	private file: vscode.Uri | undefined;
 	private fileWatcher: vscode.Disposable | undefined;
+	/** 公式样式表所在扩展的目录；resolve 时定一次，与 localResourceRoots 是同一个决定。 */
+	private katexRoot: vscode.Uri | undefined;
 	private readonly disposables: vscode.Disposable[] = [];
 
 	constructor(private readonly extensionUri: vscode.Uri) { }
 
 	resolveWebviewView(view: vscode.WebviewView): void {
 		this.view = view;
-		const katex = katexRoot();
+		this.katexRoot = katexRoot();
 		view.webview.options = {
 			enableScripts: true,
-			localResourceRoots: katex ? [this.extensionUri, katex] : [this.extensionUri],
+			localResourceRoots: this.katexRoot ? [this.extensionUri, this.katexRoot] : [this.extensionUri],
 		};
 		view.onDidChangeVisibility(() => {
 			if (view.visible) {
@@ -124,7 +126,7 @@ export class StatementViewProvider implements vscode.WebviewViewProvider {
 	private html(rendered: Rendered | undefined, file: vscode.Uri | undefined): string {
 		const { webview } = this.view!;
 		const nonce = randomNonce();
-		const css = katexRoot() ? webview.asWebviewUri(katexCssFile()) : undefined;
+		const css = this.katexRoot ? webview.asWebviewUri(vscode.Uri.joinPath(this.katexRoot, KATEX_CSS)) : undefined;
 		const meta = rendered?.meta;
 		const chips = meta ? chipsOf(meta) : [];
 		const body = rendered
@@ -226,11 +228,6 @@ function escapeHtml(text: string): string {
 
 function katexRoot(): vscode.Uri | undefined {
 	return vscode.extensions.getExtension(KATEX_EXTENSION_ID)?.extensionUri;
-}
-
-function katexCssFile(): vscode.Uri {
-	// 只在 katexRoot() 有值时被调用。
-	return vscode.Uri.joinPath(katexRoot()!, KATEX_CSS);
 }
 
 /**
