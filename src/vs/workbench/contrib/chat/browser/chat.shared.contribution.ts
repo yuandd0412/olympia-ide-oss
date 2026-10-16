@@ -65,7 +65,7 @@ import { ChatRequestOriginService, IChatRequestOriginService } from '../common/c
 import { ChatService } from '../common/chatService/chatServiceImpl.js';
 import { IChatSessionsService } from '../common/chatSessionsService.js';
 import { ChatSideChatService, IChatSideChatService } from '../common/chatSideChatService.js';
-import { BYOKUtilityModelDefault, ChatAIDisabledSettingId, ChatAgentLocation, ChatConfiguration, ChatClosedPromoNotification, ChatDefaultPermissionLevel, CustomizationMigrationHintMode, ChatNotificationMode, ChatPermissionLevel } from '../common/constants.js';
+import { BYOKUtilityModelDefault, ChatAIDisabledSettingId, ChatAgentLocation, ChatConfiguration, ChatClosedPromoNotification, ChatDefaultPermissionLevel, ChatModeKind, CustomizationMigrationHintMode, ChatNotificationMode, ChatPermissionLevel } from '../common/constants.js';
 import { agentsWindowHandoffConfigurationProperties } from './agentSessionsConfiguration.js';
 import { chatProgressConfigurationProperties } from './chatProgressConfiguration.js';
 import { customizationMarketplaceConfigurationProperties } from './aiCustomization/customizationMarketplaceConfiguration.js';
@@ -1774,7 +1774,9 @@ configurationRegistry.registerConfiguration({
 			type: 'string',
 			// allow-any-unicode-next-line
 			description: nls.localize('chat.newSession.defaultMode', "新聊天会话的默认模式。若为空，则使用聊天视图的默认模式。"),
-			default: '',
+			// Olympia：BYOK 产品里没有智能体编排那套（也没有能驱动它的模型），新会话默认落在「提问」。
+			// 同一个键在下面那个实验回调里还会被注册一次，两处都要保住这个默认值。
+			default: product.defaultChatAgent?.byokOnly ? ChatModeKind.Ask : '',
 		},
 		[ChatConfiguration.AgentHostDebugLogsDefaultExportLocation]: {
 			type: 'string',
@@ -3317,7 +3319,10 @@ class ChatAgentSettingContribution extends Disposable implements IWorkbenchContr
 						type: 'string',
 						// allow-any-unicode-next-line
 						description: nls.localize('chat.newSession.defaultMode', "新聊天会话的默认模式。若为空，则使用聊天视图的默认模式。"),
-						default: typeof value === 'string' ? value : '',
+						// 这个实验节点拿同一个键又注册了一遍配置，会盖掉上面那条静态默认值。
+						// 本产品不接实验（chat.experimental 出厂就是 false），value 永远是 undefined，
+						// 所以 byokOnly 的默认值必须在这里也接住，否则「提问」模式白设了。
+						default: typeof value === 'string' ? value : (product.defaultChatAgent?.byokOnly ? ChatModeKind.Ask : ''),
 					}
 				}
 			};

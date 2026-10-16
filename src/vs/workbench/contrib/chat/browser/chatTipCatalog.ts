@@ -141,8 +141,9 @@ export interface ITipDefinition extends ITipExclusionConfig {
 /**
  * Static catalog of tips. Tips are built dynamically at runtime to enable
  * keybindings and command labels to be resolved fresh.
+ * 上游原文照抄；Olympia 实际发出去的是下面过滤过的 TIP_CATALOG。
  */
-export const TIP_CATALOG: readonly ITipDefinition[] = [
+const ALL_TIPS: readonly ITipDefinition[] = [
 	{
 		id: 'tip.switchToAuto',
 		tier: ChatTipTier.Foundational,
@@ -497,3 +498,18 @@ export const TIP_CATALOG: readonly ITipDefinition[] = [
 		dismissWhenCommandsClicked: ['workbench.action.openSettings'],
 	},
 ];
+
+/**
+ * Olympia 不展示的提示。这几条讲的是搭自定义智能体、写技能、子代理、试用「智能体窗口」，
+ * 以及我们不随包发的 Copilot CLI——竞赛工作流里没有对应的动作，而聊天框下面那条提示位
+ * 一次只显示一条，占着它不如显示学生真会用到的（附件、计划模式、消息排队那些都留着）。
+ */
+const TIPS_HIDDEN_IN_OLYMPIA: readonly string[] = [
+	'tip.createAgent',
+	'tip.createSkill',
+	'tip.subagents',
+	'tip.agentsWindow',
+	'tip.copilotCli',
+];
+
+export const TIP_CATALOG: readonly ITipDefinition[] = ALL_TIPS.filter(tip => !TIPS_HIDDEN_IN_OLYMPIA.includes(tip.id));

@@ -111,7 +111,11 @@ export class MainThreadLanguageModels implements MainThreadLanguageModelsShape {
 							return m; // provider declared it explicitly
 						}
 						// Any contributed model that isn't from the built-in Copilot chat extension is BYOK.
-						const isBuiltinCopilot = !!copilotExtensionId && ExtensionIdentifier.equals(m.metadata.extension, copilotExtensionId);
+						// Olympia 改过这条：byokOnly 的产品里 chatExtensionId 指的是我们自己的教练扩展，
+						// 按原规则它贡献的模型会被判成「不是 BYOK」，于是所有只认 BYOK 的路（选择器分组、
+						// 不登录也能用）都不认我们的模型。这个产品没有内置 Copilot，贡献的模型必然来自密钥。
+						const isBuiltinCopilot = !this._productService.defaultChatAgent?.byokOnly
+							&& !!copilotExtensionId && ExtensionIdentifier.equals(m.metadata.extension, copilotExtensionId);
 						return { ...m, metadata: { ...m.metadata, isBYOK: !isBuiltinCopilot } };
 					});
 				},

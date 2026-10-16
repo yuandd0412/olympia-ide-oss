@@ -11,6 +11,7 @@ import { isDefined } from '../../../../../../../base/common/types.js';
 import { localize } from '../../../../../../../nls.js';
 import { ActionListItemKind, IActionListItem } from '../../../../../../../platform/actionWidget/browser/actionList.js';
 import { IActionWidgetDropdownAction } from '../../../../../../../platform/actionWidget/browser/actionWidgetDropdown.js';
+import product from '../../../../../../../platform/product/common/product.js';
 import { ChatEntitlement } from '../../../../../../services/chat/common/chatEntitlementService.js';
 import { IModelControlEntry, ILanguageModelChatMetadata, ILanguageModelChatMetadataAndIdentifier } from '../../../../common/languageModels.js';
 import { buildModelToProviderGroupMap, createModelAction, createModelItem, createPinAction, createUnavailableModelItem, getProviderGroupForModel, getProviderGroupKey, getUnavailableReason, isVersionAtLeast, ProviderGroupKey, requiresNewerVSCode } from './modelPickerItemPrimitives.js';
@@ -108,10 +109,14 @@ export function buildUnavailableStateItems(options: IBuildModelPickerItemsOption
 		return undefined;
 	}
 	const entitlement = options.chatEntitlementService.entitlement;
-	const canUpgrade = entitlement === ChatEntitlement.Free || entitlement === ChatEntitlement.EDU;
+	const byokOnly = !!product.defaultChatAgent?.byokOnly;
+	const canUpgrade = !byokOnly && (entitlement === ChatEntitlement.Free || entitlement === ChatEntitlement.EDU);
 	const description = canUpgrade
 		? new MarkdownString(localize('chat.modelPicker.upgradeLink', "[Upgrade](command:workbench.action.chat.upgradePlan \" \")"), { isTrusted: true })
-		: undefined;
+		// byokOnly：「没有可用模型」这一行点不动（它只是空列表的占位），那就必须把下一步说清楚，
+		// 否则屏幕上只剩一句结论，而学生刚在设置页看见过自己的两个模型。
+		// allow-any-unicode-next-line
+		: byokOnly ? new MarkdownString(localize('chat.modelPicker.byokEmpty', "填好服务地址与密钥后，模型会自动出现在这里")) : undefined;
 	const hover = canUpgrade ? new MarkdownString('', { isTrusted: true, supportThemeIcons: true }) : undefined;
 	hover?.appendMarkdown(localize('chat.modelPicker.upgradeHover', "[Upgrade to GitHub Copilot Pro](command:workbench.action.chat.upgradePlan \" \") to use the best models."));
 	const noModelsItem: IActionListItem<IActionWidgetDropdownAction> = {

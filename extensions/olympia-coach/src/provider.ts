@@ -131,6 +131,19 @@ export function invalidateModelsCache(): void {
 }
 
 /**
+ * 核心只有三个时机重新向提供方要模型列表：chatLanguageModels.json 变了、有人调 selectModels、
+ * 或者提供方自己发 onDidChangeLanguageModelChatInformation（extHostLanguageModels.ts:155 把它
+ * 转成 $onLMProviderChange）。本产品不写那个 json，也没有任何界面会去调 selectModels，所以
+ * 事件是唯一的一条路：不发它，聊天里的模型选择器永远是「没有可用模型」，而设置页同一个
+ * probeModels 明明列得出模型——学生看到的就只有"这个功能是坏的"。
+ */
+const modelsChanged = new vscode.EventEmitter<void>();
+
+export function notifyModelsChanged(): void {
+	modelsChanged.fire();
+}
+
+/**
  * Asks the configured endpoint what models exist, without guessing on the user's behalf: an
  * unconfigured or unreachable service is reported, never papered over with a made-up model.
  * The caller shows or logs `error`; nothing here pops a prompt, because core warms up silently.
@@ -177,6 +190,9 @@ export async function probeModels(context: vscode.ExtensionContext, options?: { 
 }
 
 export class OlympiaChatProvider implements vscode.LanguageModelChatProvider {
+
+	/** 见 modelsChanged：这是"我们的模型能不能出现在聊天里"的唯一开关。 */
+	readonly onDidChangeLanguageModelChatInformation: vscode.Event<void> = modelsChanged.event;
 
 	constructor(
 		private readonly context: vscode.ExtensionContext,
@@ -299,6 +315,9 @@ export async function setApiKey(context: vscode.ExtensionContext, key: string): 
 		await context.secrets.delete(KEY_SECRET);
 	}
 	invalidateModelsCache();
+	// 密钥不在配置里，onDidChangeConfiguration 听不到这一改动；不发一下，填完密钥的那一刻
+	// 聊天里的模型列表还是空的（设置页已经列出来了），看起来就像"填了也没用"。
+	notifyModelsChanged();
 }
 
 /** Last few characters, safe to show; the key itself never leaves SecretStorage. */
@@ -311,11 +330,17 @@ export function registerProvider(context: vscode.ExtensionContext, log: vscode.L
 	const provider = new OlympiaChatProvider(context, log);
 	context.subscriptions.push(vscode.lm.registerLanguageModelChatProvider(VENDOR, provider));
 
+	// 核心预热时问过一轮，但这个扩展是 onStartupFinished 才起动的——那时提供方还没注册，
+	// 它拿到的是一张空表，之后没人再问。补发一次"列表变了"，聊天里的选择器才会来要模型。
+	// 没配 baseUrl/密钥时这条路返回空数组，不联网。
+	notifyModelsChanged();
+
 	// A stale cache would hide a model the user just added at their provider, and a changed baseUrl
 	// must never be served the previous host's list.
 	context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(e => {
 		if (e.affectsConfiguration(CONFIG_SECTION)) {
 			invalidateModelsCache();
+			notifyModelsChanged();
 		}
 	}));
 }
