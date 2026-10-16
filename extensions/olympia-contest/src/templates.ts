@@ -176,7 +176,8 @@ export const STATEMENT_EXTENSION = '.md';
 export const SAMPLE_HEADING = '### 样例';
 /** 样例区的小节标题；补样例时要找的就是它。 */
 export const SAMPLES_SECTION = '## 样例数据';
-const META_SEPARATOR = '｜';
+/** 元信息行里各字段之间的分隔符：写题面的、读题面的、侧栏剥页眉的，都从这里取。 */
+export const META_SEPARATOR = '｜';
 /** 元信息只在文件开头，多读几行给手写题面留余量。 */
 const META_SCAN_LINES = 12;
 /** 题号长什么样：P1001 / B3001 / UVA100 / 1660C / ABC300_A。用来区分「# 题号 标题」和手写的「# 标题」。 */

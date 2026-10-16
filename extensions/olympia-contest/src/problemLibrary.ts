@@ -92,8 +92,12 @@ export function summaryOf(entry: LibraryEntry): string {
 	return parts.filter(Boolean).join(' · ');
 }
 
-/** 打开选中题面的编辑器，关掉预览模式，免得下一道题把它顶掉。 */
-export async function showStatement(uri: vscode.Uri): Promise<void> {
+/**
+ * 以文本方式打开题面：这是退路，不是主路。主路是侧栏里渲染好的「题面」视图
+ * （statementView.ts）——学生读的是题，不是 Markdown 源码。留这条是因为题面偶尔要手改
+ * （补样例、改格式），改完侧栏会跟着文件变化重画。
+ */
+export async function editStatement(uri: vscode.Uri): Promise<void> {
 	const doc = await vscode.workspace.openTextDocument(uri);
 	await vscode.window.showTextDocument(doc, { preview: false });
 }

@@ -8,7 +8,8 @@
  *  Design notes:
  *   * Everything is a normal built-in extension; no activation cost beyond a few ms.
  *   * The pulled statement is written as Markdown under <workspace>/.olympia/problems so it
- *     can be committed alongside the solution, or opened with the built-in Markdown preview.
+ *     can be committed alongside the solution. Reading it happens in the sidebar 题面 view
+ *     (statementView.ts), not in an editor tab: a student reads a problem, not Markdown source.
  *   * All user-visible strings are already Chinese; this extension never falls back to English.
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
@@ -16,12 +17,28 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { detectPlatform, fetchProblem, type Platform, type Problem } from './sources';
 import { renderStatement, templateFor, FORMAT_LABEL, PLATFORM_TEXT, platformText, MY_TEMPLATE_LABEL, MY_TEMPLATE_HINT, TEMPLATE_FOLDER, TEMPLATE_FILE, DEFAULT_PROBLEMS_DIR, STATEMENT_EXTENSION, type ContestFormat } from './templates';
-import { readLibrary, showStatement, toPicks } from './problemLibrary';
+import { readLibrary, editStatement, toPicks } from './problemLibrary';
+import { StatementViewProvider, STATEMENT_VIEW_ID, CMD } from './statementView';
 import { markOf, solvedMarks, type SolvedMark } from './solvedMarks';
 import { MAX_PRACTICE_PROBLEMS, PRACTICE_FILE, PRACTICE_MINUTES_MAX, PRACTICE_MINUTES_MIN, isSameName, mergeLists, parseMinutes, parseProblemIds, practiceFile, readLists, readPractice, withExtraProblems, withoutProblem, writeLists, type PracticeList } from './practiceList';
 import { appendSample as appendSampleTo, customSamplesOf, MANUAL_EXPLAIN, pickTarget, withCustomSamples } from './statementSamples';
 import { enrichProblem } from './enrich';
 import { registerCppSnippets } from './snippets';
+
+/** 侧栏那个题面视图；activate 里建，建不成就走下面的退路。 */
+let statementView: StatementViewProvider | undefined;
+
+/**
+ * 「看一道题」的入口：优先渲染进侧栏，视图拿不到（贡献点被改坏、或被别的扩展顶掉）就退回
+ * 编辑器。题面丢了比格式难看严重得多，所以这里宁可降级也不能什么都不发生。
+ * 要*填*题面（补样例）的调用方直接叫 editStatement，那条路必须是可写的编辑器。
+ */
+async function showStatement(uri: vscode.Uri): Promise<void> {
+	if (statementView && await statementView.show(uri)) {
+		return;
+	}
+	await editStatement(uri);
+}
 
 function cfg() {
 	const c = vscode.workspace.getConfiguration('olympia.problem');
@@ -102,8 +119,9 @@ async function pullProblem(ref: { id: string; platform: Platform }): Promise<voi
 					}
 				}
 
-				const doc = await vscode.workspace.openTextDocument(uri);
-				await vscode.window.showTextDocument(doc, { preview: false });
+				// 拉完先看进侧栏的题面，而不是在编辑区开一个 .md 源码——学生要读题，
+				// 不是读 `$O(n\log n)$` 这串反斜杠；标签页要留给代码。
+				await showStatement(uri);
 
 				if (problem.metadataOnly) {
 					const open = await vscode.window.showInformationMessage(
@@ -521,8 +539,9 @@ async function appendSample(args?: AppendSampleArgs): Promise<boolean> {
 		: { input: args?.input ?? '', output: args?.output ?? '', explain: args?.explain });
 	await fs.promises.writeFile(target.file, added.markdown, 'utf8');
 	if (manual) {
-		// 加完就打开让人填，不弹一句「已添加」然后什么都不动
-		await showStatement(vscode.Uri.file(target.file));
+		// 加完就打开让人填，不弹一句「已添加」然后什么都不动。这条必须是可写的编辑器：
+		// 侧栏那个视图是读题面用的，往里填不了样例。
+		await editStatement(vscode.Uri.file(target.file));
 		return true;
 	}
 	const action = await vscode.window.showInformationMessage(
@@ -670,6 +689,32 @@ export function activate(context: vscode.ExtensionContext): void {
 	);
 
 	context.subscriptions.push(registerCppSnippets());
+
+	// 题面进侧栏：拉完题面不再抢编辑器标签页，渲染后的题面跟代码并排。
+	statementView = new StatementViewProvider(context.extensionUri);
+	context.subscriptions.push(
+		vscode.window.registerWebviewViewProvider(STATEMENT_VIEW_ID, statementView, {
+			// 切到别的视图再切回来，不必重新读一遍文件、重新渲染一遍公式。
+			webviewOptions: { retainContextWhenHidden: true },
+		}),
+		vscode.commands.registerCommand(CMD.show, async () => {
+			if (!statementView?.currentFile()) {
+				// 空视图没什么可聚焦的：直接给一条能走通的路，而不是留一块空白。
+				await vscode.commands.executeCommand(CMD.pick);
+				return;
+			}
+			await vscode.commands.executeCommand(`${STATEMENT_VIEW_ID}.focus`);
+		}),
+		vscode.commands.registerCommand(CMD.refresh, () => statementView?.refresh()),
+		vscode.commands.registerCommand(CMD.openRaw, async () => {
+			const file = statementView?.currentFile();
+			if (!file) {
+				await vscode.window.showInformationMessage('侧栏里还没有题面：先拉一道（Ctrl+Alt+P）。');
+				return;
+			}
+			await editStatement(file);
+		}),
+	);
 }
 
 export function deactivate(): void {

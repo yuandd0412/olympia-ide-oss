@@ -77,8 +77,47 @@
 				"command": "olympia.practice.new",
 				"title": "新建集训清单",
 				"category": "Olympia"
+			},
+			{
+				"command": "olympia.statement.show",
+				"title": "显示题面（侧栏）",
+				"category": "Olympia",
+				"icon": "media/olympia-statement.svg"
+			},
+			{
+				"command": "olympia.statement.refresh",
+				"title": "题面：重新读一次文件",
+				"category": "Olympia",
+				"icon": "$(refresh)"
+			},
+			{
+				"command": "olympia.statement.openRaw",
+				"title": "题面：以文本方式打开（改题面用）",
+				"category": "Olympia",
+				"icon": "$(go-to-file)"
 			}
 		],
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "olympiaStatement",
+					"title": "题面",
+					"icon": "media/olympia-statement.svg"
+				}
+			]
+		},
+		"views": {
+			"olympiaStatement": [
+				{
+					"id": "olympia.statement",
+					"name": "题面",
+					"type": "webview",
+					"visibility": "visible",
+					"icon": "media/olympia-statement.svg",
+					"contextualTitle": "Olympia 题面"
+				}
+			]
+		},
 		"menus": {
 			"commandPalette": [
 				{
@@ -116,6 +155,35 @@
 				{
 					"command": "olympia.practice.new",
 					"when": "true"
+				},
+				{
+					"command": "olympia.statement.show",
+					"when": "true"
+				},
+				{
+					"command": "olympia.statement.refresh",
+					"when": "true"
+				},
+				{
+					"command": "olympia.statement.openRaw",
+					"when": "true"
+				}
+			],
+			"view/title": [
+				{
+					"command": "olympia.statement.refresh",
+					"group": "navigation@1",
+					"when": "view == olympia.statement"
+				},
+				{
+					"command": "olympia.statement.openRaw",
+					"group": "navigation@2",
+					"when": "view == olympia.statement"
+				},
+				{
+					"command": "olympia.problem.pull",
+					"group": "navigation@3",
+					"when": "view == olympia.statement"
 				}
 			],
 			"editor/title": [
@@ -185,6 +253,11 @@
 				"command": "olympia.practice.open",
 				"key": "ctrl+alt+l",
 				"mac": "cmd+alt+l"
+			},
+			{
+				"command": "olympia.statement.show",
+				"key": "ctrl+alt+m",
+				"mac": "cmd+alt+m"
 			}
 		],
 		"configuration": {
