@@ -8,6 +8,7 @@ import { fromNow } from '../../../../../base/common/date.js';
 import { DisposableStore } from '../../../../../base/common/lifecycle.js';
 import { ThemeIcon } from '../../../../../base/common/themables.js';
 import { localize, localize2 } from '../../../../../nls.js';
+import { Categories } from '../../../../../platform/action/common/actionCommonCategories.js';
 import { Action2 } from '../../../../../platform/actions/common/actions.js';
 import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
 import { ICommandService } from '../../../../../platform/commands/common/commands.js';
@@ -25,7 +26,7 @@ export class ManageTrustedMcpServersForAccountAction extends Action2 {
 		super({
 			id: '_manageTrustedMCPServersForAccount',
 			title: localize2('manageTrustedMcpServersForAccount', "管理帐户的受信任 MCP 服务器"),
-			category: localize2('accounts', "账户"),
+			category: Categories.Account,
 			f1: true,
 			precondition: ContextKeyExpr.and(ChatContextKeys.Setup.hidden.negate(), ChatContextKeys.Setup.disabledInWorkspace.negate())
 		});

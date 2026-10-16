@@ -8,6 +8,7 @@ import { fromNow } from '../../../../../base/common/date.js';
 import { DisposableStore } from '../../../../../base/common/lifecycle.js';
 import { ThemeIcon } from '../../../../../base/common/themables.js';
 import { localize, localize2 } from '../../../../../nls.js';
+import { Categories } from '../../../../../platform/action/common/actionCommonCategories.js';
 import { Action2 } from '../../../../../platform/actions/common/actions.js';
 import { ICommandService } from '../../../../../platform/commands/common/commands.js';
 import { IDialogService } from '../../../../../platform/dialogs/common/dialogs.js';
@@ -23,7 +24,7 @@ export class ManageTrustedExtensionsForAccountAction extends Action2 {
 		super({
 			id: '_manageTrustedExtensionsForAccount',
 			title: localize2('manageTrustedExtensionsForAccount', "管理帐户的受信任扩展"),
-			category: localize2('accounts', "账户"),
+			category: Categories.Account,
 			f1: true
 		});
 	}

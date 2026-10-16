@@ -55,8 +55,13 @@ import { ChatAgentLocation } from '../../chat/common/constants.js';
  * 所以面板里那六行永远是大写英文开头，且全是给智能体挂外部工具用的配置命令
  * （添加服务器 / 浏览服务器 / 从清单文件安装…）——本产品 BYOK-only，没有需要它的人。
  * 掉的只是面板入口：`mcp.json` 里配了的服务器照旧自启，功能没被拆。
+ *
+ * 「账户」是第三组：本产品没有托管账号（活动栏那枚账户按钮出厂就是关的），这几条点开
+ * 只能得到一个空列表。上游把它的类目在五个工作区命令里各写一遍 `localize2('accounts', …)`，
+ * 所以这里没法读现成常量——先把那张表补上 `Categories.Account`，五处一起改读它，
+ * 过滤再按同一个值收，避免出现第三份「账户」字符串。
  */
-const HIDDEN_COMMAND_CATEGORIES: readonly string[] = [Categories.Developer.value, 'MCP'];
+const HIDDEN_COMMAND_CATEGORIES: readonly string[] = [Categories.Developer.value, 'MCP', Categories.Account.value];
 /**
  * 这组里放行两条：「重新加载窗口」是手册里会让学生按的那一个（窗口不对劲时先重载，
  * 不用重开整个程序，也不丢已打开的文件）；「打开日志文件夹」是出问题让我们来查时唯一

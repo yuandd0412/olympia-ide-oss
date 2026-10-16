@@ -12,4 +12,7 @@ export const Categories = Object.freeze({
 	File: localize2('file', "文件"),
 	Preferences: localize2('preferences', "首选项"),
 	Developer: localize2({ key: 'developer', comment: ['A developer on Code itself or someone diagnosing issues in Code'] }, "开发人员"),
+	// 上游把「账户」这个类目在五个命令里各写一遍 localize2('accounts', …)（authentication/browser/actions/）。
+	// 收在这里是为了命令面板能按同一个值整组关掉，不再抄第三份字符串。
+	Account: localize2('account', "账户"),
 });

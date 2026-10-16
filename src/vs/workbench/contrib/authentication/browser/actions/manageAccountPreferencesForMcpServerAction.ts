@@ -6,6 +6,7 @@
 import { Event } from '../../../../../base/common/event.js';
 import { DisposableStore, IDisposable } from '../../../../../base/common/lifecycle.js';
 import { localize, localize2 } from '../../../../../nls.js';
+import { Categories } from '../../../../../platform/action/common/actionCommonCategories.js';
 import { Action2 } from '../../../../../platform/actions/common/actions.js';
 import { IDialogService } from '../../../../../platform/dialogs/common/dialogs.js';
 import { IInstantiationService, ServicesAccessor } from '../../../../../platform/instantiation/common/instantiation.js';
@@ -20,7 +21,7 @@ export class ManageAccountPreferencesForMcpServerAction extends Action2 {
 		super({
 			id: '_manageAccountPreferencesForMcpServer',
 			title: localize2('manageAccountPreferenceForMcpServer', "管理 MCP 服务器帐户首选项"),
-			category: localize2('accounts', "账户"),
+			category: Categories.Account,
 			f1: false
 		});
 	}

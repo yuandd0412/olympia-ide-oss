@@ -6,6 +6,7 @@
 import { Lazy } from '../../../../../base/common/lazy.js';
 import { DisposableStore } from '../../../../../base/common/lifecycle.js';
 import { localize, localize2 } from '../../../../../nls.js';
+import { Categories } from '../../../../../platform/action/common/actionCommonCategories.js';
 import { Action2 } from '../../../../../platform/actions/common/actions.js';
 import { ICommandService } from '../../../../../platform/commands/common/commands.js';
 import { IInstantiationService, ServicesAccessor } from '../../../../../platform/instantiation/common/instantiation.js';
@@ -20,7 +21,7 @@ export class ManageAccountsAction extends Action2 {
 		super({
 			id: 'workbench.action.manageAccounts',
 			title: localize2('manageAccounts', "管理帐户"),
-			category: localize2('accounts', "账户"),
+			category: Categories.Account,
 			// 本产品没有托管账号，活动栏的「账户」按钮出厂就是关的（见 olympiaChrome.ts），
 			// 这条留在命令面板只会点开一个空列表。命令保留：账户入口被别人打开时还要能用。
 			f1: false
