@@ -12,6 +12,10 @@
 		"Other"
 	],
 	"main": "./out/extension",
+	"enabledApiProposals": [
+		"defaultChatParticipant",
+		"chatParticipantAdditions"
+	],
 	"activationEvents": [
 		"onStartupFinished"
 	],
@@ -23,6 +27,13 @@
 				"name": "coach",
 				"fullName": "Olympia AI 教练",
 				"description": "分析错因、给出思路提示、提交前风险检查",
+				"isDefault": true,
+				"locations": [
+					"panel"
+				],
+				"modes": [
+					"ask"
+				],
 				"sampleRequest": "这段代码为什么是 WA？先给方向，不要直接给完整代码。",
 				"commands": [
 					{

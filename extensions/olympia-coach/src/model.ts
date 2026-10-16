@@ -44,6 +44,26 @@ export function resolveModel(state: vscode.Memento, models: readonly vscode.Lang
 	return models.length === 1 ? models[0] : undefined;
 }
 
+/**
+ * The stored pick, the only available model, or — when there are several and nothing chosen yet —
+ * one quick pick asked right where the student is, remembered for the next turn. Never a silent
+ * guess between candidates, and never a dead end that tells the student to go run a command.
+ */
+export async function resolveOrAskModel(state: vscode.Memento, models: readonly vscode.LanguageModelChat[]): Promise<vscode.LanguageModelChat | undefined> {
+	const resolved = resolveModel(state, models);
+	if (resolved || models.length === 0) {
+		return resolved;
+	}
+	const picked = await vscode.window.showQuickPick(
+		models.map(model => ({ label: describe(model), model })),
+		{ placeHolder: 'AI 教练用哪个模型？选一次，之后都用它', ignoreFocusOut: true });
+	if (!picked) {
+		return undefined;
+	}
+	await state.update(CHOSEN_KEY, picked.model.id);
+	return picked.model;
+}
+
 export function registerModelPicker(context: vscode.ExtensionContext): void {
 	context.subscriptions.push(vscode.commands.registerCommand('olympia.coach.selectModel', async () => {
 		const models = await listModels();

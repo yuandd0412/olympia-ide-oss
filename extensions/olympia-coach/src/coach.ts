@@ -12,7 +12,7 @@
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
 import { CONTEST_STATE_COMMAND, EXAMPLE_BASE_URL } from './constants';
-import { listModels, resolveModel } from './model';
+import { listModels, resolveOrAskModel } from './model';
 
 const HISTORY_TURNS = 6;
 const MAX_DOCUMENT_CHARS = 12_000;
@@ -109,11 +109,13 @@ async function handleRequest(
 		return;
 	}
 	const models = await listModels();
-	const model = resolveModel(state, models);
+	const model = await resolveOrAskModel(state, models);
 	if (!model) {
-		stream.markdown(NO_MODEL);
-		if (models.length > 1) {
-			stream.markdown('\n检测到多个模型，请运行「Olympia：选择 AI 教练使用的模型」指定一个。');
+		if (models.length) {
+			// 配置是好的，只是刚才那个选择框被关掉了——别把人说成没配好。
+			stream.markdown(`没有选模型，这一轮先不作答。想改主意随时运行「Olympia：选择 AI 教练使用的模型」（当前有 ${models.length} 个候选）。`);
+		} else {
+			stream.markdown(NO_MODEL);
 		}
 		return;
 	}

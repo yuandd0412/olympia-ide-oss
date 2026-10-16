@@ -711,9 +711,11 @@ export class BuiltinChatMode implements IChatMode {
 }
 
 export namespace ChatMode {
-	export const Ask = new BuiltinChatMode(ChatModeKind.Ask, 'Ask', localize('chatDescription', "浏览并理解代码"), Codicon.question);
-	export const Edit = new BuiltinChatMode(ChatModeKind.Edit, 'Edit', localize('editsDescription', "编辑或重构所选代码"), Codicon.edit);
-	export const Agent = new BuiltinChatMode(ChatModeKind.Agent, 'Agent', localize('agentDescription', "描述要构建的内容"), Codicon.agent);
+	// 输入框上那颗 chip 显示的就是这里的 name：写死英文的话，学生在一个全中文的
+	// 界面里会看见一个不知道能不能点的「Ask」。名字与下面那句说明是两回事，改名字不影响 id。
+	export const Ask = new BuiltinChatMode(ChatModeKind.Ask, localize('chatModeName.ask', "提问"), localize('chatDescription', "浏览并理解代码"), Codicon.question);
+	export const Edit = new BuiltinChatMode(ChatModeKind.Edit, localize('chatModeName.edit', "改代码"), localize('editsDescription', "编辑或重构所选代码"), Codicon.edit);
+	export const Agent = new BuiltinChatMode(ChatModeKind.Agent, localize('chatModeName.agent', "智能体"), localize('agentDescription', "描述要构建的内容"), Codicon.agent);
 }
 
 export function isBuiltinChatMode(mode: IChatMode): boolean {
