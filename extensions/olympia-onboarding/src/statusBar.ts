@@ -14,6 +14,7 @@ import * as vscode from 'vscode';
 import { CMD, KEYS } from './commands';
 import { activeTarget, renderFlags, targetSummary } from './ojTargets';
 import { PRECHECK_SOURCE, SOURCE_FILES } from './precheck';
+import { isChecked } from './precheckState';
 
 const PRIORITY_PROFILE = 100;
 const PRIORITY_RUN = 90;
@@ -63,9 +64,13 @@ export function registerStatusBar(context: vscode.ExtensionContext): void {
 		runItem.show();
 		const findings = vscode.languages.getDiagnostics(editor.document.uri)
 			.filter(diagnostic => diagnostic.source === PRECHECK_SOURCE);
-		if (findings.length === 0) {
+		if (!isChecked(editor.document)) {
+			// 没查过不能写成通过：绿色勾是让人在提交前信任它的。
+			checkItem.text = '$(watch) 体检未检查';
+			checkItem.tooltip = '提交前体检还没查过这个文件（刚打开、或刚改完还没编完）。按 Ctrl+Alt+Enter 现在查。';
+		} else if (findings.length === 0) {
 			checkItem.text = '$(check) 体检通过';
-			checkItem.tooltip = '提交前体检：没有会在评测机上编译失败的写法。';
+			checkItem.tooltip = '提交前体检：语法编过一遍，也没有会在评测机上编译失败的写法。';
 		} else {
 			checkItem.text = `$(error) 体检 ${findings.length} 处编译错误`;
 			checkItem.tooltip = `提交前体检：${findings.length} 处写法会让评测机的编译器拒绝这份代码。\n\n点击打开「问题」面板。`;

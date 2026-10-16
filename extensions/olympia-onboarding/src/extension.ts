@@ -16,6 +16,7 @@
 import * as vscode from 'vscode';
 import { analyse, toDiagnostic, SOURCE_FILES, type Finding } from './precheck';
 import { syntaxCheck } from './syntaxCheck';
+import { forgetDocument, markChecked } from './precheckState';
 import {
 	registerCompileTaskProvider, compileCurrentFile, compileJudgeAccurate, compileAndRun
 } from './compile';
@@ -235,6 +236,8 @@ async function runCheckNow(document: vscode.TextDocument, surface: 'problems' | 
 			detail: '这一条不是代码的问题，是体检本身没跑完。'
 		});
 	}
+	// 先记下"查过了"，再写诊断：面板是收到诊断变化才刷新的，反过来会刷成「未检查」。
+	markChecked(document);
 	diagnostics.set(document.uri, findings.map(toDiagnostic));
 
 	if (surface === 'quiet' || findings.length === 0) {
@@ -317,6 +320,21 @@ export function activate(context: vscode.ExtensionContext): void {
 			if (editor && checkEnabled()) {
 				void runCheck(editor.document, 'quiet');
 			}
+		})
+	);
+
+	// 窗口恢复时那个文件**已经**是活动编辑器了：没有"变化"就没有检查，面板会拿着空诊断列表
+	// 写「无问题」——那正是 2026-10-16 误报的形状。启动时先把看得见的编辑器各查一遍。
+	for (const editor of vscode.window.visibleTextEditors) {
+		if (checkEnabled()) {
+			void runCheck(editor.document, 'quiet');
+		}
+	}
+
+	context.subscriptions.push(
+		vscode.workspace.onDidCloseTextDocument(document => {
+			forgetDocument(document.uri);
+			diagnostics?.delete(document.uri);
 		})
 	);
 }

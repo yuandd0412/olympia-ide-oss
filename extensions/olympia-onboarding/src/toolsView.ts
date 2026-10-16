@@ -15,6 +15,7 @@ import { CMD, KEYS } from './commands';
 import { activeTarget, renderFlags, targetSummary } from './ojTargets';
 import { resolveCompiler } from './toolchain';
 import { PRECHECK_SOURCE, SOURCE_FILES } from './precheck';
+import { isChecked } from './precheckState';
 import { PRACTICE_PATH_LABEL, statementFiles, watchStatements, TEMPLATE_PATH_LABEL } from './problemFiles';
 import { contestSummary, isContestRunning, onContestChange } from './contestMode';
 import { onSolveLogChange, readSolves, solveSummary, SOLVES_PATH_LABEL } from './solveLog';
@@ -232,6 +233,10 @@ function precheckCount(): string {
 	}
 	const findings = vscode.languages.getDiagnostics(editor.document.uri)
 		.filter(d => d.source === PRECHECK_SOURCE);
+	// 空数组有两种来路：查过且没问题，和根本没查过。只有前者能写「无问题」。
+	if (!isChecked(editor.document)) {
+		return '未检查';
+	}
 	return findings.length === 0 ? '无问题' : `${findings.length} 处编译错误`;
 }
 
