@@ -256,7 +256,7 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
 		isFeatured: true,
 		icon: setupIcon,
 		when: '!isWeb',
-		walkthroughPageTitle: localize('gettingStarted.setup.walkthroughPageTitle', "安装程序 Olympia"),
+		walkthroughPageTitle: localize('gettingStarted.setup.walkthroughPageTitle', "Olympia"),
 		next: 'Beginner',
 		content: {
 			type: 'steps',
@@ -293,7 +293,7 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
 		icon: setupIcon,
 		when: 'isWeb',
 		next: 'Beginner',
-		walkthroughPageTitle: localize('gettingStarted.setupWeb.walkthroughPageTitle', "安装程序 Olympia Web"),
+		walkthroughPageTitle: localize('gettingStarted.setupWeb.walkthroughPageTitle', "Olympia Web"),
 		content: {
 			type: 'steps',
 			steps: [
@@ -379,7 +379,7 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
 		icon: setupIcon,
 		when: CONTEXT_ACCESSIBILITY_MODE_ENABLED.key,
 		next: 'Setup',
-		walkthroughPageTitle: localize('gettingStarted.setupAccessibility.walkthroughPageTitle', "安装程序 Olympia 辅助功能"),
+		walkthroughPageTitle: localize('gettingStarted.setupAccessibility.walkthroughPageTitle', "Olympia 无障碍功能"),
 		content: {
 			type: 'steps',
 			steps: [

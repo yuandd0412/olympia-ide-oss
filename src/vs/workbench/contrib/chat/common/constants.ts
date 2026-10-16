@@ -646,6 +646,14 @@ export const OPEN_AGENTS_WINDOW_COMMAND_ID = 'workbench.action.openAgentsWindow'
  * 但 Ctrl+Shift+A 仍然能把窗口开出来，所以注册处要一起读这个判断。
  */
 export const AGENTS_WINDOW_DISABLED = !!product.defaultChatAgent?.byokOnly;
+/**
+ * 本产品没有托管账号：既没有「登录」可点，也没有「升级到 Copilot Pro」可买。
+ * 上游有一批门径拿 entitlement 判断「该提示登录 / 该提示升级」（会话类型选择器是其中一处），
+ * 在 BYOK 构建里只会把学生引到一条 404 的路上，所以这些分支统一按这个常量跳过，
+ * 可用性判断只落在「有没有模型」上。和 `AGENTS_WINDOW_DISABLED` 同源，但那是「这扇门存不存在」，
+ * 这里是「登录 / 升级这两条出路还说不说」。
+ */
+export const HOSTED_ACCOUNT_FLOWS_DISABLED = !!product.defaultChatAgent?.byokOnly;
 export const OPEN_AGENTS_WINDOW_PRECONDITION = AGENTS_WINDOW_DISABLED ? ContextKeyExpr.false() : ContextKeyExpr.and(
 	ChatEntitlementContextKeys.Setup.hidden.negate(),
 	ChatEntitlementContextKeys.Setup.disabledInWorkspace.negate(),

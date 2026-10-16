@@ -7,6 +7,7 @@ import { IMarkdownString, MarkdownString } from '../../../../../base/common/html
 import { localize } from '../../../../../nls.js';
 import { ChatEntitlement, IChatEntitlementService } from '../../../../services/chat/common/chatEntitlementService.js';
 import { IChatSessionsService, SessionType } from '../../common/chatSessionsService.js';
+import { HOSTED_ACCOUNT_FLOWS_DISABLED } from '../../common/constants.js';
 import { ILanguageModelsService } from '../../common/languageModels.js';
 
 /**
@@ -93,11 +94,14 @@ export function getSessionTypeAvailability(
 	if (!chatSessionsService.getChatSessionContribution(type)) {
 		return SessionTypeAvailability.Available;
 	}
+	// 本产品没有托管账号：既没有"登录"可点，也没有"升级到 Copilot Pro"可买。这两条 affordance
+	// 的文案（「登录」「升级到 GitHub Copilot Pro」「需要 GitHub Copilot Pro」）在这个构建里
+	// 只会把学生引到一条 404 的路上，所以按产品开关整段跳过，让判断只落在"有没有模型"上。
 	const entitlement = chatEntitlementService.entitlement;
 	const hasTargetedModels = hasAnyModelTargetingSessionType(languageModelsService, type);
 	const hasVisibleByokModels = allowSignedOutWhenUsable && chatEntitlementService.clientByokEnabled && hasVisibleByokModelsTargetingSessionType(languageModelsService, type);
 	// A visible Agent Host BYOK model can run without a Copilot account.
-	if (entitlement === ChatEntitlement.Unknown && !chatEntitlementService.anonymous && chatSessionsService.requiresCopilotSignInForSessionType(type) && !hasVisibleByokModels) {
+	if (!HOSTED_ACCOUNT_FLOWS_DISABLED && entitlement === ChatEntitlement.Unknown && !chatEntitlementService.anonymous && chatSessionsService.requiresCopilotSignInForSessionType(type) && !hasVisibleByokModels) {
 		return SessionTypeAvailability.SignInRequired;
 	}
 	// Signed in: a model targeting the type (e.g. BYOK) or an "Auto" fallback
@@ -107,7 +111,7 @@ export function getSessionTypeAvailability(
 	}
 	// No Auto fallback and no targeted models: Free / Student users must upgrade
 	// to unlock the type (e.g. the cloud delegation agent is a paid feature).
-	const canUpgrade = entitlement === ChatEntitlement.Free || entitlement === ChatEntitlement.EDU;
+	const canUpgrade = !HOSTED_ACCOUNT_FLOWS_DISABLED && (entitlement === ChatEntitlement.Free || entitlement === ChatEntitlement.EDU);
 	if (canUpgrade) {
 		return SessionTypeAvailability.UpgradeRequired;
 	}
