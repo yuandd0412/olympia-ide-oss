@@ -98,6 +98,12 @@ export interface IDictationRuntimeProductConfig {
 
 export interface IProductConfiguration {
 	readonly version: string;
+	/**
+	 * Olympia 自己的发布版本号：官网下载、发行标签、安装器属性都认它。
+	 * 与 `version`（VS Code 基线号，打包时由 package.json 注入）区分开，
+	 * 「关于」里两个都要露出来，否则学生对着官网的 v1.0.0 找不到 1.140.0。
+	 */
+	readonly olympiaVersion?: string;
 	readonly date?: string;
 	readonly quality?: string;
 	readonly commit?: string;

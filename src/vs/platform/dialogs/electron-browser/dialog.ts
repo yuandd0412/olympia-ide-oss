@@ -15,7 +15,12 @@ function formatCopilotVersion(version: string | undefined): string {
 }
 
 export function createNativeAboutDialogDetails(productService: IProductService, osProps: IOSProperties): { title: string; details: string; detailsToCopy: string } {
-	let version = productService.version;
+	// 「关于」第一行得是学生装的那个东西的版本号。以前只有 productService.version，
+	// 也就是 VS Code 的基线号 1.140.0，而官网、发行标签、安装器上写的都是 Olympia v1.0.0——
+	// 两处数字对不上，看起来就像装错了版本。基线号仍然留在括号里，报问题时要它。
+	let version = productService.olympiaVersion
+		? `${productService.olympiaVersion}（VS Code ${productService.version}）`
+		: productService.version;
 	if (productService.target) {
 		version = `${version} (${productService.target} setup)`;
 	} else if (productService.darwinUniversalAssetId) {

@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { Schemas } from '../../../../base/common/network.js';
+import { product } from '../../../../base/common/product.js';
 import { IChatSessionsService, isAgentHostTarget, localChatSessionType, SessionType } from './chatSessionsService.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { IStorageService } from '../../../../platform/storage/common/storage.js';
@@ -638,7 +639,14 @@ export const CHAT_SUBAGENT_RESOURCE_QUERY_PARAM = 'subagentChatResource';
 
 export const OPEN_WORKSPACE_IN_AGENTS_WINDOW_COMMAND_ID = 'workbench.action.openWorkspaceInAgentsWindow';
 export const OPEN_AGENTS_WINDOW_COMMAND_ID = 'workbench.action.openAgentsWindow';
-export const OPEN_AGENTS_WINDOW_PRECONDITION = ContextKeyExpr.and(
+/**
+ * 「智能体窗口」是 Copilot 那条链路的入口：它要账号体系，也要第二个窗口去跑 agent。
+ * Olympia 是 BYOK 产品，两条都没有，所以整扇门关掉。
+ * 注意快捷键的 `when` 不吃 precondition——只改下面那个常量的话，命令面板里是没了，
+ * 但 Ctrl+Shift+A 仍然能把窗口开出来，所以注册处要一起读这个判断。
+ */
+export const AGENTS_WINDOW_DISABLED = !!product.defaultChatAgent?.byokOnly;
+export const OPEN_AGENTS_WINDOW_PRECONDITION = AGENTS_WINDOW_DISABLED ? ContextKeyExpr.false() : ContextKeyExpr.and(
 	ChatEntitlementContextKeys.Setup.hidden.negate(),
 	ChatEntitlementContextKeys.Setup.disabledInWorkspace.negate(),
 	IsSessionsWindowContext.negate(),

@@ -37,7 +37,7 @@
 	"keyboardShortcutsUrlWin": "https://olympia.dpdns.org/docs/#keys",
 	"releaseNotesUrl": "https://olympia.dpdns.org/docs/#changelog",
 	"enableTelemetry": false,
-	"olympiaVersion": "0.1.0",
+	"olympiaVersion": "1.0.0",
 	"nodejsArtifactFeed": "",
 	"electronArtifactFeed": "",
 	"urlProtocol": "olympia",

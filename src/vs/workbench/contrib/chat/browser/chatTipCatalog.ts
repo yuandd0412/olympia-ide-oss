@@ -503,6 +503,8 @@ const ALL_TIPS: readonly ITipDefinition[] = [
  * Olympia 不展示的提示。这几条讲的是搭自定义智能体、写技能、子代理、试用「智能体窗口」，
  * 以及我们不随包发的 Copilot CLI——竞赛工作流里没有对应的动作，而聊天框下面那条提示位
  * 一次只显示一条，占着它不如显示学生真会用到的（附件、计划模式、消息排队那些都留着）。
+ * tip.init 也在里面：它让人去生成 AGENTS.md，那是给编码智能体看的工程约定文件，
+ * 而这条提示在真机上正好落在「没有可用模型」那一屏的下面（截图里能看到）。
  */
 const TIPS_HIDDEN_IN_OLYMPIA: readonly string[] = [
 	'tip.createAgent',
@@ -510,6 +512,7 @@ const TIPS_HIDDEN_IN_OLYMPIA: readonly string[] = [
 	'tip.subagents',
 	'tip.agentsWindow',
 	'tip.copilotCli',
+	'tip.init',
 ];
 
 export const TIP_CATALOG: readonly ITipDefinition[] = ALL_TIPS.filter(tip => !TIPS_HIDDEN_IN_OLYMPIA.includes(tip.id));
