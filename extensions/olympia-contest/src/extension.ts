@@ -25,6 +25,7 @@ import { MAX_PRACTICE_PROBLEMS, PRACTICE_FILE, PRACTICE_MINUTES_MAX, PRACTICE_MI
 import { appendSample as appendSampleTo, customSamplesOf, MANUAL_EXPLAIN, pickTarget, withCustomSamples } from './statementSamples';
 import { enrichProblem } from './enrich';
 import { registerCppSnippets } from './snippets';
+import { HANDOFF_COMMAND, parseHandoff, writeHandoff } from './statementHandoff';
 
 /** 侧栏那个题面视图；activate 里建，建不成就走下面的退路。 */
 let statementView: StatementViewProvider | undefined;
@@ -706,6 +707,23 @@ export function activate(context: vscode.ExtensionContext): void {
 		vscode.commands.registerCommand('olympia.problem.openStatement', openCached),
 		vscode.commands.registerCommand('olympia.problem.openSource', openProblemSource),
 		vscode.commands.registerCommand('olympia.problem.appendSample', appendSample),
+		// 浏览器插件交题面的入口。故意不进命令面板（见 package.json 的 commandPalette 那条），
+		// 因为它的调用方是未来的桥接层，不是学生；接口本身与校验在 statementHandoff.ts。
+		vscode.commands.registerCommand(HANDOFF_COMMAND, async (raw?: unknown) => {
+			const parsed = parseHandoff(raw);
+			if (!parsed.ok) {
+				vscode.window.showWarningMessage(`浏览器插件交来的题面没有收下：${parsed.reason}`);
+				return { ok: false as const, reason: parsed.reason };
+			}
+			const root = await problemsRoot();
+			if (!root) {
+				vscode.window.showWarningMessage('收不下这份题面：先打开一个工程文件夹（题面库是每个工程一份）。');
+				return { ok: false as const, reason: '没有工作区文件夹，题面库无处可放。' };
+			}
+			const file = await writeHandoff(parsed.value, root);
+			vscode.window.showInformationMessage(`题面已收下：${parsed.value.problem.id}（来自浏览器插件）。按 Ctrl+Alt+M 就能在侧栏读它。`);
+			return { ok: true as const, file };
+		}),
 		vscode.commands.registerCommand('olympia.practice.open', showPracticeLists),
 		vscode.commands.registerCommand('olympia.practice.new', async () => {
 			const created = await createPracticeList();

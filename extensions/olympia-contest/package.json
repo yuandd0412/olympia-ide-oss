@@ -120,6 +120,10 @@
 		},
 		"menus": {
 			"commandPalette": [
+			{
+				"command": "olympia.problem.receiveHandoff",
+				"when": "false"
+			},
 				{
 					"command": "olympia.problem.pull",
 					"when": "true"

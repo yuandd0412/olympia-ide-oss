@@ -181,7 +181,7 @@ export const META_SEPARATOR = '｜';
 /** 元信息只在文件开头，多读几行给手写题面留余量。 */
 const META_SCAN_LINES = 12;
 /** 题号长什么样：P1001 / B3001 / UVA100 / 1660C / ABC300_A。用来区分「# 题号 标题」和手写的「# 标题」。 */
-const PROBLEM_ID = /^[A-Za-z]{0,6}\d{1,8}[A-Za-z]?(_[A-Za-z0-9]{1,3})?$/;
+export const PROBLEM_ID = /^[A-Za-z]{0,6}\d{1,8}[A-Za-z]?(_[A-Za-z0-9]{1,3})?$/;
 
 export interface ProblemMeta {
 	readonly id: string;
