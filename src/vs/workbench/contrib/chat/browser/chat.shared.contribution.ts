@@ -865,13 +865,13 @@ configurationRegistry.registerConfiguration({
 			},
 			default: { mode: 'interactive', approvals: ChatDefaultPermissionLevel.Manual },
 			// allow-any-unicode-next-line
-			markdownDescription: nls.localize('chat.defaultConfiguration.settingDescription', "控制新智能体会话(例如 Copilot CLI)的默认配置。你仍然可以按会话更改模式和审批行为，每个会话都会记住所使用的设置。"),
+			markdownDescription: nls.localize('chat.defaultConfiguration.settingDescription', "控制新智能体会话的默认配置。你仍然可以按会话更改模式和审批行为，每个会话都会记住所使用的设置。"),
 		},
 		[ChatConfiguration.DefaultModel]: {
 			type: 'string',
 			default: '',
 			// allow-any-unicode-next-line
-			markdownDescription: nls.localize('chat.defaultModel.description', "新聊天对话的默认模型。使用“自动”让 Copilot 选择模型，使用模型系列名称(例如 \"opus\" 或 \"gemini\")以使用该系列中最新可用的模型，或使用完整模型 ID。你仍然可以在对话中切换模型；每个新对话都从此模型开始。"),
+			markdownDescription: nls.localize('chat.defaultModel.description', "新聊天对话的默认模型。填模型系列名称以使用该系列中最新可用的模型，或填你在 AI 设置里配好的完整模型 ID。你仍然可以在对话中切换模型；每个新对话都从此模型开始。"),
 			experiment: {
 				mode: 'auto'
 			},
@@ -922,6 +922,11 @@ configurationRegistry.registerConfiguration({
 			// allow-any-unicode-next-line
 			markdownDescription: nls.localize('chat.sessionSync.enabled', "启用会话同步到 GitHub.com。启用后，Copilot 会话数据将同步到你的 GitHub 帐户，实现跨设备访问并提供更丰富的见解。还需要启用 `#github.copilot.chat.localIndex.enabled#`。"),
 			type: 'boolean',
+			// 这条承诺的是「Copilot 会话数据同步到你的 GitHub 帐户」，而本产品只有 BYOK 教练：
+			// 没有 GitHub 帐户可同步，也没有那条链路。留着它等于在设置里挂一个按下去不会有任何
+			// 结果的开关。included 为假时这条不进注册表、设置界面也搜不到（与
+			// extensions.verifySignature 用 isNative 是同一机制）。
+			included: !product.defaultChatAgent?.byokOnly,
 			tags: ['experimental'],
 			experiment: {
 				mode: 'auto'
