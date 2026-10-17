@@ -490,7 +490,7 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
 				{
 					id: 'settingsAndSync',
 					title: localize('gettingStarted.settings.title', "调整你的设置"),
-					description: localize('gettingStarted.settingsAndSync.description.interpolated', "自定义 Olympia IDE 的方方面面，并[同步](command:workbench.userDataSync.actions.turnOn)到各个设备。\n{0}", Button(localize('tweakSettings', "打开设置"), 'command:toSide:workbench.action.openSettings')),
+					description: localize('gettingStarted.settingsAndSync.description.interpolated', "自定义 Olympia IDE 的方方面面：快捷键、主题、编辑器行为都从这里开始。\n{0}", Button(localize('tweakSettings', "打开设置"), 'command:toSide:workbench.action.openSettings')),
 					when: 'workspacePlatform != \'webworker\' && syncStatus != uninitialized',
 					completionEvents: ['onEvent:sync-enabled'],
 					media: {

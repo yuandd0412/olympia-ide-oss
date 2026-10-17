@@ -34,7 +34,6 @@ import { getActiveElement } from '../../../../base/browser/dom.js';
 import { isWeb } from '../../../../base/common/platform.js';
 import { IOnboardingService } from '../../welcomeOnboarding/common/onboardingService.js';
 import { ONBOARDING_STORAGE_KEY } from '../../welcomeOnboarding/common/onboardingTypes.js';
-import { IChatEntitlementService } from '../../../services/chat/common/chatEntitlementService.js';
 
 export const restoreWalkthroughsConfigurationKey = 'workbench.welcomePage.restorableWalkthroughs';
 export type RestoreWalkthroughsConfigurationValue = { folder: string; category?: string; step?: string };
@@ -96,7 +95,6 @@ export class StartupPageRunnerContribution extends Disposable implements IWorkbe
 		@INotificationService private readonly notificationService: INotificationService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@IOnboardingService private readonly onboardingService: IOnboardingService,
-		@IChatEntitlementService private readonly chatEntitlementService: IChatEntitlementService,
 	) {
 		super();
 
@@ -246,10 +244,12 @@ export class StartupPageRunnerContribution extends Disposable implements IWorkbe
 			return; // experimental onboarding is disabled
 		}
 
-		if (this.chatEntitlementService.sentiment.hidden) {
-			return; // AI features are hidden, do not show AI-focused onboarding
-		}
-
+		// 上游在这里挡的是「AI 导向的引导」：`sentiment.hidden` 为真时不给看。
+		// 但本产品走 byokOnly，OnboardingVariationA 已经把「登录 / 解锁 Copilot / 连接 GitHub」
+		// 整一步过滤掉（onboardingVariationA.ts 的 byokOnly 分支），剩下的只有一步全中文的
+		// 「选颜色主题 + 键盘映射」。留着这个 return 等于把首启引导整条丢掉，而
+		// `gettingStarted.ts:1022` 又因为同一个 experimentalOnboarding 开关不显示经典
+		// walkthrough——两头都没有，新用户什么都拿不到。
 		if (!this.storageService.isNew(StorageScope.APPLICATION)) {
 			return; // only show onboarding for new users who have never used the product before
 		}
