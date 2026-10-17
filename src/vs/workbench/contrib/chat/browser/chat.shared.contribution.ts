@@ -345,8 +345,12 @@ configurationRegistry.registerConfiguration({
 		},
 		'dictation.enabled': {
 			type: 'boolean',
-			markdownDescription: nls.localize('dictation.enabled', "Enables dictation across the product (chat input, editor, and terminal). When enabled, a microphone button appears in the chat input and the dictation shortcut becomes available. Desktop uses the selected transcription model; web uses cloud transcription."),
-			default: true,
+			// allow-any-unicode-next-line
+			markdownDescription: nls.localize('dictation.enabled', "开启后，聊天输入框会出现麦克风按钮，听写快捷键也会生效。桌面端使用所选的本地转写模型，网页端走云端转写。\n\n本产品在出厂时把它关着：语音听写要一份我们不随安装器附带的转写模型，装上麦克风按钮只会多出一个学生按了只会等到报错的图标。需要时把这一项勾上即可整套恢复。"),
+			// Olympia 出厂默认关。这一项同时决定聊天输入框的麦克风按钮、听写快捷键和
+			// 「Dictate: …」那一组命令（它们的 precondition 读的是同一个 chatSpeechToTextConfigured）；
+			// 上游默认 true 是给 Copilot 用户的，本产品 BYOK-only，转写模型不在安装器里。
+			default: false,
 			tags: ['experimental'],
 			policy: {
 				name: 'DictationEnabled',

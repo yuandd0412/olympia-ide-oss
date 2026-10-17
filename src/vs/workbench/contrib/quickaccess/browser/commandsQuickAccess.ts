@@ -39,6 +39,7 @@ import { createKeybindingCommandQuery } from '../../../services/preferences/brow
 import { IPreferencesService } from '../../../services/preferences/common/preferences.js';
 import { CHAT_OPEN_ACTION_ID } from '../../chat/browser/actions/chatActions.js';
 import { ASK_QUICK_QUESTION_ACTION_ID } from '../../chat/browser/actions/chatQuickInputActions.js';
+import { ForceUpdateAgentPluginsCommandId, RefreshAgentPluginMarketplacesCommandId, UpdateAgentPluginsCommandId } from '../../chat/browser/chat.js';
 import { IChatAgentService } from '../../chat/common/participants/chatAgents.js';
 import { ChatAgentLocation } from '../../chat/common/constants.js';
 
@@ -71,6 +72,36 @@ const KEPT_COMMANDS_IN_HIDDEN_CATEGORIES: readonly string[] = [
 	'workbench.action.reloadWindow',
 	'workbench.action.openLogsFolder',
 ];
+/**
+ * 整组类目之外，按命令 id 单条摘掉的面板入口。
+ *
+ * 「刷新插件市场」属于上游的智能体插件（agent plugins）那一套：从 marketplace 清单拉第三方
+ * 插件包。本产品只内置 Olympia 教练一个参与者，学生的机器上既没有 marketplace 清单，也没有
+ * 需要他手动刷新的东西——点它只会得到一条英文的「刷新失败」通知。所以只摘面板入口：
+ * `chatPlugins.json` 里真配了清单时，命令照旧能用（id 还在 CommandsRegistry 里），
+ * 与 'MCP' 那组的处理口径一致。
+ *
+ * 判据是「这个产品里有没有人会点它」，不是「汉化做没做」——标题现在还是英文，
+ * 但一条没人需要的命令翻成中文也只是多一行占位的中文。
+ *
+ * 写成函数而不是模块级常量：id 来自 chat 那一侧的导出，若在模块初始化时就取值，
+ * 一旦两条模块互相引用就会拿到 undefined，过滤会一声不响地失效。调用时再取，
+ * 循环里每次比较都读的是当前值。
+ */
+/**
+ * 摘掉的名单在调用时取值（避免模块初始化顺序把它变成 undefined）——见上方注释。
+ *
+ * 三条都属于智能体插件（agent plugins）那一组：从 marketplace 刷新清单、检查插件更新、
+ * 强制更新。真机上把上面两条摘掉后再念一次面板，露出来的正是它们的两个兄弟，所以整组一起收：
+ * 学生手上没有需要更新的第三方智能体插件，教练是内置的。
+ */
+function hiddenCommandIds(): readonly string[] {
+	return [
+		RefreshAgentPluginMarketplacesCommandId,
+		UpdateAgentPluginsCommandId,
+		ForceUpdateAgentPluginsCommandId,
+	];
+}
 
 export class CommandsQuickAccessProvider extends AbstractEditorCommandsQuickAccessProvider {
 
@@ -272,6 +303,10 @@ export class CommandsQuickAccessProvider extends AbstractEditorCommandsQuickAcce
 			// 整组类目按掉：见文件顶部 HIDDEN_COMMAND_CATEGORIES 的理由。放行名单在这里，
 			// 所以「重新加载窗口」这种学生真要用的一条不会被一起带走。
 			if (category && HIDDEN_COMMAND_CATEGORIES.includes(category) && !KEPT_COMMANDS_IN_HIDDEN_CATEGORIES.includes(action.item.id)) {
+				continue;
+			}
+			// 单条摘掉的面板入口：见上方 hiddenCommandIds() 的理由。
+			if (hiddenCommandIds().includes(action.item.id)) {
 				continue;
 			}
 			if (category) {
