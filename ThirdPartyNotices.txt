@@ -1826,6 +1826,312 @@ THE SOFTWARE.
 
 ---------------------------------------------------------
 
+libasprintf-0.dll (GNU gettext-runtime, library libasprintf; MSYS2 package mingw-w64-x86_64-gettext-runtime) - LGPL-2.1-or-later
+https://www.gnu.org/software/gettext/
+
+Runtime library shipped inside the Olympia IDE installer. The bundled MinGW-w64
+toolchain lives at resources/app/toolchain/mingw64, and this DLL sits with the
+compilers in resources/app/toolchain/mingw64/bin, where the gettext helpers
+(gettext.exe, envsubst.exe, ngettext.exe) load it at process start. It is part of
+what is distributed, not a build-time-only dependency of the installer.
+
+GNU LGPL-2.1-or-later. The licence text ships inside this product at
+resources/app/toolchain/mingw64/share/licenses/gettext-runtime/libasprintf/
+(COPYING refers to COPYING.LIB, which is the LGPL-2.1 text). Corresponding source:
+the mingw-w64-x86_64-gettext-runtime package from any MSYS2 mirror, and gettext
+itself from https://www.gnu.org/software/gettext/.
+---------------------------------------------------------
+
+---------------------------------------------------------
+
+libatomic-1.dll (GNU libatomic, part of GCC; MSYS2 package mingw-w64-x86_64-gcc-libs) - GPL-3.0-or-later WITH GCC-exception-3.1
+https://gcc.gnu.org/
+
+Runtime library shipped inside the Olympia IDE installer, in the bundled MinGW-w64
+toolchain at resources/app/toolchain/mingw64/bin. Code that uses atomic operations
+loads it at start-up, and cc1plus.exe imports it at process load.
+
+GPL-3.0-or-later with the GCC Runtime Library Exception 3.1, so the programs
+students compile with this toolchain are not themselves covered by the GPL. The
+licence texts ship inside this product at
+resources/app/toolchain/mingw64/share/licenses/gcc-libs/ (COPYING3, COPYING.LIB,
+COPYING.RUNTIME, and the README that states which library is under what).
+Corresponding source: the mingw-w64-x86_64-gcc-libs package from any MSYS2 mirror,
+and GCC from https://gcc.gnu.org/.
+---------------------------------------------------------
+
+---------------------------------------------------------
+
+libgcc_s_seh-1.dll (GNU libgcc, the SEH unwinder, part of GCC; MSYS2 package mingw-w64-x86_64-gcc-libs) - GPL-3.0-or-later WITH GCC-exception-3.1
+https://gcc.gnu.org/
+
+Runtime library shipped inside the Olympia IDE installer at
+resources/app/toolchain/mingw64/bin, part of the bundled MinGW-w64 toolchain. Every
+binary this product compiles loads it, and as.exe, ld.exe and cc1plus.exe import it
+at process load.
+
+GPL-3.0-or-later with the GCC Runtime Library Exception 3.1 (see the preceding
+entry for what that exception means for a student's own code). The licence texts
+ship inside this product at
+resources/app/toolchain/mingw64/share/licenses/gcc-libs/. Corresponding source: the
+mingw-w64-x86_64-gcc-libs package from any MSYS2 mirror, and GCC from
+https://gcc.gnu.org/.
+---------------------------------------------------------
+
+---------------------------------------------------------
+
+libgmp-10.dll (GNU MP, the multiple precision arithmetic library; MSYS2 package mingw-w64-x86_64-gmp) - LGPL-3.0-or-later
+https://gmplib.org/
+
+Runtime library shipped inside the Olympia IDE installer: the bundled MinGW-w64
+toolchain at resources/app/toolchain/mingw64/bin. cc1plus.exe — the compiler proper,
+which every C++ compile in the product runs — imports it at process load, together
+with libmpfr-6.dll, libmpc-3.dll and libisl-23.dll.
+
+GNU LGPL-3.0-or-later. The MSYS2 binary package carries no licence text, so this
+product ships the canonical FSF copy of the LGPL-3.0 at
+resources/app/toolchain/mingw64/share/licenses/gmp/COPYING.LESSER (the same text
+binutils distributes in share/licenses/binutils/COPYING3.LIB), together with the
+GNU GPL-3.0 it incorporates. Published by the FSF at
+https://www.gnu.org/licenses/lgpl-3.0.html. Corresponding source: the
+mingw-w64-x86_64-gmp package from any MSYS2 mirror, and GMP from
+https://gmplib.org/.
+---------------------------------------------------------
+
+---------------------------------------------------------
+
+libgmpxx-4.dll (GNU MP C++ bindings; MSYS2 package mingw-w64-x86_64-gmp) - LGPL-3.0-or-later
+https://gmplib.org/
+
+Shipped beside libgmp-10.dll because the same MSYS2 package installs both. Nothing in
+the bundled toolchain imports it — no cc1plus, no ld, no driver — and no part of
+Olympia IDE links against it either; it travels because the package that provides a
+required library provides both, and splitting a package's contents by hand is how the
+missing-DLL breakage in this toolchain happened in the first place.
+
+GNU LGPL-3.0-or-later; the licence text is the same canonical FSF copy described in the
+libgmp-10.dll entry above, at
+resources/app/toolchain/mingw64/share/licenses/gmp/COPYING.LESSER.
+---------------------------------------------------------
+
+---------------------------------------------------------
+
+libgomp-1.dll (GNU libgomp, the OpenMP runtime, part of GCC; MSYS2 package mingw-w64-x86_64-gcc-libs) - GPL-3.0-or-later WITH GCC-exception-3.1
+https://gcc.gnu.org/
+
+Runtime library shipped inside the Olympia IDE installer at
+resources/app/toolchain/mingw64/bin, part of the bundled MinGW-w64 toolchain. It is
+imported at process load by cc1plus.exe and is loaded by any program compiled with
+-fopenmp.
+
+GPL-3.0-or-later with the GCC Runtime Library Exception 3.1. The licence texts ship
+inside this product at
+resources/app/toolchain/mingw64/share/licenses/gcc-libs/. Corresponding source: the
+mingw-w64-x86_64-gcc-libs package from any MSYS2 mirror, and GCC from
+https://gcc.gnu.org/.
+---------------------------------------------------------
+
+---------------------------------------------------------
+
+libiconv-2.dll (GNU libiconv, character set conversion library; MSYS2 package mingw-w64-x86_64-libiconv) - LGPL-2.1-or-later
+https://www.gnu.org/software/libiconv/
+
+Runtime library shipped inside the Olympia IDE installer: the bundled MinGW-w64
+toolchain at resources/app/toolchain/mingw64/bin, where every binutils program needs
+it — as.exe and ld.exe import libintl-8.dll at process load, and that library
+imports this one in turn. A copy of this DLL is not on PATH on a typical student
+machine, so missing it fails the build outright rather than degrading a feature.
+
+GNU LGPL-2.1-or-later, together with libiconv's own additional permission note,
+which is part of the licence files the package ships and belongs to this
+distribution just as much as the LGPL text does. The licence text is carried by the
+MSYS2 package at share/licenses/libiconv/ and is published upstream at
+https://www.gnu.org/software/libiconv/. Corresponding source: the
+mingw-w64-x86_64-libiconv package from any MSYS2 mirror.
+---------------------------------------------------------
+
+---------------------------------------------------------
+
+libcharset-1.dll (GNU libcharset, the standalone character-set name conversion library;
+MSYS2 package mingw-w64-x86_64-libiconv) - LGPL-2.1-or-later
+https://www.gnu.org/software/libiconv/
+
+Installed next to libiconv-2.dll by the same package. Nothing in the bundled toolchain
+imports it — the conversion routines libiconv-2.dll itself uses are in that library —
+and it is kept rather than hand-deleted for the same reason as libgmpxx-4.dll: the
+assembly step ships whole packages, and picking files out of them by hand is what left
+this toolchain unable to start its own compiler.
+
+GNU LGPL-2.1-or-later with libiconv's additional permission note; the licence texts
+ship inside this product at
+resources/app/toolchain/mingw64/share/licenses/libiconv/.
+---------------------------------------------------------
+
+---------------------------------------------------------
+
+libintl-8.dll (GNU gettext-runtime, the intl library; MSYS2 package mingw-w64-x86_64-gettext-runtime) - LGPL-2.1-or-later
+https://www.gnu.org/software/gettext/
+
+Runtime library shipped inside the Olympia IDE installer at
+resources/app/toolchain/mingw64/bin, part of the bundled MinGW-w64 toolchain. as.exe
+and ld.exe import it at process load, and it imports libiconv-2.dll in turn; the
+gettext helpers in the same directory need it too.
+
+GNU LGPL-2.1-or-later. The licence text ships inside this product at
+resources/app/toolchain/mingw64/share/licenses/gettext-runtime/intl/COPYING.LIB.
+Corresponding source: the mingw-w64-x86_64-gettext-runtime package from any MSYS2
+mirror, and gettext from https://www.gnu.org/software/gettext/.
+---------------------------------------------------------
+
+---------------------------------------------------------
+
+libisl-23.dll (ISL, the integer set library used by GCC for loop optimizations; MSYS2 package mingw-w64-x86_64-isl) - MIT
+https://libisl.sourceforge.io/
+
+Runtime library shipped inside the Olympia IDE installer: the bundled MinGW-w64
+toolchain at resources/app/toolchain/mingw64/bin. cc1plus.exe imports it at process
+load, so it is required for every C++ compile in the product.
+
+MIT licence, copyright the ISL authors, principally Sven Verdoolaeze. The MSYS2
+binary package ships no licence text, and an MIT licence is a named copyright notice
+plus a permission notice, so this product does not restate one it cannot source:
+resources/app/toolchain/mingw64/share/licenses/isl/LICENCE-NOTICE.txt records the
+licence and points at the upstream source release, where the COPYING file lives.
+Corresponding source: the mingw-w64-x86_64-isl package from any MSYS2 mirror, and ISL
+from https://libisl.sourceforge.io/.
+---------------------------------------------------------
+
+---------------------------------------------------------
+
+liblto_plugin.dll (GNU GCC's LTO / plugin support for BFD ld; MSYS2 packages mingw-w64-x86_64-gcc and mingw-w64-x86_64-gcc-libs) - GPL-3.0-or-later WITH GCC-exception-3.1
+https://gcc.gnu.org/
+
+Plugin shipped inside the Olympia IDE installer's bundled MinGW-w64 toolchain, at
+resources/app/toolchain/mingw64/lib/gcc/x86_64-w64-mingw32/<version>/ and copied to
+resources/app/toolchain/mingw64/lib/bfd-plugins/. ld.exe loads it on every link,
+which is why it stays in the packaged toolchain even though LTO itself is not part
+of the contest workflow.
+
+GPL-3.0-or-later with the GCC Runtime Library Exception 3.1. The licence texts ship
+inside this product at
+resources/app/toolchain/mingw64/share/licenses/gcc-libs/. Corresponding source: the
+mingw-w64-x86_64-gcc packages from any MSYS2 mirror, and GCC from
+https://gcc.gnu.org/.
+---------------------------------------------------------
+
+---------------------------------------------------------
+
+libmpc-3.dll (GNU MPC, multiple precision complex arithmetic; MSYS2 package mingw-w64-x86_64-mpc) - LGPL-3.0-or-later
+https://www.multiprecision.org/mpc/
+
+Runtime library shipped inside the Olympia IDE installer: the bundled MinGW-w64
+toolchain at resources/app/toolchain/mingw64/bin. cc1plus.exe imports it at process
+load; it in turn needs libmpfr-6.dll and libgmp-10.dll, which is why the three ship
+together.
+
+GNU LGPL-3.0-or-later. The MSYS2 binary package carries no licence text, so this
+product ships the canonical FSF copy of the LGPL-3.0 at
+resources/app/toolchain/mingw64/share/licenses/mpc/COPYING.LESSER, together with the
+GNU GPL-3.0 it incorporates; see the libgmp-10.dll entry for the same case. Published
+by the FSF at
+https://www.gnu.org/licenses/lgpl-3.0.html. Corresponding source: the
+mingw-w64-x86_64-mpc package from any MSYS2 mirror, and MPC from
+https://www.multiprecision.org/mpc/.
+---------------------------------------------------------
+
+---------------------------------------------------------
+
+libmpfr-6.dll (GNU MPFR, multiple precision floating-point library; MSYS2 package mingw-w64-x86_64-mpfr) - LGPL-3.0-or-later
+https://www.mpfr.org/
+
+Runtime library shipped inside the Olympia IDE installer: the bundled MinGW-w64
+toolchain at resources/app/toolchain/mingw64/bin. cc1plus.exe imports it at process
+load, and it depends on libgmp-10.dll, which ships next to it.
+
+GNU LGPL-3.0-or-later. The licence text ships inside this product at
+resources/app/toolchain/mingw64/share/licenses/mpfr/ — that package keeps it in
+share/doc/mpfr rather than share/licenses, so the toolchain assembly step relocates it
+before the documentation prune, and pruning it away would have distributed the library
+without its licence. Published by the FSF at
+https://www.gnu.org/licenses/lgpl-3.0.html. Corresponding source: the
+mingw-w64-x86_64-mpfr package from any MSYS2 mirror, and MPFR from
+https://www.mpfr.org/.
+---------------------------------------------------------
+
+---------------------------------------------------------
+
+libquadmath-0.dll (GNU libquadmath, quadruple-precision math, part of GCC; MSYS2 package mingw-w64-x86_64-gcc-libs) - LGPL-2.1-or-later
+https://gcc.gnu.org/
+
+Runtime library shipped inside the Olympia IDE installer at
+resources/app/toolchain/mingw64/bin, part of the bundled MinGW-w64 toolchain. It is
+imported at process load by cc1plus.exe.
+
+GNU LGPL-2.1-or-later — libquadmath is the one library of the GCC runtime set that
+is not under GPL with the runtime exception, and the file
+resources/app/toolchain/mingw64/share/licenses/gcc-libs/README says so explicitly.
+The licence texts ship inside this product at
+resources/app/toolchain/mingw64/share/licenses/gcc-libs/ (COPYING.LIB).
+Corresponding source: the mingw-w64-x86_64-gcc-libs package from any MSYS2 mirror,
+and GCC from https://gcc.gnu.org/.
+---------------------------------------------------------
+
+---------------------------------------------------------
+
+libstdc++-6.dll (GNU libstdc++, the C++ standard library, part of GCC; MSYS2 package mingw-w64-x86_64-gcc-libs) - GPL-3.0-or-later WITH GCC-exception-3.1
+https://gcc.gnu.org/
+
+Runtime library shipped inside the Olympia IDE installer at
+resources/app/toolchain/mingw64/bin, part of the bundled MinGW-w64 toolchain. Every
+C++ program this product compiles and runs loads it, and cc1plus.exe imports it at
+process load.
+
+GPL-3.0-or-later with the GCC Runtime Library Exception 3.1 — that exception is the
+reason a student's own submission stays their own code. The licence texts ship
+inside this product at
+resources/app/toolchain/mingw64/share/licenses/gcc-libs/ (COPYING3, COPYING.RUNTIME,
+COPYING.LIB and README). Corresponding source: the mingw-w64-x86_64-gcc-libs package
+from any MSYS2 mirror, and GCC from https://gcc.gnu.org/.
+---------------------------------------------------------
+
+---------------------------------------------------------
+
+libwinpthread-1.dll (winpthreads, the POSIX threads library for Windows from the MinGW-w64 project; MSYS2 packages mingw-w64-x86_64-libwinpthread and mingw-w64-x86_64-winpthreads-git) - MIT
+https://mingw-w64.org/
+
+Runtime library shipped inside the Olympia IDE installer at
+resources/app/toolchain/mingw64/bin, part of the bundled MinGW-w64 toolchain. It is
+imported at process load by cc1plus.exe, by libstdc++-6.dll and by libgomp-1.dll, so
+it is needed for every compile and every threaded program.
+
+MIT (the text shipped in this product begins "Copyright (c) 2011 mingw-w64 project"
+and carries, in the same file, the BSD-style notice for the parts derived from the
+Posix Threads library for Microsoft Windows). Both notices ship inside this product
+at resources/app/toolchain/mingw64/share/licenses/libwinpthread/COPYING and
+resources/app/toolchain/mingw64/share/licenses/winpthreads/COPYING. Corresponding
+source: the mingw-w64-x86_64-libwinpthread / mingw-w64-x86_64-winpthreads-git
+packages from any MSYS2 mirror, and the MinGW-w64 project at https://mingw-w64.org/.
+---------------------------------------------------------
+
+---------------------------------------------------------
+
+libzstd.dll (Zstandard lossless compression library; MSYS2 package mingw-w64-x86_64-zstd) - BSD-3-Clause
+https://github.com/facebook/zstd
+
+Runtime library shipped inside the Olympia IDE installer at
+resources/app/toolchain/mingw64/bin, part of the bundled MinGW-w64 toolchain.
+binutils (objdump.exe, readelf.exe) and the zstd tools in the same directory load it
+at process start.
+
+BSD-3-Clause (Copyright Meta Platforms, Inc. and affiliates). The licence text ships
+inside this product at
+resources/app/toolchain/mingw64/share/licenses/zstd/LICENSE. Corresponding source:
+the mingw-w64-x86_64-zstd package from any MSYS2 mirror, and zstd from
+https://github.com/facebook/zstd.
+---------------------------------------------------------
+
+---------------------------------------------------------
+
 marked 14.0.0 - MIT
 https://github.com/markedjs/marked
 
@@ -3417,6 +3723,23 @@ Apache License
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+---------------------------------------------------------
+
+---------------------------------------------------------
+
+zlib1.dll (zlib data compression library; MSYS2 package mingw-w64-x86_64-zlib) - zlib License
+https://zlib.net/
+
+Runtime library shipped inside the Olympia IDE installer at
+resources/app/toolchain/mingw64/bin, part of the bundled MinGW-w64 toolchain.
+libzstd.dll's tooling and the binutils in the same directory reach for it at process
+start.
+
+The zlib License (the two-restriction BSD-style text whose copyright notice reads
+"(C) 1995-2026 Jean-loup Gailly and Mark Adler"). The licence text ships inside this
+product at resources/app/toolchain/mingw64/share/licenses/zlib/LICENSE.
+Corresponding source: the mingw-w64-x86_64-zlib package from any MSYS2 mirror, and
+zlib from https://zlib.net/.
 ---------------------------------------------------------
 
 ---------------------------------------------------------

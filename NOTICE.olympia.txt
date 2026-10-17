@@ -59,8 +59,9 @@ Chromium、V8、Node.js 及其依赖
     <安装目录>\LICENSES.chromium.html（这是 Chromium 要求的呈现形式，
     这个文件必须留在安装目录里）。
 
-    resources\app\ThirdPartyNotices.txt 覆盖的是应用层那 83 个 npm / git 组件
-    （编辑器语法、语言服务、Markdown、mermaid 等），与上一段是两份不同的清单。
+    resources\app\ThirdPartyNotices.txt 覆盖的是那 101 个 npm / git 组件与随包工具链的运行库
+    （编辑器语法、语言服务、Markdown、mermaid，以及下面「内置的 C/C++ 工具链」那一节按
+    DLL 逐个声明的那些 mingw 运行库），与上一段是两份不同的清单。
 
 随产品打包的内置扩展（41 个目录）
     每个扩展在自己的 package.json 的 license 字段里声明许可证：除上面自研的两个
@@ -90,20 +91,31 @@ Chromium、V8、Node.js 及其依赖
     语言包本身没有打进产品，只用了它的译法。
 
 内置的 C/C++ 工具链（resources\app\toolchain\mingw64，GCC 15.2.0）
-    由 MSYS2 官方的 mingw-w64-x86_64-* 包组装：gcc、gcc-libs、binutils、crt、
-    headers、libwinpthread、winpthreads-git、zlib、zstd、gettext-runtime、
-    windows-default-manifest。
+    由 MSYS2 官方的 mingw-w64-x86_64-* 包按「PE 导入表要什么就给什么」组装：gcc、
+    gcc-libs、binutils、crt、headers、libwinpthread、winpthreads-git、zlib、zstd、
+    gettext-runtime、libiconv、gmp、mpfr、mpc、isl、windows-default-manifest。
+    （后五个不是"以为编译器要"，是 build/pe-imports.mjs 读出 cc1plus/as/ld 的导入表、
+    以及 libintl-8.dll 自己的导入表之后要求补的：少了任何一个，编译器连进程都起不来，
+    只会留一行"编译失败"，没有 error、没有行号。）
     其中 GCC 与 binutils 属于 GPL（GCC 主体 GPL-3.0，运行库 libstdc++/libgcc
     是 GPL-3.0 附 GCC 运行时库例外条款，binutils GPL-3.0，winpthreads
     GPL-3.0/zlib，zlib 是 zlib License，gettext-runtime LGPL-2.1+，
     mingw-w64 的 crt 与 headers 是 ZPL-2.1 与各自的 BSD 风格声明，
-    zstd BSD-3-Clause，windows-default-manifest 是公有领域）。
+    zstd BSD-3-Clause，windows-default-manifest 是公有领域，
+    libiconv LGPL-2.1+，gmp / mpfr / mpc 是 LGPL-3.0+，isl 是 MIT）。
 
-    GPL 要求的许可证正文**已经全部随包发出**，就在这九个目录里：
+    GPL/LGPL 要求的许可证正文**已经全部随包发出**，就在这十四个目录里：
 
         resources\app\toolchain\mingw64\share\licenses\
-            binutils  crt  gcc-libs  gettext-runtime  headers
-            libwinpthread  winpthreads  zlib  zstd
+            binutils  crt  gcc-libs  gettext-runtime  gmp  headers  isl  libiconv
+            libwinpthread  mpc  mpfr  winpthreads  zlib  zstd
+
+    两处需要说明，因为它们不是"包里有就行"：mpfr 的正文在 MSYS2 包里放在 share\doc
+    而不是 share\licenses，装配流程会先把许可证文件搬到 share\licenses 再删文档目录，
+    否则等于发了一个库却不带它的许可证；gmp 与 mpc 的二进制包根本不带正文，产品内放的是
+    FSF 的标准 LGPL-3.0 文本（与 binutils 随包那份同一份字节）。isl 是 MIT，MIT 的正文
+    就是「署版权人的名字 + 授权声明」，别人替它写一份是伪造，所以 share\licenses\isl 里
+    放的是一份写明许可与上游出处、指向源码发布的说明，正文由上游源码发布。
 
     （文件名是 COPYING3、COPYING.LIB、COPYING.RUNTIME、README 这些。）
     编译器驱动本身（g++、cc1plus）没有单独的目录，它的条款与 gcc-libs 同一份
