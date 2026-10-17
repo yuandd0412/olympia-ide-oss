@@ -14,7 +14,7 @@ import * as vscode from 'vscode';
 import { CMD, KEYS } from './commands';
 import { activeTarget, renderFlags, targetSummary } from './ojTargets';
 import { PRECHECK_SOURCE, SOURCE_FILES } from './precheck';
-import { checkLevel, isChecked, STRUCTURE_LABEL_STATUS } from './precheckState';
+import { checkLevel, isChecked, onSourceEdited, STRUCTURE_LABEL_STATUS } from './precheckState';
 
 const PRIORITY_PROFILE = 100;
 const PRIORITY_RUN = 90;
@@ -95,6 +95,8 @@ export function registerStatusBar(context: vscode.ExtensionContext): void {
 			}
 		}),
 		vscode.languages.onDidChangeDiagnostics(render),
+		// 一改字，上一次的结果就不再属于这一版代码：不重画就会继续挂着「体检通过」
+		onSourceEdited(render),
 		vscode.workspace.onDidChangeConfiguration(event => {
 			if (event.affectsConfiguration('olympia.compiler')) {
 				render();

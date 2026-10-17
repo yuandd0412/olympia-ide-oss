@@ -15,7 +15,7 @@ import { CMD, KEYS } from './commands';
 import { activeTarget, renderFlags, targetSummary } from './ojTargets';
 import { resolveCompiler } from './toolchain';
 import { PRECHECK_SOURCE, SOURCE_FILES } from './precheck';
-import { checkLevel, isChecked, STRUCTURE_LABEL_PANEL } from './precheckState';
+import { checkLevel, isChecked, onSourceEdited, STRUCTURE_LABEL_PANEL } from './precheckState';
 import { PRACTICE_PATH_LABEL, statementFiles, watchStatements, TEMPLATE_PATH_LABEL } from './problemFiles';
 import { contestSummary, isContestRunning, onContestChange } from './contestMode';
 import { onSolveLogChange, readSolves, solveSummary, SOLVES_PATH_LABEL } from './solveLog';
@@ -259,6 +259,8 @@ export function registerToolsView(context: vscode.ExtensionContext): vscode.Disp
 		}),
 		vscode.window.onDidChangeActiveTextEditor(() => provider.refresh()),
 		vscode.languages.onDidChangeDiagnostics(() => provider.refresh()),
+		// 改完字，上一份结论就不属于这一版代码了；面板不重画会继续写「无问题」
+		onSourceEdited(() => provider.refresh()),
 		// 拉完题面数字就该变，不该等学生切个文件才刷新
 		watchStatements(() => void provider.refreshLibrary()),
 		onSolveLogChange(() => void provider.refreshSolves())

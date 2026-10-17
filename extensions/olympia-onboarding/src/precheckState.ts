@@ -14,6 +14,7 @@
  *  它说"没报错"只等于结构没断。绿色勾是让人在提交前信任它的，所以那一层必须写清楚。
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
+import { SOURCE_FILES } from './precheck';
 
 /** `structure` = 只跑了进程内的语法解析；`compiled` = 真的用评测机那套开关编过一遍。 */
 export type CheckLevel = 'structure' | 'compiled';
@@ -45,4 +46,28 @@ export function checkLevel(document: vscode.TextDocument): CheckLevel | undefine
 
 export function forgetDocument(uri: vscode.Uri): void {
 	checked.delete(keyOf(uri));
+}
+
+/** 改完字之后多久重画一次：再短就是每个按键都去读一遍诊断，再长就还有一瞬的假绿。 */
+export const STALE_RERENDER_MS = 200;
+
+/**
+ * 订阅「源文件被改过」。两枚常驻界面都必须听这个：`isChecked` 是按文档版本判的，
+ * 一改版本就不再等于查过的那一版——可要是没人重画，状态栏会继续挂着上一次的
+ * 「体检通过」，而那正是"绿色勾替一份没查的代码说话"（2026-10-17 真机看到过一次：
+ * 部件级检查只在闭合新块时跑，普通改字不触发任何检查，chip 就一直不动）。
+ */
+export function onSourceEdited(handler: () => void, throttleMs: number = STALE_RERENDER_MS): vscode.Disposable {
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	const subscription = vscode.workspace.onDidChangeTextDocument(event => {
+		if (!SOURCE_FILES.test(event.document.fileName)) {
+			return;
+		}
+		clearTimeout(timer);
+		timer = setTimeout(handler, throttleMs);
+	});
+	return new vscode.Disposable(() => {
+		clearTimeout(timer);
+		subscription.dispose();
+	});
 }
