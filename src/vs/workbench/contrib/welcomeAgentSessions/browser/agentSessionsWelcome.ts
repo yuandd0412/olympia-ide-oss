@@ -743,7 +743,7 @@ export class AgentSessionsWelcomePage extends EditorPane {
 		// Content
 		const content = append(tosCard, $('.agentSessionsWelcome-walkthroughCard-content'));
 		const title = append(content, $('.agentSessionsWelcome-walkthroughCard-title'));
-		title.textContent = localize('tosTitle', "免费试用 GitHub Copilot，无需登录!");
+		title.textContent = localize('tosTitle', "开始使用 {0} AI", providers.default.name);
 
 		const desc = append(content, $('.agentSessionsWelcome-walkthroughCard-description'));
 		const descriptionMarkdown = new MarkdownString(

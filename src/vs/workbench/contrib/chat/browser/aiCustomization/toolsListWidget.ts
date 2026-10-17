@@ -12,6 +12,7 @@ import { RenderIndentGuides } from '../../../../../base/browser/ui/tree/abstract
 import { IObjectTreeElement, ObjectTreeElementCollapseState } from '../../../../../base/browser/ui/tree/tree.js';
 import { StandardMouseEvent } from '../../../../../base/browser/mouseEvent.js';
 import { IAnchor } from '../../../../../base/browser/ui/contextview/contextview.js';
+import product from '../../../../../platform/product/common/product.js';
 import { Action } from '../../../../../base/common/actions.js';
 import { Delayer } from '../../../../../base/common/async.js';
 import { CancellationToken, CancellationTokenSource } from '../../../../../base/common/cancellation.js';
@@ -521,7 +522,7 @@ export class ToolsListWidget extends Disposable {
 		DOM.append(DOM.append(this._header, $('.section-title-row')), $('h2.section-title')).textContent = localize('toolsListTitle', "工具");
 
 		const description = DOM.append(this._header, $('p.section-title-description'));
-		DOM.append(description, $('span.section-title-description-text')).textContent = localize('toolsListSubtitle', "启用或禁用聊天可用的工具。禁用的工具不会通告给智能体。除 Copilot CLI 外的工具在客户端上运行，并要求客户端已连接。");
+		DOM.append(description, $('span.section-title-description-text')).textContent = localize('toolsListSubtitle', "启用或禁用聊天可用的工具。禁用的工具不会通告给智能体。");
 		// Whitespace node so the gap collapses when the link wraps.
 		description.appendChild(document.createTextNode(' '));
 
@@ -673,6 +674,11 @@ export class ToolsListWidget extends Disposable {
 	}
 
 	private _createStaticReadOnlySets(): readonly IToolSet[] {
+		// 这一组是 Copilot CLI 那个运行时的内置工具。BYOK 产品里根本没有该运行时，列出来只是
+		// 一排点不动的只读行，所以整组不注册（不是改文案：分组本来就不该出现）。
+		if (product.defaultChatAgent?.byokOnly) {
+			return [];
+		}
 		const tools: IToolData[] = COPILOT_CLI_TOOLS.map(t => ({
 			id: `copilot-cli:${t.name}`,
 			displayName: t.name,

@@ -400,27 +400,16 @@ export async function showConfigureHooksQuickPick(
 							.filter(([hookType]) => targetHookTypes.has(hookType))
 							.map(makeItem);
 					} else {
-						// No target: group into Default (shared), VS Code Only, Copilot Only
+						// No target: this product only ever runs the local agent, so events that the
+						// Copilot CLI alone supports are left out — they can never fire here.
 						const vscodeTypes = new Set(Object.values(HOOKS_BY_TARGET[Target.VSCode]));
-						const copilotTypes = new Set(Object.values(HOOKS_BY_TARGET[Target.GitHubCopilot]));
 						const allEntries = Object.entries(HOOK_METADATA) as [HookType, IHookTypeMeta][];
-
-						const shared = allEntries.filter(([h]) => vscodeTypes.has(h) && copilotTypes.has(h));
-						const vscodeOnly = allEntries.filter(([h]) => vscodeTypes.has(h) && !copilotTypes.has(h));
-						const copilotOnly = allEntries.filter(([h]) => !vscodeTypes.has(h) && copilotTypes.has(h));
+						const local = allEntries.filter(([h]) => vscodeTypes.has(h));
 
 						pickerItems = [];
-						if (shared.length > 0) {
-							pickerItems.push({ type: 'separator', label: localize('hookSection.default', "本地/Copilot CLI 智能体") });
-							pickerItems.push(...shared.map(makeItem));
-						}
-						if (vscodeOnly.length > 0) {
-							pickerItems.push({ type: 'separator', label: localize('hookSection.vscodeOnly', "本地智能体") });
-							pickerItems.push(...vscodeOnly.map(makeItem));
-						}
-						if (copilotOnly.length > 0) {
-							pickerItems.push({ type: 'separator', label: localize('hookSection.copilotCliOnly', "Copilot CLI 智能体") });
-							pickerItems.push(...copilotOnly.map(makeItem));
+						if (local.length > 0) {
+							pickerItems.push({ type: 'separator', label: localize('hookSection.local', "本地智能体") });
+							pickerItems.push(...local.map(makeItem));
 						}
 					}
 

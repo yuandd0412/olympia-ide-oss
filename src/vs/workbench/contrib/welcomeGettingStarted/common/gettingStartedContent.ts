@@ -26,10 +26,6 @@ const defaultChat = {
 	privacyStatementUrl: product.defaultChatAgent?.privacyStatementUrl ?? ''
 };
 
-export function copilotSettingsMessage(manageSettingsUrl: string): string {
-	return localize({ key: 'settings', comment: ['{Locked="["}', '{Locked="]({0})"}', '{Locked="]({1})"}'] }, "{0} Copilot 可能会显示 [公共代码]({1})建议并使用你的数据来改进产品。你可以随时更改这些 [设置]({2})。", defaultChat.provider.default.name, defaultChat.publicCodeMatchesUrl, manageSettingsUrl);
-}
-
 class GettingStartedContentProviderRegistry {
 
 	private readonly providers = new Map<string, IGettingStartedContentProvider>();

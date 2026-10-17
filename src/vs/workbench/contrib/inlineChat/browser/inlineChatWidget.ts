@@ -324,7 +324,7 @@ export abstract class InlineChatWidget {
 			this._elements.disclaimerLabel.classList.toggle('hidden', !showDisclaimer);
 
 			if (showDisclaimer) {
-				const renderedMarkdown = disposables.add(this.#markdownRendererService.render(new MarkdownString(localize({ key: 'termsDisclaimer', comment: ['{Locked="]({2})"}', '{Locked="]({3})"}'] }, "继续使用 {0} Copilot 即表示你同意 {1} 的[条款]({2})和[隐私声明]({3})", product.defaultChatAgent?.provider?.default?.name ?? '', product.defaultChatAgent?.provider?.default?.name ?? '', product.defaultChatAgent?.termsStatementUrl ?? '', product.defaultChatAgent?.privacyStatementUrl ?? ''), { isTrusted: true })));
+				const renderedMarkdown = disposables.add(this.#markdownRendererService.render(new MarkdownString(localize({ key: 'termsDisclaimer', comment: ['{Locked="]({2})"}', '{Locked="]({3})"}'] }, "继续使用 {0} 即表示你同意 {1} 的[条款]({2})和[隐私声明]({3})", product.defaultChatAgent?.provider?.default?.name ?? '', product.defaultChatAgent?.provider?.default?.name ?? '', product.defaultChatAgent?.termsStatementUrl ?? '', product.defaultChatAgent?.privacyStatementUrl ?? ''), { isTrusted: true })));
 				this._elements.disclaimerLabel.appendChild(renderedMarkdown.element);
 			}
 
