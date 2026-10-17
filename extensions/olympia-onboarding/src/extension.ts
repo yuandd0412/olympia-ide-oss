@@ -35,7 +35,9 @@ import { openLicenceNotices } from './licences';
 import { CMD } from './commands';
 
 const WEBSITE = 'https://olympia.dpdns.org';
-const DOCS = 'https://olympia.dpdns.org/docs';
+const DOCS = `${WEBSITE}/docs`;
+/** 官网首页的下载区锚点。环境自检发现这台机器没编译器时直接把它点开，省得用户自己找。 */
+const DOWNLOAD_PAGE = `${WEBSITE}/#download`;
 const ENVIRONMENT_CHANNEL_TITLE = 'Olympia 环境自检';
 
 export interface TargetMatch {
@@ -80,6 +82,40 @@ function sourceLabel(source: CompilerSource['kind'] | undefined): string {
 	}
 }
 
+/**
+ * 找不到编译器时该怎么补救。三种来源要分开说：探测落到 `path` 意味着这台机器上
+ * 根本没有编译器——精简版（不内置 MinGW）装在没有编译器的机房机器上正好是这一种，
+ * 此时「重新下载安装包」是废话，该说的是下完整版或自己装一个。
+ * `bundled` 却跑不起来才是安装不完整；`configured` 是本人填错了路径。
+ */
+function missingCompilerAdvice(report: CompilerReport): readonly string[] {
+	switch (report.source) {
+		case 'bundled':
+			return [
+				'本应随产品一起安装的内置编译器跑不起来，多半是安装不完整。',
+				`请到 ${DOWNLOAD_PAGE} 重新下载并覆盖安装。`,
+			];
+		case 'configured':
+			return [
+				`设置里指定的那个路径跑不起来：${report.binary}。`,
+				'清空 olympia.compiler.path 可回到自动探测；也可改成 g++.exe 的完整路径后重试。',
+			];
+		default:
+			return [
+				'这台机器上没找到任何 C++ 编译器（内置工具链和系统 PATH 都没有）。',
+				`三条路：①下载带编译器的完整版（${DOWNLOAD_PAGE}）；`,
+				'②自己装一个 MinGW-w64 并把它的 bin 目录加进系统 PATH；',
+				'③在设置 olympia.compiler.path 里直接填 g++.exe 的完整路径。',
+				'任选其一后，在命令面板里重新运行「环境自检」。',
+			];
+	}
+}
+
+/** 按钮文字与上面三条补救对应：PATH 空着时先给完整版，其次才是手工填路径。 */
+function missingCompilerActions(source: CompilerSource['kind'] | undefined): readonly string[] {
+	return source === 'configured' ? ['打开设置', '查看详情'] : ['下载完整版', '打开设置', '查看详情'];
+}
+
 function renderReport(report: CompilerReport): string {
 	const lines: string[] = [];
 	if (!report.available) {
@@ -89,8 +125,7 @@ function renderReport(report: CompilerReport): string {
 			lines.push(`原因：${report.error}`);
 		}
 		lines.push('');
-		lines.push('如果这是安装了内置工具链的正式版本，请重新下载安装包；');
-		lines.push('如果是开发版本，可在设置 olympia.compiler.path 中指定 g++ 的完整路径。');
+		lines.push(...missingCompilerAdvice(report));
 		return lines.join('\n');
 	}
 
@@ -137,16 +172,16 @@ async function showEnvironmentReport(): Promise<CompilerReport> {
 
 	const summary = report.available
 		? `编译器就绪：g++ ${report.version ?? '未知'}（${sourceLabel(report.source)}）`
-		: '未检测到 g++，请在设置中指定 olympia.compiler.path';
+		: report.source === 'path'
+			? '这台机器上没有可用的 C++ 编译器，编译和跑样例都用不了'
+			: `编译器跑不起来（${sourceLabel(report.source)}），详见环境自检`;
 
-	// Only offer the settings shortcut when there is actually something to configure — on a
-	// bundled install the compiler is already right there.
-	const actions = report.available ? ['查看详情'] : ['打开设置', '查看官网'];
+	const actions = report.available ? ['查看详情'] : missingCompilerActions(report.source);
 	const choice = await vscode.window.showInformationMessage(summary, ...actions);
 	if (choice === '打开设置') {
 		await vscode.commands.executeCommand('workbench.action.openSettings', 'olympia.compiler.path');
-	} else if (choice === '查看官网') {
-		await vscode.commands.executeCommand(CMD.openWebsite);
+	} else if (choice === '下载完整版') {
+		await vscode.env.openExternal(vscode.Uri.parse(DOWNLOAD_PAGE));
 	}
 	return report;
 }

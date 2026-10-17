@@ -18,8 +18,24 @@ const HISTORY_TURNS = 6;
 const MAX_DOCUMENT_CHARS = 12_000;
 /** 题面比代码更容易长（洛谷一份题面常带大段说明与多组样例），给得比代码少一点，留给问题与历史。 */
 const MAX_STATEMENT_CHARS = 6_000;
-/** 题面库的目录。写题面的是 olympia-contest，这边只读——共享的是文件，不是代码。 */
-const PROBLEMS_DIR = '.olympia/problems';
+/**
+ * 题面库的目录。写题面的是 olympia-contest，这边只读——共享的是文件，不是代码。
+ *
+ * 目录名不能写死：真源是 olympia-contest 贡献的 `olympia.problem.problemsDir` 设置。
+ * 学生改过目录之后，contest 往新目录写题面，而教练还在旧目录里找，结果是「问教练」
+ * 每次都回一句「题面库里找不到这道题」——题面明明就在盘上，用户看到的却是我们
+ * 承诺过的功能（带题面提问）凭空失灵。跨扩展没有 import 这条路，所以按键名读。
+ */
+const PROBLEMS_DIR_SETTING = 'problemsDir';
+const DEFAULT_PROBLEMS_DIR = '.olympia/problems';
+
+function problemsDir(scope: vscode.Uri): string {
+	const configured = vscode.workspace.getConfiguration('olympia.problem', scope).get<string>(PROBLEMS_DIR_SETTING, DEFAULT_PROBLEMS_DIR);
+	return (configured ?? '').trim() || DEFAULT_PROBLEMS_DIR;
+}
+
+/** 一次列目录最多取这么多份题面。题面库比这大时按题号可能找不到，但那是几千份的量级。 */
+const MAX_STATEMENT_FILES = 400;
 
 const PERSONA = [
 	'你是 Olympia IDE 内置的信息学竞赛（NOIP/NOI/CSP）教练，用简体中文回答。',
@@ -89,7 +105,7 @@ function editorContext(): string {
  * ——老版本是带的，官网和 `/wa` 的说明也写着「结合题面」。
  *
  * 路径按大小写不敏感对齐题号（题面文件名和源文件名可能一个 P53 一个 p53）。
- * 读的是 `.olympia/problems` 这个共享文件，不 import olympia-contest：跨扩展没有 import 这条路，
+ * 读的是 `olympia.problem.problemsDir` 指向的那个共享目录，不 import olympia-contest：跨扩展没有 import 这条路，
  * 与 solvedMarks 那边是同一个约定。
  */
 export async function statementContext(): Promise<string> {
@@ -99,7 +115,7 @@ export async function statementContext(): Promise<string> {
 		return '（本轮没有题面：要么没打开工程，要么没打开源文件。）';
 	}
 	const wanted = basenameOf(file).replace(/\.[^.]*$/, '').toLowerCase();
-	const found = await vscode.workspace.findFiles(new vscode.RelativePattern(folder, `${PROBLEMS_DIR}/*.md`), undefined, 400);
+	const found = await vscode.workspace.findFiles(new vscode.RelativePattern(folder, `${problemsDir(folder.uri)}/*.md`), undefined, MAX_STATEMENT_FILES);
 	const hit = found.find(uri => basenameOf(uri).toLowerCase() === `${wanted}.md`) ?? found.find(uri => basenameOf(uri).toLowerCase() === `${wanted}`);
 	if (!hit) {
 		return `（本轮没有题面：题面库里找不到 ${wanted} 这道题。按 Ctrl+Alt+P 拉一份，或把题意要点补进问题里。）`;
