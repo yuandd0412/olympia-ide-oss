@@ -15,6 +15,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import { DEFAULT_REQUEST_TIMEOUT_MS } from './net';
 import { detectPlatform, fetchProblem, type Platform, type Problem } from './sources';
 import { renderStatement, templateFor, FORMAT_LABEL, PLATFORM_TEXT, platformText, MY_TEMPLATE_LABEL, MY_TEMPLATE_HINT, TEMPLATE_FOLDER, TEMPLATE_FILE, DEFAULT_PROBLEMS_DIR, STATEMENT_EXTENSION, type ContestFormat } from './templates';
 import { readLibrary, editStatement, toPicks, FAVORITE_BUTTON, UNFAVORITE_BUTTON, type LibraryPick } from './problemLibrary';
@@ -47,7 +48,7 @@ function cfg() {
 	return {
 		problemsDir: c.get<string>('problemsDir', DEFAULT_PROBLEMS_DIR),
 		templateOnPull: c.get<boolean>('templateOnPull', false),
-		timeoutMs: c.get<number>('requestTimeoutMs', 15000),
+		timeoutMs: c.get<number>('requestTimeoutMs', DEFAULT_REQUEST_TIMEOUT_MS),
 		cfMetadata: c.get<boolean>('cfMetadata', false),
 	};
 }

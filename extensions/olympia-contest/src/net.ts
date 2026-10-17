@@ -22,8 +22,16 @@ export interface FetchResult {
 	finalUrl: string;
 }
 
+/**
+ * UA 里的产品版本。写在这里而不是取 vscode.version：net.ts 必须能被纯 Node 加载
+ * （build/test-contest-fetch.mjs 直接 require out/sources.js），引一个 vscode 进来那个测试
+ * 当场就崩。这个字面量由 scripts/oneoff/check-version-mirrors.mjs 钉住必须等于
+ * oss/package.json 的 major.minor，发新版忘了改就是红的。
+ */
+const UA_PRODUCT_VERSION = '1.140';
+
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-	+ 'Chrome/124.0 Safari/537.36 OlympiaIDE/1.140';
+	+ 'Chrome/124.0 Safari/537.36 OlympiaIDE/' + UA_PRODUCT_VERSION;
 
 const MAX_HOPS = 4;
 
@@ -50,9 +58,12 @@ function mergeCookies(jar: string, incoming: string): string {
 	return [...map].map(([k, v]) => `${k}=${v}`).join('; ');
 }
 
+/** 拉题面的默认上限：慢站一次跳转就要几秒，太短会把能拉到的题判成拉不到。 */
+export const DEFAULT_REQUEST_TIMEOUT_MS = 15_000;
+
 export async function fetchText(
 	url: string,
-	timeoutMs = 15000,
+	timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
 	extraHeaders: Record<string, string> = {},
 ): Promise<FetchResult> {
 	let current = url;

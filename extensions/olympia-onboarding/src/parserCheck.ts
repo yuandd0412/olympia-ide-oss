@@ -15,7 +15,7 @@
  *  wasm 加载失败、文件过长而跳过解析，一律回一条 blocked，让面板说「没查」而不是「没问题」。
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
-import { Finding, SOURCE_FILES } from './precheck';
+import { Finding, MAX_FINDINGS, SOURCE_FILES } from './precheck';
 
 /** 随扩展发出去的三个文件都在 syntax/ 下：运行时 JS、它自己的 wasm、C++ 语法。 */
 const SYNTAX_DIR = 'syntax';
@@ -23,8 +23,6 @@ const RUNTIME = 'tree-sitter.js';
 const CPP_GRAMMAR = 'tree-sitter-cpp.wasm';
 /** 再长就不解析了：结构检查的意义是边写边报，几十万字节的文件会让等待重新变明显。 */
 const MAX_PARSE_CHARS = 200_000;
-/** 一次报太多没意义：根因通常在最前面几条，后面多是连锁反应。 */
-const MAX_FINDINGS = 12;
 /** 一条提示里最多带这么多原文，够定位就行；ERROR 节点可能吞掉后面几十行。 */
 const MAX_SNIPPET_CHARS = 48;
 

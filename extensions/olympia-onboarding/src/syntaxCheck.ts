@@ -23,12 +23,10 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { compilerBinary, planCompile } from './compile';
-import { Finding, SOURCE_FILES } from './precheck';
+import { Finding, MAX_FINDINGS, SOURCE_FILES } from './precheck';
 
 /** 语法检查的超时：一次完整编译的上限，比学生愿意等的时间短。 */
 const SYNTAX_TIMEOUT_MS = 20000;
-/** 只报前几条：g++ 的根因通常在第一条，后面的多是连锁反应。 */
-const MAX_FINDINGS = 12;
 
 export interface SyntaxResult {
 	readonly findings: readonly Finding[];

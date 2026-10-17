@@ -233,13 +233,18 @@ const OUTPUT_LOCKED = /cannot open output file/i;
  * 拼进脚本里又要处理引号。
  * 返回空数组只表示"没查到"，不表示"没有进程占着"——所以调用方两种情况分开说。
  */
+/** 问 PowerShell「谁占着这个 exe」的上限：它只用来给报错补一句是谁占着，不该拖住保存。 */
+const WHO_PROBES_MS = 10_000;
+/** 上一条问完接着 taskkill，给一半时间就够。 */
+const KILL_PROBES_MS = 5_000;
+
 function processesUsing(exePath: string): Promise<number[]> {
 	const probe = '$p=$env:OLYMPIA_LOCKED_EXE; Get-CimInstance Win32_Process | '
 		+ 'Where-Object { $_.ExecutablePath -and $_.ExecutablePath.ToLower() -eq $p.ToLower() } | '
 		+ 'ForEach-Object { $_.ProcessId }';
 	return new Promise(resolve => {
 		execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', probe],
-			{ env: { ...process.env, OLYMPIA_LOCKED_EXE: exePath }, timeout: 10000, windowsHide: true },
+			{ env: { ...process.env, OLYMPIA_LOCKED_EXE: exePath }, timeout: WHO_PROBES_MS, windowsHide: true },
 			(error, stdout) => {
 				resolve(error ? [] : stdout.split(/\r?\n/).map(line => Number(line.trim())).filter(n => Number.isInteger(n) && n > 0));
 			});
@@ -248,7 +253,7 @@ function processesUsing(exePath: string): Promise<number[]> {
 
 function stopProcesses(pids: number[]): Promise<void> {
 	return Promise.all(pids.map(pid => new Promise<void>(resolve => {
-		execFile('taskkill.exe', ['/F', '/PID', String(pid)], { timeout: 5000, windowsHide: true }, () => resolve());
+		execFile('taskkill.exe', ['/F', '/PID', String(pid)], { timeout: KILL_PROBES_MS, windowsHide: true }, () => resolve());
 	}))).then(() => undefined);
 }
 

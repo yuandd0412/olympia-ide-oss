@@ -261,4 +261,7 @@ export function toDiagnostic(finding: Finding): vscode.Diagnostic {
 	return diagnostic;
 }
 
+/** 一次报太多没意义：根因通常在最前面几条，后面多是连锁反应。语法检查与解析检查共用这一个上限。 */
+export const MAX_FINDINGS = 12;
+
 export const SOURCE_FILES = /\.(?:c|cc|cpp|cxx|c\+\+|h|hh|hpp|hxx)$/i;
