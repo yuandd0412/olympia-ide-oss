@@ -100,6 +100,12 @@ function hiddenCommandIds(): readonly string[] {
 		RefreshAgentPluginMarketplacesCommandId,
 		UpdateAgentPluginsCommandId,
 		ForceUpdateAgentPluginsCommandId,
+		// 后两条是同组的插件作者命令（把一批文件打包成 agent 插件 / 从源清单装插件）。
+		// 它们的 id 写在各自动作类的 static readonly ID 上、没有导出，所以这里只能落字面量；
+		// 检查台（scripts/oneoff/test-palette-trim.mjs）会把这两个字面量与注册处对拍，
+		// 上游改了 id 就翻红，不会留下一个悄悄失效的名单。
+		'workbench.action.chat.createPlugin',
+		'workbench.action.chat.installPluginFromSource',
 	];
 }
 
