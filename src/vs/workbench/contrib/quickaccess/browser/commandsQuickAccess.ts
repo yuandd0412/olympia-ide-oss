@@ -40,6 +40,7 @@ import { IPreferencesService } from '../../../services/preferences/common/prefer
 import { CHAT_OPEN_ACTION_ID } from '../../chat/browser/actions/chatActions.js';
 import { ASK_QUICK_QUESTION_ACTION_ID } from '../../chat/browser/actions/chatQuickInputActions.js';
 import { ForceUpdateAgentPluginsCommandId, RefreshAgentPluginMarketplacesCommandId, UpdateAgentPluginsCommandId } from '../../chat/browser/chat.js';
+import { CONFIGURE_DICTATION_INSTRUCTIONS_ACTION_ID, CONFIGURE_VOICE_INSTRUCTIONS_ACTION_ID } from '../../chat/browser/actions/configureVoiceInstructionsAction.js';
 import { IChatAgentService } from '../../chat/common/participants/chatAgents.js';
 import { ChatAgentLocation } from '../../chat/common/constants.js';
 
@@ -87,25 +88,32 @@ const KEPT_COMMANDS_IN_HIDDEN_CATEGORIES: readonly string[] = [
  * 写成函数而不是模块级常量：id 来自 chat 那一侧的导出，若在模块初始化时就取值，
  * 一旦两条模块互相引用就会拿到 undefined，过滤会一声不响地失效。调用时再取，
  * 循环里每次比较都读的是当前值。
- */
-/**
- * 摘掉的名单在调用时取值（避免模块初始化顺序把它变成 undefined）——见上方注释。
  *
- * 三条都属于智能体插件（agent plugins）那一组：从 marketplace 刷新清单、检查插件更新、
- * 强制更新。真机上把上面两条摘掉后再念一次面板，露出来的正是它们的两个兄弟，所以整组一起收：
- * 学生手上没有需要更新的第三方智能体插件，教练是内置的。
+ * 真机上把上面三条摘掉后再念一次面板，「聊天」那一组就干净了；接着念「语音」和英文
+ * 「dictat」才露出剩下这几条——它们分属语音模式与听写的指令文件，不在「聊天」类目里，
+ * 所以第一次按类目扫的时候看不见。其中两条上游自己就标成 dev utility（模拟后端掉线、
+ * 重放入门指引），却因为类目写成「语音」而躲过了整组类目过滤。
  */
 function hiddenCommandIds(): readonly string[] {
 	return [
 		RefreshAgentPluginMarketplacesCommandId,
 		UpdateAgentPluginsCommandId,
 		ForceUpdateAgentPluginsCommandId,
-		// 后两条是同组的插件作者命令（把一批文件打包成 agent 插件 / 从源清单装插件）。
-		// 它们的 id 写在各自动作类的 static readonly ID 上、没有导出，所以这里只能落字面量；
-		// 检查台（scripts/oneoff/test-palette-trim.mjs）会把这两个字面量与注册处对拍，
+		// 后两条是同组的插件作者命令（把一批文件打包成 agent 插件 / 从源清单装插件），
+		// 再往下三条是语音模式的转写视图与两个 dev utility。这些 id 都写在各自动作类或
+		// 模块内部、上游没导出，所以这里只能落字面量；检查台
+		// （scripts/oneoff/test-palette-trim.mjs）会把字面量与注册处逐条对拍，
 		// 上游改了 id 就翻红，不会留下一个悄悄失效的名单。
 		'workbench.action.chat.createPlugin',
 		'workbench.action.chat.installPluginFromSource',
+		'agentsVoice.simulateConnection',
+		'agentsVoice.resetOnboarding',
+		'agentsVoice.showTranscripts',
+		// 最后两条是面板里仅存的整行英文（类目与标题都没翻：Voice: Configure …）。
+		// 它们改的是听写／语音模式的指令文件，而这两个功能本产品出厂关着，
+		// 按同一判据（有没有人会点它）一起摘掉，而不是给用不到的文案补词典。
+		CONFIGURE_DICTATION_INSTRUCTIONS_ACTION_ID,
+		CONFIGURE_VOICE_INSTRUCTIONS_ACTION_ID,
 	];
 }
 
