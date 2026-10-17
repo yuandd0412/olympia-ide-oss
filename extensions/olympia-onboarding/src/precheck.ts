@@ -27,7 +27,9 @@ export type RuleId =
 	| 'reservedWord'
 	| 'removedCpp'
 	/** 语法这一半不在这里：见 syntaxCheck.ts（真的把代码编一遍）。 */
-	| 'syntax';
+	| 'syntax'
+	/** 结构这一半也不在这里：见 parserCheck.ts（进程内的语法解析，不启编译器）。 */
+	| 'parse';
 
 export interface Finding {
 	readonly rule: RuleId;

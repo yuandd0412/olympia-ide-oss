@@ -165,3 +165,7 @@ test/unit/electron/renderer.js
 test/unit/fullJsonStreamReporter.js
 test/unit/node/index.js
 test/unit/reporter.js
+
+# Olympia：随 olympia-onboarding 发的第三方构建件（web-tree-sitter 的 Emscripten glue），
+# 不是我们新写的 JS，改不成 TypeScript；两个 .wasm 由它按文件名找。
+extensions/olympia-onboarding/syntax/tree-sitter.js

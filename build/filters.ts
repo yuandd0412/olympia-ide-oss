@@ -93,6 +93,11 @@ export const unicodeFilter = Object.freeze<string[]>([
 
 	// Files with licences
 	'!src/vs/platform/endpoint/common/licenseAgreement.ts',
+	// Olympia: a vendored build artifact shipped inside olympia-onboarding (the
+	// web-tree-sitter glue plus its wasm grammars). It is space-indented and carries no
+	// header of ours, so the line-by-line guards below must not police it - same category
+	// as the generated / notebook-out js entries above.
+	'!extensions/olympia-onboarding/syntax/**',
 ]);
 
 export const indentationFilter = Object.freeze<string[]>([
@@ -191,6 +196,11 @@ export const indentationFilter = Object.freeze<string[]>([
 	'!extensions/ipynb/notebook-out/**',
 	'!extensions/notebook-renderers/renderer-out/*.js',
 	'!extensions/simple-browser/media/*.js',
+	// Olympia: a vendored build artifact shipped inside olympia-onboarding (the
+	// web-tree-sitter glue plus its wasm grammars). It is space-indented and carries no
+	// header of ours, so the line-by-line guards below must not police it - same category
+	// as the generated / notebook-out js entries above.
+	'!extensions/olympia-onboarding/syntax/**',
 ]);
 
 export const copyrightFilter = Object.freeze<string[]>([
@@ -253,6 +263,11 @@ export const copyrightFilter = Object.freeze<string[]>([
 
 	// extensions/copilot has its own code style
 	'!extensions/copilot/**',
+	// Olympia: a vendored build artifact shipped inside olympia-onboarding (the
+	// web-tree-sitter glue plus its wasm grammars). It is space-indented and carries no
+	// header of ours, so the line-by-line guards below must not police it - same category
+	// as the generated / notebook-out js entries above.
+	'!extensions/olympia-onboarding/syntax/**',
 ]);
 
 export const tsFormattingFilter = Object.freeze<string[]>([
@@ -279,6 +294,11 @@ export const tsFormattingFilter = Object.freeze<string[]>([
 
 	// extensions/copilot has its own code style
 	'!extensions/copilot/**',
+	// Olympia: a vendored build artifact shipped inside olympia-onboarding (the
+	// web-tree-sitter glue plus its wasm grammars). It is space-indented and carries no
+	// header of ours, so the line-by-line guards below must not police it - same category
+	// as the generated / notebook-out js entries above.
+	'!extensions/olympia-onboarding/syntax/**',
 ]);
 
 export const eslintFilter = Object.freeze<string[]>([
@@ -290,7 +310,12 @@ export const eslintFilter = Object.freeze<string[]>([
 		.toString()
 		.split(/\r\n|\n/)
 		.filter(line => line && !line.startsWith('#'))
-		.map(line => line.startsWith('!') ? line.slice(1) : `!${line}`)
+		.map(line => line.startsWith('!') ? line.slice(1) : `!${line}`),
+	// Olympia: a vendored build artifact shipped inside olympia-onboarding (the
+	// web-tree-sitter glue plus its wasm grammars). It is space-indented and carries no
+	// header of ours, so the line-by-line guards below must not police it - same category
+	// as the generated / notebook-out js entries above.
+	'!extensions/olympia-onboarding/syntax/**',
 ]);
 
 export const stylelintFilter = Object.freeze<string[]>([

@@ -15,7 +15,7 @@ import { CMD, KEYS } from './commands';
 import { activeTarget, renderFlags, targetSummary } from './ojTargets';
 import { resolveCompiler } from './toolchain';
 import { PRECHECK_SOURCE, SOURCE_FILES } from './precheck';
-import { isChecked } from './precheckState';
+import { checkLevel, isChecked, STRUCTURE_LABEL_PANEL } from './precheckState';
 import { PRACTICE_PATH_LABEL, statementFiles, watchStatements, TEMPLATE_PATH_LABEL } from './problemFiles';
 import { contestSummary, isContestRunning, onContestChange } from './contestMode';
 import { onSolveLogChange, readSolves, solveSummary, SOLVES_PATH_LABEL } from './solveLog';
@@ -200,7 +200,7 @@ class OlympiaToolsProvider implements vscode.TreeDataProvider<TreeEntry> {
 			},
 			{
 				kind: 'state', id: 'precheck', label: '提交前体检', value: count,
-				icon: count === '无问题' ? 'check' : 'error', command: CMD.showProblems,
+				icon: count === '无问题' || count === STRUCTURE_LABEL_PANEL ? 'check' : 'error', command: CMD.showProblems,
 				tooltip: '点击打开「问题」面板查看当前文件的体检结果。'
 			},
 			{
@@ -236,6 +236,10 @@ function precheckCount(): string {
 	// 空数组有两种来路：查过且没问题，和根本没查过。只有前者能写「无问题」。
 	if (!isChecked(editor.document)) {
 		return '未检查';
+	}
+	// 部件级那一跑没启动编译器：它说没报错只等于结构没断，写不成「无问题」。
+	if (checkLevel(editor.document) === 'structure') {
+		return findings.length === 0 ? STRUCTURE_LABEL_PANEL : `${findings.length} 处结构错误`;
 	}
 	return findings.length === 0 ? '无问题' : `${findings.length} 处编译错误`;
 }

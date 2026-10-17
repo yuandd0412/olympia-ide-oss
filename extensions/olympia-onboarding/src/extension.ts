@@ -16,7 +16,9 @@
 import * as vscode from 'vscode';
 import { analyse, toDiagnostic, SOURCE_FILES, type Finding } from './precheck';
 import { syntaxCheck } from './syntaxCheck';
-import { forgetDocument, markChecked } from './precheckState';
+import { parseCheck, wantsParseCheck } from './parserCheck';
+import { scanStructure } from './blockDone';
+import { forgetDocument, markChecked, type CheckLevel } from './precheckState';
 import {
 	registerCompileTaskProvider, compileCurrentFile, compileJudgeAccurate, compileAndRun
 } from './compile';
@@ -203,33 +205,45 @@ export function currentCompileFlags(): string {
 
 let diagnostics: vscode.DiagnosticCollection | undefined;
 
-/** 正在编的文档：一次 -fsyntax-only 要一两秒，连点标签页不该堆出好几个 g++。 */
+/** 扩展自己的目录：语法解析的 wasm 在这里，编译器的路径不假设它在工程里。 */
+let extensionDir = '';
+
+/** 正在查的文档：连点标签页不该堆出好几个 g++，同理也不该堆出两次解析。 */
 const checking = new Set<string>();
 
-function runCheck(document: vscode.TextDocument, surface: 'problems' | 'quiet'): Promise<void> {
+/**
+ * 上一次查的时候，这份文件顶层闭合了几对花括号。每跑一次检查就记一次，所以刚打开文件
+ * 那一下也有基准：不然第一次写完部件时基准还是空的，只能拿当下这一份比，就永远不会触发。
+ */
+const blocksSeen = new Map<string, number>();
+
+function runCheck(document: vscode.TextDocument, surface: 'problems' | 'quiet', level: CheckLevel): Promise<void> {
 	const key = document.uri.toString();
 	if (checking.has(key)) {
 		return Promise.resolve();
 	}
 	checking.add(key);
-	return runCheckNow(document, surface).finally(() => checking.delete(key));
+	return runCheckNow(document, surface, level).finally(() => checking.delete(key));
 }
 
-async function runCheckNow(document: vscode.TextDocument, surface: 'problems' | 'quiet'): Promise<void> {
+async function runCheckNow(document: vscode.TextDocument, surface: 'problems' | 'quiet', level: CheckLevel): Promise<void> {
 	if (!diagnostics || !SOURCE_FILES.test(document.fileName)) {
 		return;
 	}
 	const findings: Finding[] = analyse(document.getText());
-	// 规则那半同步、语法那半要等编译器：先画出来，别让保存卡在一次 g++ 上。
+	// 规则那半同步、另一头要等（编译器是一两秒，解析是几毫秒）：先画出来，别让输入卡住。
 	diagnostics.set(document.uri, findings.map(toDiagnostic));
-	const syntax = await syntaxCheck(document);
-	findings.push(...syntax.findings);
-	if (syntax.blocked) {
+	// 「编译不过」这句话只由 g++ 说；部件级那一跑只用进程内的语法解析，它够快，但看不见类型。
+	const half = level === 'structure'
+		? await parseCheck(document, extensionDir)
+		: await syntaxCheck(document);
+	findings.push(...half.findings);
+	if (half.blocked) {
 		// 一个没读到任何东西的工具不能给出「无问题」。
 		findings.push({
-			rule: 'syntax',
+			rule: level === 'structure' ? 'parse' : 'syntax',
 			severity: vscode.DiagnosticSeverity.Warning,
-			message: syntax.blocked,
+			message: half.blocked,
 			line: 0,
 			character: 0,
 			length: 1,
@@ -237,14 +251,15 @@ async function runCheckNow(document: vscode.TextDocument, surface: 'problems' | 
 		});
 	}
 	// 先记下"查过了"，再写诊断：面板是收到诊断变化才刷新的，反过来会刷成「未检查」。
-	markChecked(document);
+	markChecked(document, level);
+	blocksSeen.set(document.uri.toString(), scanStructure(document.getText()).blocks);
 	diagnostics.set(document.uri, findings.map(toDiagnostic));
 
 	if (surface === 'quiet' || findings.length === 0) {
 		return;
 	}
 	const compileErrors = findings.filter(finding => finding.rule === 'syntax').length;
-	// 语法错误和「本地能编过、评测机编不过」是两件事，说成一句会让人去找不存在的关键字。
+	// 语法错误和「本地能编过、评测机编不过」是两件事，说成一句会让人去找不存在关键字。
 	const summary = compileErrors
 		? `提交前体检：这份代码编译不过（${compileErrors} 处）`
 		: `提交前体检：${findings.length} 处写法会在评测机上编译失败`;
@@ -255,13 +270,16 @@ async function runCheckNow(document: vscode.TextDocument, surface: 'problems' | 
 	});
 }
 
+/** 手停下来这么久就认为这个部件写完了：再短会在敲空格时反复解析，再长就感觉不即时。 */
+const BLOCK_DEBOUNCE_MS = 400;
+
 async function preSubmitCheck(): Promise<void> {
 	const editor = vscode.window.activeTextEditor;
 	if (!editor) {
 		void vscode.window.showWarningMessage('提交前体检：请先打开要检查的源文件。');
 		return;
 	}
-	await runCheck(editor.document, 'problems');
+	await runCheck(editor.document, 'problems', 'compiled');
 	const found = diagnostics?.get(editor.document.uri) ?? [];
 	if (found.length === 0) {
 		void vscode.window.showInformationMessage('提交前体检：语法和写法都没问题，可以提交了。');
@@ -269,6 +287,7 @@ async function preSubmitCheck(): Promise<void> {
 }
 
 export function activate(context: vscode.ExtensionContext): void {
+	extensionDir = context.extensionPath;
 	diagnostics = vscode.languages.createDiagnosticCollection('olympia-precheck');
 	context.subscriptions.push(diagnostics);
 
@@ -301,7 +320,34 @@ export function activate(context: vscode.ExtensionContext): void {
 	registerSolveLog(context);
 	context.subscriptions.push(registerSettingsPanel());
 
-	// run on save, silently: the Problems panel is the surface, not a modal
+	// 写完一个部件就查：顶层那对花括号刚闭合、手也停了一小会儿，就用进程内的语法解析报结构错误。
+	// 这条不启编译器，所以它只管「这一层第一次成为完整的结构」；部件没闭合（depth>0）时不查，
+	// 那会儿查只会拿到一个假的 MISSING "}"——学生还在往里写。
+	const blockTimers = new Map<string, ReturnType<typeof setTimeout>>();
+	context.subscriptions.push(
+		vscode.workspace.onDidChangeTextDocument(event => {
+			const document = event.document;
+			if (!checkEnabled() || !wantsParseCheck(document)) {
+				return;
+			}
+			const key = document.uri.toString();
+			clearTimeout(blockTimers.get(key));
+			blockTimers.set(key, setTimeout(() => {
+				blockTimers.delete(key);
+				if (!vscode.workspace.getConfiguration('olympia').get<boolean>('check.onBlockDone', true)) {
+					return;
+				}
+				const { blocks, depth } = scanStructure(document.getText());
+				const before = blocksSeen.get(key) ?? blocks;
+				blocksSeen.set(key, blocks);
+				if (depth === 0 && blocks > before) {
+					void runCheck(document, 'quiet', 'structure');
+				}
+			}, BLOCK_DEBOUNCE_MS));
+		})
+	);
+
+	// 保存时静默真编一遍：「编译不过」这句话只由编译器说，解析器说不了。
 	context.subscriptions.push(
 		vscode.workspace.onWillSaveTextDocument(event => {
 			if (!checkEnabled()) {
@@ -310,7 +356,7 @@ export function activate(context: vscode.ExtensionContext): void {
 			if (!vscode.workspace.getConfiguration('olympia').get<boolean>('check.onSave', true)) {
 				return;
 			}
-			void runCheck(event.document, 'quiet');
+			void runCheck(event.document, 'quiet', 'compiled');
 		})
 	);
 
@@ -318,7 +364,7 @@ export function activate(context: vscode.ExtensionContext): void {
 	context.subscriptions.push(
 		vscode.window.onDidChangeActiveTextEditor(editor => {
 			if (editor && checkEnabled()) {
-				void runCheck(editor.document, 'quiet');
+				void runCheck(editor.document, 'quiet', 'compiled');
 			}
 		})
 	);
@@ -327,13 +373,19 @@ export function activate(context: vscode.ExtensionContext): void {
 	// 写「无问题」——那正是 2026-10-16 误报的形状。启动时先把看得见的编辑器各查一遍。
 	for (const editor of vscode.window.visibleTextEditors) {
 		if (checkEnabled()) {
-			void runCheck(editor.document, 'quiet');
+			void runCheck(editor.document, 'quiet', 'compiled');
 		}
 	}
 
 	context.subscriptions.push(
 		vscode.workspace.onDidCloseTextDocument(document => {
 			forgetDocument(document.uri);
+			blocksSeen.delete(document.uri.toString());
+			const timer = blockTimers.get(document.uri.toString());
+			if (timer) {
+				clearTimeout(timer);
+				blockTimers.delete(document.uri.toString());
+			}
 			diagnostics?.delete(document.uri);
 		})
 	);

@@ -468,7 +468,12 @@
 				"olympia.check.onSave": {
 					"type": "boolean",
 					"default": true,
-					"markdownDescription": "保存时自动运行体检。关闭后只能手动执行「提交前体检」命令。"
+					"markdownDescription": "保存时真编一遍（`g++ -fsyntax-only`）。「编译不过」这句话由它说：只有它看得见类型错误和没声明的名字。"
+				},
+				"olympia.check.onBlockDone": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "每写完一个部件（顶层的一对花括号闭合，也就是一个函数、一个结构体写完）就查一次结构，不用等保存。这一条用的是编辑器内置的语法解析，几毫秒出结果、不启动编译器，所以它只报**括号不配对、少分号、写到一半断链**这类结构错误，不会说「编译通过」。"
 				},
 				"olympia.check.rules.pragmaOptimize": {
 					"type": "boolean",

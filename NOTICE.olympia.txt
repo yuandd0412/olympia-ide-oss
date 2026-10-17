@@ -75,6 +75,15 @@ Chromium、V8、Node.js 及其依赖
     被产品裁掉的扩展（GitHub Copilot、git、python、jupyter 等 59 个目录）
     不在安装包里，也就跟本文件无关。
 
+「写完一个部件就查」用的语法解析器（extensions\olympia-onboarding\syntax\）
+    三个文件随 olympia-onboarding 一起发：tree-sitter.js 与 tree-sitter.wasm 是
+    web-tree-sitter 运行时（MIT，Copyright (c) 2014 Max Brunsfeld；我们取的是
+    @vscode/tree-sitter-wasm 那份打包件，MIT，Copyright (c) Microsoft Corporation）；
+    tree-sitter-cpp.wasm 是 C++ 语法，上游 tree-sitter-grammars/tree-sitter-cpp 声明为
+    ISC（Copyright (c) 2014 Max Brunsfeld）——二进制里没有内嵌声明，这一条按上游声明写。
+    它们是独立文件，由扩展宿主在进程内加载，不链接进内核。这一条只报括号不配对、
+    少分号、写到一半断链这类结构错误，不判编译——编译那条路仍然是 g++。
+
 界面里的中文文案
     是把上游源码 localize 调用里的默认英文原地改写成中文，词典参考了
     Microsoft 官方的简体中文语言包（vscode-language-pack-zh-hans）的译文。

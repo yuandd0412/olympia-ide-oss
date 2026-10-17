@@ -61,3 +61,6 @@
 # Vendored third-party libraries
 src/vs/base/common/lit-html/**
 src/vs/base/common/signals-core/**
+
+# Olympia：第三方构建件（web-tree-sitter 的 Emscripten glue + wasm 语法），不是我们写的代码
+extensions/olympia-onboarding/syntax/**
