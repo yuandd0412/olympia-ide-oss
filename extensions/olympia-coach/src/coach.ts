@@ -16,13 +16,18 @@ import { listModels, resolveOrAskModel } from './model';
 
 const HISTORY_TURNS = 6;
 const MAX_DOCUMENT_CHARS = 12_000;
+/** 题面比代码更容易长（洛谷一份题面常带大段说明与多组样例），给得比代码少一点，留给问题与历史。 */
+const MAX_STATEMENT_CHARS = 6_000;
+/** 题面库的目录。写题面的是 olympia-contest，这边只读——共享的是文件，不是代码。 */
+const PROBLEMS_DIR = '.olympia/problems';
 
 const PERSONA = [
 	'你是 Olympia IDE 内置的信息学竞赛（NOIP/NOI/CSP）教练，用简体中文回答。',
 	'规则：',
 	'- 先诊断，再给方向。默认不要输出完整可提交代码；学生明确要代码时再给，并标出关键行。',
 	'- 涉及复杂度时给出关于 n 的显式估计，并对照常见限制（1s 约 1e8 次简单运算）。',
-	'- 说清你「看不到」的东西：没有题面、没有评测输出、没有数据范围时，直接说明并列出需要学生补充的信息。',
+	'- 题面通常随本轮一起给你（本地题面库里缓存过这道题时）；本轮没给就是没缓存，直说需要学生补题意，别假装看过。',
+	'- 你拿不到评测机的结果。学生从「问教练」进来时除外——那条会把判定与每组样例的期望／实际一起贴过来。',
 	'- 不要做超出事实的承诺，不声称自己能访问评测机或在线评测网站。',
 ].join('\n');
 
@@ -79,6 +84,34 @@ function editorContext(): string {
 	return `当前打开的文件：${editor.document.fileName}\n\`\`\`${editor.document.languageId}\n${text}${truncated}\n\`\`\``;
 }
 
+/**
+ * 这道题的题面。学生按 `/wa` 时问的就是「我哪里不符合题意」，不带题面等于让他把题目重述一遍
+ * ——老版本是带的，官网和 `/wa` 的说明也写着「结合题面」。
+ *
+ * 路径按大小写不敏感对齐题号（题面文件名和源文件名可能一个 P53 一个 p53）。
+ * 读的是 `.olympia/problems` 这个共享文件，不 import olympia-contest：跨扩展没有 import 这条路，
+ * 与 solvedMarks 那边是同一个约定。
+ */
+export async function statementContext(): Promise<string> {
+	const folder = vscode.workspace.workspaceFolders?.[0];
+	const file = vscode.window.activeTextEditor?.document.uri;
+	if (!folder || !file) {
+		return '（本轮没有题面：要么没打开工程，要么没打开源文件。）';
+	}
+	const wanted = basenameOf(file).replace(/\.[^.]*$/, '').toLowerCase();
+	const found = await vscode.workspace.findFiles(new vscode.RelativePattern(folder, `${PROBLEMS_DIR}/*.md`), undefined, 400);
+	const hit = found.find(uri => basenameOf(uri).toLowerCase() === `${wanted}.md`) ?? found.find(uri => basenameOf(uri).toLowerCase() === `${wanted}`);
+	if (!hit) {
+		return `（本轮没有题面：题面库里找不到 ${wanted} 这道题。按 Ctrl+Alt+P 拉一份，或把题意要点补进问题里。）`;
+	}
+	const markdown = new TextDecoder().decode(await vscode.workspace.fs.readFile(hit)).slice(0, MAX_STATEMENT_CHARS);
+	return `这道题的题面（来自本地题面库，过长已截断）：\n\n${markdown}\n`;
+}
+
+function basenameOf(uri: vscode.Uri): string {
+	return uri.path.split('/').pop() ?? '';
+}
+
 function toMessages(history: ReadonlyArray<vscode.ChatRequestTurn | vscode.ChatResponseTurn>): vscode.LanguageModelChatMessage[] {
 	const messages: vscode.LanguageModelChatMessage[] = [];
 	for (const turn of history.slice(-HISTORY_TURNS)) {
@@ -124,7 +157,7 @@ async function handleRequest(
 	const messages = [
 		vscode.LanguageModelChatMessage.Assistant(`${PERSONA}\n\n${instruction}`),
 		...toMessages(context.history),
-		vscode.LanguageModelChatMessage.User(`${editorContext()}\n\n学生的问题：\n${request.prompt}`),
+		vscode.LanguageModelChatMessage.User(`${await statementContext()}\n${editorContext()}\n\n学生的问题：\n${request.prompt}`),
 	];
 
 	try {
