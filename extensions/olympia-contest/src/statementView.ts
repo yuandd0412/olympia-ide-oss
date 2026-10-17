@@ -23,6 +23,7 @@ export const CMD = {
 	refresh: 'olympia.statement.refresh',
 	openRaw: 'olympia.statement.openRaw',
 	pull: 'olympia.problem.pull',
+	pullFromClipboard: 'olympia.problem.pullFromClipboard',
 	pick: 'olympia.problem.openStatement',
 } as const;
 

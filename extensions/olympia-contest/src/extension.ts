@@ -682,11 +682,11 @@ function refFromClipboard(raw: string): { id: string; platform: Platform } | und
 
 export function activate(context: vscode.ExtensionContext): void {
 	context.subscriptions.push(
-		vscode.commands.registerCommand('olympia.problem.pull', async () => {
+		vscode.commands.registerCommand(CMD.pull, async () => {
 			const ref = await askProblemRef();
 			if (ref) { await pullProblem(ref); }
 		}),
-		vscode.commands.registerCommand('olympia.problem.pullFromClipboard', async () => {
+		vscode.commands.registerCommand(CMD.pullFromClipboard, async () => {
 			const clip = await vscode.env.clipboard.readText();
 			if (!clip.trim()) {
 				vscode.window.showWarningMessage('剪贴板里没有内容。');
