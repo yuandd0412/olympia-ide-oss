@@ -510,6 +510,9 @@ const ALL_TIPS: readonly ITipDefinition[] = [
  * tip.troubleshoot 也是：它写着「输入 /troubleshoot <问题> 从调试日志诊断问题」，
  * 而那一步靠的是上游智能体的 listDebugEvents 工具——本产品只有 BYOK 教练，
  * 输进去就是一段普通文本发给模型，不会去读日志。首屏提示位不能许诺做不到的事。
+ * tip.forkConversation 是另一类：/fork 本身能用，但「把一次会话分叉出去对比做法」是
+ * 编码智能体的多分支玩法，教练问答里没有对应动作；而真机上这条正好顶在首屏那一条
+ * 提示位上（2026-10-17 拍官网首屏图时看到）。提示位一次只放一条，占着它不如放学生真会用的。
  */
 const TIPS_HIDDEN_IN_OLYMPIA: readonly string[] = [
 	'tip.createAgent',
@@ -520,6 +523,7 @@ const TIPS_HIDDEN_IN_OLYMPIA: readonly string[] = [
 	'tip.init',
 	'tip.createPrompt',
 	'tip.troubleshoot',
+	'tip.forkConversation',
 ];
 
 export const TIP_CATALOG: readonly ITipDefinition[] = ALL_TIPS.filter(tip => !TIPS_HIDDEN_IN_OLYMPIA.includes(tip.id));

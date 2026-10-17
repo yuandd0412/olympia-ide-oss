@@ -197,7 +197,12 @@ Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration)
 			'extensions.ignoreRecommendations': {
 				type: 'boolean',
 				description: localize('extensionsIgnoreRecommendations', "启用后，不再显示扩展推荐通知。"),
-				default: false,
+				// Olympia 出厂开着：推荐通知的主语是「此存储库推荐的来自 ms-vscode、dbaeumer
+				// 和其他的扩展」（真机截图里就是这一条），那是给 VS Code 仓库贡献者用的工作流，
+				// 学生打开自己的题单目录不会带 .vscode/extensions.json，即使带了也装不上他需要的东西。
+				// 这一条同时管住工作区推荐、exe 推荐与扩展提示三个来源（都读 hasToIgnoreRecommendationNotifications），
+				// 而扩展视图和「安装工作区推荐的扩展」命令照旧在，想装的人仍然能主动装。
+				default: true,
 				agentsWindow: { default: true, readOnly: true },
 			},
 			'extensions.showRecommendationsOnlyOnDemand': {
