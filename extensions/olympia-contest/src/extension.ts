@@ -19,7 +19,7 @@ import { detectPlatform, fetchProblem, type Platform, type Problem } from './sou
 import { renderStatement, templateFor, FORMAT_LABEL, PLATFORM_TEXT, platformText, MY_TEMPLATE_LABEL, MY_TEMPLATE_HINT, TEMPLATE_FOLDER, TEMPLATE_FILE, DEFAULT_PROBLEMS_DIR, STATEMENT_EXTENSION, type ContestFormat } from './templates';
 import { readLibrary, editStatement, toPicks, FAVORITE_BUTTON, UNFAVORITE_BUTTON, type LibraryPick } from './problemLibrary';
 import { favoriteKey, readFavorites, toggleFavorite } from './favorites';
-import { StatementViewProvider, STATEMENT_VIEW_ID, CMD } from './statementView';
+import { StatementViewProvider, STATEMENT_VIEW_ID, CMD, STATEMENT_SHOW_KEY } from './statementView';
 import { markOf, solvedMarks, type SolvedMark } from './solvedMarks';
 import { MAX_PRACTICE_PROBLEMS, PRACTICE_FILE, PRACTICE_MINUTES_MAX, PRACTICE_MINUTES_MIN, isSameName, mergeLists, parseMinutes, parseProblemIds, practiceFile, readLists, readPractice, withExtraProblems, withoutProblem, writeLists, type PracticeList } from './practiceList';
 import { appendSample as appendSampleTo, customSamplesOf, MANUAL_EXPLAIN, pickTarget, withCustomSamples } from './statementSamples';
@@ -721,7 +721,7 @@ export function activate(context: vscode.ExtensionContext): void {
 				return { ok: false as const, reason: '没有工作区文件夹，题面库无处可放。' };
 			}
 			const file = await writeHandoff(parsed.value, root);
-			vscode.window.showInformationMessage(`题面已收下：${parsed.value.problem.id}（来自浏览器插件）。按 Ctrl+Alt+M 就能在侧栏读它。`);
+			vscode.window.showInformationMessage(`题面已收下：${parsed.value.problem.id}（来自浏览器插件）。按 ${STATEMENT_SHOW_KEY} 就能在侧栏读它。`);
 			return { ok: true as const, file };
 		}),
 		vscode.commands.registerCommand('olympia.practice.open', showPracticeLists),

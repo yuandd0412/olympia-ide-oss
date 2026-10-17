@@ -26,6 +26,14 @@ export const CMD = {
 	pick: 'olympia.problem.openStatement',
 } as const;
 
+/**
+ * `CMD.show` 的键位，写成人类可读的样子，与 package.json 的 keybindings 一字不差。
+ * 文案里要告诉学生按哪个键时从这里取，不要在句子里再敲一遍 —— 改键位的人不会
+ * 去搜散在各处的中文提示，写死的那份就会一直说一个已经不存在的组合键。
+ * （`scripts/oneoff/check-keybinding-mirrors.mjs` 逐条对拍这两处。）
+ */
+export const STATEMENT_SHOW_KEY = 'Ctrl+Alt+M';
+
 /** 提供公式样式的扩展；它不在了也要能看题面，所以是"尽力找到"而不是硬依赖。 */
 const KATEX_EXTENSION_ID = 'vscode.markdown-math';
 const KATEX_CSS = 'notebook-out/katex.min.css';
