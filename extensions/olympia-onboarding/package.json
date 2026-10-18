@@ -223,7 +223,7 @@
 			},
 			{
 				"command": "olympia.settings",
-				"key": "ctrl+alt+comma",
+				"key": "ctrl+alt+,",
 				"mac": "cmd+alt+,"
 			}
 		],
