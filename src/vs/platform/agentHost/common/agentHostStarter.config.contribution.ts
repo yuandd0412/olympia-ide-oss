@@ -123,6 +123,7 @@ configurationRegistry.registerConfiguration({
 		},
 		[AgentMergeSettingId.AddressReviews]: {
 			type: 'boolean',
+			included: !product.defaultChatAgent?.byokOnly, // 本产品没有托管助手，也没有可挂的第三方编码智能体
 			description: nls.localize('chat.agentMerge.addressReviews', "Controls whether enabled Agent Merge sessions address unresolved review threads, changes-requested reviews, and new pull request comments from repository maintainers or the Copilot pull request reviewer."),
 			default: true,
 			scope: ConfigurationScope.APPLICATION,
@@ -224,6 +225,7 @@ configurationRegistry.registerConfiguration({
 		},
 		[AgentHostGitHubMcpServerEnabledSettingId]: {
 			type: 'boolean',
+			included: !product.defaultChatAgent?.byokOnly, // 本产品没有托管助手，也没有可挂的第三方编码智能体
 			description: nls.localize('chat.agentHost.githubMcpServer.enabled', "When enabled, agent-host sessions include the GitHub MCP server."),
 			default: true,
 			tags: ['experimental', 'advanced'],
@@ -259,6 +261,7 @@ configurationRegistry.registerConfiguration({
 		},
 		[AgentHostClaudeAgentEnabledSettingId]: {
 			type: 'boolean',
+			included: !product.defaultChatAgent?.byokOnly, // 本产品没有托管助手，也没有可挂的第三方编码智能体
 			description: nls.localize('chat.agentHost.claudeAgent.enabled', "启用后，智能体主机将注册 Claude 提供程序(前提是可以访问 Claude SDK)。此设置与 `#chat.agents.claude.preferAgentHost#` 和 `#chat.editor.claude.preferAgentHost#` 无关，这两个设置用于选择 Claude 的集成曲面。需要 `#chat.agentHost.enabled#`。必须重启智能体主机进程，更改才能生效。"),
 			default: true,
 			tags: ['experimental', 'advanced'],
@@ -286,6 +289,7 @@ configurationRegistry.registerConfiguration({
 		},
 		[AgentHostCodexAgentEnabledSettingId]: {
 			type: 'boolean',
+			included: !product.defaultChatAgent?.byokOnly, // 本产品没有托管助手，也没有可挂的第三方编码智能体
 			description: nls.localize('chat.agentHost.codexAgent.enabled', "启用后，智能体主机将注册 Codex 提供程序(前提是可以访问 Codex SDK)。需要 `#chat.agentHost.enabled#`。必须重启智能体主机进程，更改才能生效。"),
 			default: product.quality !== 'stable',
 			tags: ['experimental'],
