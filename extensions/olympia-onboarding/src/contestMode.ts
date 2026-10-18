@@ -23,14 +23,11 @@ const CONTEST_MINUTES_MAX = 600;
 const TICK_INTERVAL_MS = 1000;
 /** 倒计时要比编译器、运行、体检三个 chip 更靠左，所以优先级最高。 */
 const STATUS_PRIORITY = 110;
-/** 比赛进行中要把 AI 教练关掉（和老版本一致）；界面侧的 when 子句读这个键。 */
-const CONTEST_RUNNING_CONTEXT = 'olympia.contest.running';
 
 let statusItem: vscode.StatusBarItem | undefined;
 let ticker: NodeJS.Timeout | undefined;
 let endsAt: number | undefined;
 let onChange: (() => void) | undefined;
-let publishedRunning: boolean | undefined;
 let endAnnounced = false;
 
 function remainingMs(): number | undefined {
@@ -65,18 +62,7 @@ export function isContestRunning(): boolean {
 	return left !== undefined && left > 0;
 }
 
-/** 上下文键只在真的翻转时写一次，不让每秒的 tick 都敲一遍 setContext。 */
-function publishRunning(): void {
-	const running = isContestRunning();
-	if (publishedRunning === running) {
-		return;
-	}
-	publishedRunning = running;
-	void vscode.commands.executeCommand('setContext', CONTEST_RUNNING_CONTEXT, running);
-}
-
 function render(context: vscode.ExtensionContext): void {
-	publishRunning();
 	if (!statusItem) {
 		return;
 	}
@@ -131,7 +117,6 @@ function stop(context: vscode.ExtensionContext, notify: boolean): void {
 	const left = remainingMs();
 	endsAt = undefined;
 	endAnnounced = false;
-	publishRunning();
 	if (statusItem) {
 		statusItem.hide();
 	}
@@ -205,7 +190,6 @@ function release(): void {
 	}
 	endsAt = undefined;
 	endAnnounced = false;
-	publishRunning();
 	statusItem = undefined;
 	onChange = undefined;
 }
