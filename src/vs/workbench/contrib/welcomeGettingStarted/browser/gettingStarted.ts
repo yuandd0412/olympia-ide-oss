@@ -1025,7 +1025,12 @@ export class GettingStartedPage extends EditorPane {
 			const fistContentBehaviour = daysSinceFirstSession < 1 ? 'openToFirstCategory' : 'index';
 
 			if (fistContentBehaviour === 'openToFirstCategory') {
-				const first = this.gettingStartedCategories.filter(c => !c.when || this.contextService.contextMatchesRules(c.when))[0];
+				// 隐藏集在这里也必须生效。gettingStartedCategories 是注册顺序，第 0 个永远是上游的
+				// 「Setup」引导（两步：选主题 + 看视频）；下面渲染分区列表时过滤了（rankCategories），
+				// 这一条早退路径没过滤。结果全新装机第一眼被塞进上游引导，我们自己的十步
+				// 「十分钟上手 Olympia IDE」反而要在列表里再点一次才看到。
+				const hidden = this.getHiddenCategories();
+				const first = this.gettingStartedCategories.filter(c => !hidden.has(c.id) && (!c.when || this.contextService.contextMatchesRules(c.when)))[0];
 				if (first && this.editorInput) {
 					this.currentWalkthrough = first;
 					this.editorInput.selectedCategory = this.currentWalkthrough?.id;

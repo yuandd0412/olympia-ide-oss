@@ -342,12 +342,16 @@ configurationRegistry.registerConfiguration({
 		'workbench.welcomePage.experimentalOnboarding': {
 			scope: ConfigurationScope.APPLICATION,
 			type: 'boolean',
-			default: true,
+			// 上游默认开：首启弹一层"按你的习惯配置"模态，让你在 5 个主题里选一个。
+			// 本产品不跟：主题已经有出厂默认（One Dark Pro），而那层模态会把键盘吃掉——
+			// 实测全新 profile 下按 Ctrl+Shift+P 与 Ctrl+Alt+, 都没有反应，直到关掉它，
+			// 也就是学生第一次打开软件、照着说明按键时，看到的是"软件没反应"。
+			// 关掉它同时让 gettingStarted.ts 那条经典引导页路径重新生效（两头不能都关：
+			// startupPage.ts 的 tryShowOnboarding 与这里共用这一个开关）。
+			// experiment.mode 一并去掉：留着一个能被远端实验翻回去的口子，出厂行为就不是确定的了。
+			default: false,
 			tags: ['experimental'],
-			description: localize('workbench.welcomePage.experimentalOnboarding', "启用后首次启动显示新版引导流程，而非经典引导页。"),
-			experiment: {
-				mode: 'auto'
-			}
+			description: localize('workbench.welcomePage.experimentalOnboarding', "启用后首次启动显示新版引导流程，而非经典引导页。")
 		}
 	}
 });
