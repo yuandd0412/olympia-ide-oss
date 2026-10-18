@@ -17,14 +17,14 @@ const legacyAutoDeleteArchivedMergedSessionsAfterDaysSetting = 'chat.agentSessio
 export const agentsWindowHandoffConfigurationProperties = {
 	[ChatConfiguration.OpenInAgentsWindowTransferDraft]: {
 		type: 'boolean',
-		description: nls.localize('chat.openInAgentsWindow.transferDraft', "Copy the prompt and attachments from a new chat when opening the Agents Window. Existing drafts in the Agents Window are preserved."),
+		description: nls.localize('chat.openInAgentsWindow.transferDraft', "新建对话切到智能体窗口时，把当前的提问和附件一起带过去。那边已有的草稿会被保留。"),
 		default: product.quality === 'insider',
 		tags: ['experimental'],
 		experiment: { mode: 'auto' },
 	},
 	[ChatConfiguration.AgentsParallelWorkBannerEnabled]: {
 		type: 'boolean',
-		description: nls.localize('chat.agentsParallelWorkBanner.enabled', "Show an invitation to work in parallel in the Agents Window when starting a new Agent Host chat while another Agent Host session is running."),
+		description: nls.localize('chat.agentsParallelWorkBanner.enabled', "已有智能体主机会话在跑时，新开一个智能体主机会话就在智能体窗口里提示可以并行干活。"),
 		default: false,
 		tags: ['experimental'],
 		experiment: { mode: 'auto' },
@@ -58,7 +58,7 @@ export const agentsWindowHandoffConfigurationProperties = {
 		type: 'number',
 		minimum: 0,
 		default: DEFAULT_AGENTS_HANDOFF_TIP_DELAY_SECONDS,
-		markdownDescription: nls.localize('chat.agentsHandoffTip.delaySeconds', "Controls the delay, in seconds, after the latest user message before offering to continue an in-progress session in the Agents Window. Requires `#chat.agentsHandoffTip.mode#` to be `default` or `custom`."),
+		markdownDescription: nls.localize('chat.agentsHandoffTip.delaySeconds', "设置发出最后一条消息之后，隔多少秒才提议「把进行中的会话接进智能体窗口」。需要把 `#chat.agentsHandoffTip.mode#` 设成 `default` 或 `custom` 才会生效。"),
 		tags: ['experimental', 'advanced'],
 		experiment: { mode: 'auto' },
 	},
