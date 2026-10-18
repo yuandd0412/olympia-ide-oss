@@ -11,13 +11,13 @@ export const customizationMarketplaceConfigurationProperties = {
 	[CustomizationMarketplaceConfiguration.MarketplaceEnabled]: {
 		type: 'boolean',
 		tags: ['experimental'],
-		description: localize('chat.customizations.marketplace.enabled', "Shows Discover instead of Overview when a customization marketplace source is enabled. When disabled, marketplace discovery remains in the existing customization management pages."),
+		description: localize('chat.customizations.marketplace.enabled', "启用了定制来源时，页面显示「发现」而不是「概览」。关掉之后，定制管理页里仍保留原来的市场发现入口。"),
 		default: false,
 	},
 	[CustomizationMarketplaceConfiguration.AgentFinderPublicFeedEnabled]: {
 		type: 'boolean',
 		tags: ['experimental'],
-		description: localize('chat.customizations.marketplace.sources.publicFeed.enabled', "Enables the GitHub Feed as a source of skills, MCP servers, and plugins when Marketplace is shown. If Marketplace or this setting is disabled, the GitHub Feed is not queried."),
+		description: localize('chat.customizations.marketplace.sources.publicFeed.enabled', "市场显示时，把 GitHub Feed 作为技能、MCP 服务器与插件的来源之一。市场或这一项关掉后，就不会去查询 GitHub Feed。"),
 		default: true,
 	},
 } satisfies Record<string, IConfigurationPropertySchema>;

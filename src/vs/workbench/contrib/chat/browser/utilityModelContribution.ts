@@ -13,7 +13,7 @@ import { createDefaultModelArrays, DefaultModelContribution } from './defaultMod
 // The empty value uses the default utility behavior: a built-in model for a
 // Copilot main model, or no model for BYOK unless the user opts in.
 const defaultEntryLabel = localize('chat.utilityModel.defaultEntry.label', "默认");
-const defaultEntryDescription = localize('chat.utilityModel.defaultEntry.description', "Use the default behavior for utility models");
+const defaultEntryDescription = localize('chat.utilityModel.defaultEntry.description', "按默认方式处理工具模型（标题、摘要这类后台小任务用的模型）");
 
 const utilityArrays = createDefaultModelArrays(defaultEntryLabel, defaultEntryDescription);
 const utilitySmallArrays = createDefaultModelArrays(defaultEntryLabel, defaultEntryDescription);

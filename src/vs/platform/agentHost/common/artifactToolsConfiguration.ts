@@ -12,7 +12,7 @@ import { ArtifactToolsSettingId } from './agentService.js';
 export const artifactToolsConfigurationProperties = {
 	[ArtifactToolsSettingId]: {
 		type: 'boolean',
-		description: nls.localize('chat.artifactTools.enabled', "When enabled, agents can record artifacts — pull requests, issues, commits, websites, files and other resources — which are surfaced above the chat input."),
+		description: nls.localize('chat.artifactTools.enabled', "启用后，智能体可以记录产出物——Pull Request、issue、提交、网站、文件等资源——它们会显示在聊天输入框的上方。"),
 		default: product.quality !== 'stable',
 		scope: ConfigurationScope.APPLICATION,
 		tags: ['experimental', 'advanced'],
