@@ -306,8 +306,8 @@ jsonContributionRegistry.registerSchema(HOOK_SCHEMA_URI, hookFileSchema);
 const configurationRegistry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration);
 const migrationsTabLink = createMarkdownCommandLink({
 	id: AICustomizationManagementCommands.OpenEditor,
-	text: nls.localize('chat.locations.migrate', "Migrations tab"),
-	tooltip: nls.localize('chat.locations.migrate.tooltip', "Open the Migrations Tab"),
+	text: nls.localize('chat.locations.migrate', "迁移标签页"),
+	tooltip: nls.localize('chat.locations.migrate.tooltip', "打开「迁移」标签页"),
 	arguments: [{ migration: true }],
 });
 configurationRegistry.registerConfiguration({
