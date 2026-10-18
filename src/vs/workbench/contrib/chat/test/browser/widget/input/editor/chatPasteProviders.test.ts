@@ -182,7 +182,7 @@ suite('Chat Paste Providers', () => {
 			].flatMap(link => getGitHubIssueOrPullRequestAttachments(link)),
 		}, {
 			insertText: text,
-			title: 'Paste GitHub Context',
+			title: '粘贴 GitHub 链接上下文',
 			attached: [
 				{
 					id: 'github-context:https://github.com/microsoft/vscode/issues/334548',

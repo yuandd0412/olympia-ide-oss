@@ -2178,7 +2178,7 @@ configurationRegistry.registerConfiguration({
 			default: true,
 			scope: ConfigurationScope.WINDOW,
 			tags: ['experimental'],
-			markdownDescription: nls.localize('mcp.workspaceRootConfig.enabled', "Offer the workspace root `.mcp.json` file when adding MCP servers manually. When `.vscode/mcp.json` exists, choose which file to add to. Marketplace installations continue to use `.vscode/mcp.json`. Existing `.mcp.json` files can be opened and read independently of this setting."),
+			markdownDescription: nls.localize('mcp.workspaceRootConfig.enabled', "手动添加 MCP 服务器时，一并给出工作区根目录的 `.mcp.json` 作为写入目标。已有 `.vscode/mcp.json` 时让用户选写哪个文件。既有 `.mcp.json` 仍可以单独打开和读取，与这一项无关。"),
 		},
 		[mcpGalleryServiceEnablementConfig]: {
 			type: 'boolean',

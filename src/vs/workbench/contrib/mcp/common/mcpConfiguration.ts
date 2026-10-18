@@ -49,7 +49,7 @@ export const discoverySourceLabel: Record<ExternalDiscoverySource, string> = {
 };
 export const discoverySourceSettingsLabel: Record<ExternalDiscoverySource, string> = {
 	[ExternalDiscoverySource.ClaudeDesktop]: localize('mcp.discovery.source.claude-desktop.config', "Claude Desktop 配置(`claude_desktop_config.json`)"),
-	[ExternalDiscoverySource.Copilot]: localize('mcp.discovery.source.copilot.config', "GitHub Copilot CLI configuration (`mcp-config.json` in `COPILOT_HOME`, or `~/.copilot/mcp-config.json` when unset)"),
+	[ExternalDiscoverySource.Copilot]: localize('mcp.discovery.source.copilot.config', "GitHub Copilot CLI 配置（`COPILOT_HOME` 下的 `mcp-config.json`；没设这个环境变量时是 `~/.copilot/mcp-config.json`）"),
 	[ExternalDiscoverySource.Windsurf]: localize('mcp.discovery.source.windsurf.config', "Windsurf 配置(`~/.codeium/windsurf/mcp_config.json`)"),
 	[ExternalDiscoverySource.CursorGlobal]: localize('mcp.discovery.source.cursor-global.config', "光标全局配置(`~/.cursor/mcp.json`)"),
 	[ExternalDiscoverySource.CursorWorkspace]: localize('mcp.discovery.source.cursor-workspace.config', "光标工作区配置(`.cursor/mcp.json`)"),

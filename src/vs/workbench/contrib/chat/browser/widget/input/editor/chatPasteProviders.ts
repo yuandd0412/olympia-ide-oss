@@ -405,14 +405,14 @@ export class PasteTextProvider implements DocumentPasteEditProvider {
 					return;
 				}
 				const announcement = githubAttachments.length === 1
-					? localize('chat.pastedGitHubContextAttached', "Attached {0} as context", githubAttachments[0].name)
-					: localize('chat.pastedGitHubContextsAttached', "Attached {0} GitHub links as context", githubAttachments.length);
+					? localize('chat.pastedGitHubContextAttached', "已把 {0} 作为上下文附上", githubAttachments[0].name)
+					: localize('chat.pastedGitHubContextsAttached', "已把 {0} 个 GitHub 链接作为上下文附上", githubAttachments.length);
 				const edit = createCustomPasteEdit(
 					model,
 					githubAttachments,
 					Mimes.text,
 					this.kind,
-					localize('chat.pasteGitHubContext', "Paste GitHub Context"),
+					localize('chat.pasteGitHubContext', "粘贴 GitHub 链接上下文"),
 					this.pasteTargetService,
 					{ insertText: textdata, statusAnnouncement: announcement },
 				);
