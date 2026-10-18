@@ -39,6 +39,9 @@ export const agentsWindowHandoffConfigurationProperties = {
 		],
 		description: nls.localize('chat.copilotHarnessIntroduction.mode', "Controls when the introduction to the new Copilot experience is shown."),
 		default: product.quality === 'insider' ? CopilotHarnessIntroductionMode.NewSession : CopilotHarnessIntroductionMode.Off,
+		// 这个产品介绍的是 Copilot 那套 harness，BYOK 产品里没有它；出厂默认本来就是 Off，
+		// 所以从注册表里拿掉不改变任何行为，只是设置页不再摆三条看不懂也用处没有的英文选项。
+		included: !product.defaultChatAgent?.byokOnly,
 		tags: ['experimental'],
 		experiment: { mode: 'auto' },
 	},
@@ -46,6 +49,8 @@ export const agentsWindowHandoffConfigurationProperties = {
 		type: 'boolean',
 		description: nls.localize('chat.harnessSwitchFeedbackSurvey.enabled', "Show a one-time feedback survey after switching from Copilot to Local."),
 		default: false,
+		// 同上：这个调查问的是「从 Copilot 切到本地」的体验，本产品没有可切走的那一侧。
+		included: !product.defaultChatAgent?.byokOnly,
 		tags: ['experimental'],
 		experiment: { mode: 'auto' },
 	},

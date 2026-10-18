@@ -263,6 +263,14 @@ import { ChatPasteProvidersFeature } from './widget/input/editor/chatPasteProvid
 import { QuickChatService } from './widgetHosts/chatQuick.js';
 import { IRepositoryPickerOptions, PICK_REPOSITORY_COMMAND_ID, RepositoryPicker } from './agentSessions/repositoryPicker.js';
 
+/**
+ * 本产品（product.defaultChatAgent.byokOnly）不跑 Copilot 账号、Copilot SDK、智能体主机与
+ * 定制市场那套机器。它们的设置项出厂默认本来就全是关，从设置页挡掉不改变任何行为，只是
+ * 学生不再看见一排读不通的英文选项。默认值不是"关"的条目留下来了，理由登记在
+ * scripts/oneoff/check-byok-settings.mjs 里，改这条开关前先看那份表。
+ */
+const byokProductIneligible = !product.defaultChatAgent?.byokOnly;
+
 CommandsRegistry.registerCommand('_chat.notifyQuestionCarouselAnswer', (accessor: ServicesAccessor, resolveId: string, answers?: import('../common/chatService/chatService.js').IChatQuestionAnswers) => {
 	accessor.get(IChatService).notifyQuestionCarouselAnswer('', resolveId, answers);
 });
@@ -1824,6 +1832,7 @@ configurationRegistry.registerConfiguration({
 			},
 		},
 		[AgentHostCustomTerminalToolEnabledSettingId]: {
+			included: byokProductIneligible,
 			type: 'boolean',
 			// allow-any-unicode-next-line
 			description: nls.localize('chat.agentHost.customTerminalTool.enabled', "启用后，Copilot SDK 会话使用智能体主机终端工具替代，而非 SDK 的默认终端行为。"),
@@ -1850,6 +1859,7 @@ configurationRegistry.registerConfiguration({
 			scope: ConfigurationScope.APPLICATION,
 		},
 		[AgentHostCopilotSdkLogLevelSettingId]: {
+			included: byokProductIneligible,
 			type: 'string',
 			enum: [...copilotSdkLogLevelSettingValues],
 			enumDescriptions: [
@@ -1897,6 +1907,7 @@ configurationRegistry.registerConfiguration({
 			tags: ['experimental', 'advanced'],
 		},
 		[AgentHostOpus48PromptEnabledSettingId]: {
+			included: byokProductIneligible,
 			type: 'boolean',
 			// allow-any-unicode-next-line
 			description: nls.localize('chat.agentHost.opus48Prompt.enabled', "启用此选项后，运行 Claude Opus 4.8 模型的 Copilot SDK 会话会在默认系统消息之上应用针对 Opus 4.8 调优的系统提示部分覆盖。"),
@@ -1921,6 +1932,9 @@ configurationRegistry.registerConfiguration({
 			description: nls.localize('chat.copilot.skillCharBudget', "Maximum number of characters available for skill descriptions in the Copilot SDK system message."),
 			default: DEFAULT_COPILOT_SKILL_CHAR_BUDGET,
 			minimum: 1,
+			// 这条只往智能体主机的 Copilot SDK 会话里同步；BYOK 产品跑不出那种会话，
+			// 留在设置页就是一个没人能用的英文数字框。
+			included: !product.defaultChatAgent?.byokOnly,
 			experiment: { mode: 'startup' },
 			scope: ConfigurationScope.APPLICATION,
 			tags: ['experimental', 'advanced'],
@@ -1931,6 +1945,7 @@ configurationRegistry.registerConfiguration({
 			},
 		},
 		[CopilotSemanticSearchEnabledSettingId]: {
+			included: byokProductIneligible,
 			type: 'boolean',
 			description: nls.localize('chat.copilot.semanticSearch.enabled', "Controls whether Copilot Agent Host sessions can use Olympia IDE's semantic workspace search. When disabled, semantic search is unavailable."),
 			default: false,
@@ -2018,6 +2033,7 @@ configurationRegistry.registerConfiguration({
 			experiment: { mode: 'startup' }
 		},
 		[AgentHostSdkSandboxEnabledSettingId]: {
+			included: byokProductIneligible,
 			type: 'string',
 			enum: [AgentSandboxEnabledValue.Off, AgentSandboxEnabledValue.On],
 			markdownDescription: nls.localize('chat.agentHost.sdkSandbox.enabled.description', "Deprecated sandbox mode for the Copilot SDK's built-in shell tool on macOS and Linux."),
@@ -2026,6 +2042,7 @@ configurationRegistry.registerConfiguration({
 			tags: ['experimental', 'advanced'],
 		},
 		[AgentHostSdkSandboxWindowsEnabledSettingId]: {
+			included: byokProductIneligible,
 			type: 'string',
 			enum: [AgentSandboxEnabledValue.Off, AgentSandboxEnabledValue.On],
 			markdownDescription: nls.localize('chat.agentHost.sdkSandbox.enabledWindows.description', "Deprecated sandbox mode for the Copilot SDK's built-in shell tool on Windows."),
@@ -2513,6 +2530,7 @@ configurationRegistry.registerConfiguration({
 			}
 		},
 		[PromptsConfig.USE_CLAUDE_HOOKS]: {
+			included: byokProductIneligible,
 			type: 'boolean',
 			// allow-any-unicode-next-line
 			title: nls.localize('chat.useClaudeHooks.title', "使用 Claude 挂钩",),
@@ -2662,11 +2680,12 @@ configurationRegistry.registerConfiguration({
 		[ChatAIDisabledSettingId]: {
 			type: 'boolean',
 			// allow-any-unicode-next-line
-			description: nls.localize('chat.disableAIFeatures', "禁用和隐藏 GitHub Copilot 提供的内置 AI 功能，包括聊天和内联建议。"),
+			description: nls.localize('chat.disableAIFeatures', "禁用并隐藏内置的 AI 功能，包括 AI 教练的聊天与内联建议。"),
 			default: false,
 			scope: ConfigurationScope.WINDOW,
 		},
 		[ChatConfiguration.TitleBarSignInEnabled]: {
+			included: byokProductIneligible,
 			type: 'boolean',
 			// allow-any-unicode-next-line
 			description: nls.localize('chat.titleBar.signIn.enabled', "控制退出登录时是否在标题栏显示 Copilot 登录按钮。禁用时，登录入口将回退到状态栏。"),
@@ -2726,6 +2745,7 @@ configurationRegistry.registerConfiguration({
 			}
 		},
 		[ChatConfiguration.GrowthNotificationEnabled]: {
+			included: byokProductIneligible,
 			type: 'boolean',
 			// allow-any-unicode-next-line
 			description: nls.localize('chat.growthNotification', "控制是否在智能体会话视图中显示增长通知以鼓励新用户试用 Copilot。"),
@@ -2736,6 +2756,7 @@ configurationRegistry.registerConfiguration({
 			}
 		},
 		[ChatConfiguration.ChatClosedPromoNotification]: {
+			included: byokProductIneligible,
 			type: 'string',
 			enum: [ChatClosedPromoNotification.None, ChatClosedPromoNotification.CopilotIconPopup],
 			enumItemLabels: [
@@ -2818,6 +2839,7 @@ configurationRegistry.registerConfiguration({
 			}
 		},
 		[ChatConfiguration.CollectInstructionsInExtension]: {
+			included: byokProductIneligible,
 			type: 'boolean',
 			// allow-any-unicode-next-line
 			description: nls.localize('chat.experimental.collectInstructionsInExtension', "启用后，自动指令收集(.instructions.md、智能体指令、自定义项索引)将由 GitHub Copilot 对话助手扩展而不是核心工作台执行。"),
@@ -2844,6 +2866,7 @@ configurationRegistry.registerConfiguration({
 		},
 		...customizationMarketplaceConfigurationProperties,
 		[CustomizationMarketplaceConfiguration.CopilotConnectorsEnabled]: {
+			included: byokProductIneligible,
 			type: 'boolean',
 			tags: ['experimental'],
 			description: nls.localize('chat.customizations.copilotConnectors.enabled', "Enables Copilot connectors in the unified marketplace and exposes connected connector MCP servers in Chat Customizations and Copilot agent sessions."),
