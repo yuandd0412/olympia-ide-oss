@@ -19,6 +19,10 @@ export const agentsWindowHandoffConfigurationProperties = {
 		type: 'boolean',
 		description: nls.localize('chat.openInAgentsWindow.transferDraft', "新建对话切到智能体窗口时，把当前的提问和附件一起带过去。那边已有的草稿会被保留。"),
 		default: product.quality === 'insider',
+		// 智能体窗口在 BYOK 产品里开不了（constants.ts 的 OPEN_AGENTS_WINDOW_PRECONDITION 恒假），
+		// 读它的那行写的是 getValue(...) !== true，注册摘掉后读到 undefined 一样是「不带过去」，
+		// 与出厂默认 product.quality === 'insider'（本产品没定义 quality，即 false）一致。
+		included: !product.defaultChatAgent?.byokOnly,
 		tags: ['experimental'],
 		experiment: { mode: 'auto' },
 	},
@@ -26,6 +30,9 @@ export const agentsWindowHandoffConfigurationProperties = {
 		type: 'boolean',
 		description: nls.localize('chat.agentsParallelWorkBanner.enabled', "已有智能体主机会话在跑时，新开一个智能体主机会话就在智能体窗口里提示可以并行干活。"),
 		default: false,
+		// 两处读者一处 === true、一处在 !(...) && getValue(...) 里当假值用，没有 === false 这种
+		// 反向 kill switch，摘掉注册等于保持默认关；入口本身还要 OPEN_AGENTS_WINDOW_PRECONDITION 为真。
+		included: !product.defaultChatAgent?.byokOnly,
 		tags: ['experimental'],
 		experiment: { mode: 'auto' },
 	},
@@ -59,6 +66,10 @@ export const agentsWindowHandoffConfigurationProperties = {
 		minimum: 0,
 		default: DEFAULT_AGENTS_HANDOFF_TIP_DELAY_SECONDS,
 		markdownDescription: nls.localize('chat.agentsHandoffTip.delaySeconds', "设置发出最后一条消息之后，隔多少秒才提议「把进行中的会话接进智能体窗口」。需要把 `#chat.agentsHandoffTip.mode#` 设成 `default` 或 `custom` 才会生效。"),
+		// 读它的那处自带兜底：typeof delay === 'number' && delay >= 0 && isFinite 都不成立时
+		// 直接用 DEFAULT_AGENTS_HANDOFF_TIP_DELAY_SECONDS * 1000，跟注册表给的默认值同数；
+		// 而提议本身还要 mode 为 hidden 之外、且智能体窗口可开，本产品两条都不满足。
+		included: !product.defaultChatAgent?.byokOnly,
 		tags: ['experimental', 'advanced'],
 		experiment: { mode: 'auto' },
 	},
