@@ -15,6 +15,7 @@ import { promises as fs } from 'fs';
 import { basename, dirname, join } from 'path';
 
 import { planCompile, renderCommandLine, COMPILE_MAX_BUFFER_BYTES, COMPILE_TIMEOUT_MS } from './compile';
+import { compilerEnv, describeFailure } from './toolchain';
 import { CMD } from './commands';
 
 const STATE_KEY = 'olympia.stress.roles';
@@ -38,6 +39,8 @@ export interface RunResult {
 	readonly stderr: string;
 	readonly timedOut: boolean;
 	readonly failed: boolean;
+	/** 进程退出码；Windows 用它报 NTSTATUS，缺 DLL 的那种失败只能从这里看出来。 */
+	readonly code: number | null;
 }
 
 /** 起一个进程、喂 stdin、收 stdout/stderr，带超时。对拍与样例评测共用。 */
@@ -46,7 +49,8 @@ export function runProcess(program: string, args: readonly string[], cwd: string
 		let stdout = '';
 		let stderr = '';
 		let timedOut = false;
-		const child = spawn(program, [...args], { cwd, windowsHide: true });
+		// 这三个程序都是刚编出来的 exe：工具链的 bin 不在 PATH 上的话，它们一个都起不来
+		const child = spawn(program, [...args], { cwd, env: compilerEnv(), windowsHide: true });
 		const timer = setTimeout(() => {
 			timedOut = true;
 			child.kill();
@@ -58,7 +62,7 @@ export function runProcess(program: string, args: readonly string[], cwd: string
 			if (error) {
 				stderr = `${stderr}${error.message}\n`;
 			}
-			resolve({ stdout, stderr, timedOut, failed: !!error || (!timedOut && child.exitCode !== 0) });
+			resolve({ stdout, stderr, timedOut, failed: !!error || (!timedOut && child.exitCode !== 0), code: child.exitCode });
 		};
 		child.on('error', error => done(error));
 		child.on('close', () => done());
@@ -112,14 +116,20 @@ async function compileAsync(uri: vscode.Uri, channel: vscode.OutputChannel): Pro
 	try {
 		await new Promise<void>((resolve, reject) => {
 			// 没有 timeout 的话，一个卡住的 g++ 会把整场对拍挂在编译这一步上（跑样例那侧是有时限的）
-			execFile(plan.program, plan.args, { cwd: plan.cwd, windowsHide: true, maxBuffer: COMPILE_MAX_BUFFER_BYTES, timeout: COMPILE_TIMEOUT_MS }, error => {
+			execFile(plan.program, plan.args, { cwd: plan.cwd, env: plan.env, windowsHide: true, maxBuffer: COMPILE_MAX_BUFFER_BYTES, timeout: COMPILE_TIMEOUT_MS }, error => {
 				error ? reject(error) : resolve();
 			});
 		});
 		return plan.output;
 	} catch (error) {
-		const detail = error as { stdout?: string; stderr?: string; message?: string };
-		channel.appendLine(`${detail.stdout ?? ''}${detail.stderr ?? detail.message ?? ''}`);
+		const detail = error as { code?: number; stdout?: string; stderr?: string; message?: string };
+		// 对拍挂在编译这一步时，面板上那行空白就是学生唯一能看到的线索。
+		channel.appendLine(describeFailure(
+			plan.program,
+			typeof detail.code === 'number' ? detail.code : 1,
+			detail.stdout ?? '',
+			detail.stderr ?? detail.message ?? ''
+		));
 		return undefined;
 	}
 }

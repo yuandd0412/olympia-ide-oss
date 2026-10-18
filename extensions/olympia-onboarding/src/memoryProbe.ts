@@ -18,6 +18,7 @@
  *--------------------------------------------------------------------------------------------*/
 import { execFile, spawn } from 'child_process';
 
+import { compilerEnv } from './toolchain';
 import { type RunResult } from './stressTest';
 
 /** tasklist 一次可能要一两百毫秒，所以同一时刻只允许有一个在跑；间隔再密也只是排队。 */
@@ -83,7 +84,7 @@ export function runSampled(program: string, args: readonly string[], cwd: string
 		let settled = false;
 		let timer: NodeJS.Timeout | undefined;
 
-		const child = spawn(program, [...args], { cwd, windowsHide: true });
+		const child = spawn(program, [...args], { cwd, env: compilerEnv(), windowsHide: true });
 		child.stdout.on('data', chunk => { stdout += String(chunk); });
 		child.stderr.on('data', chunk => { stderr += String(chunk); });
 
@@ -127,6 +128,7 @@ export function runSampled(program: string, args: readonly string[], cwd: string
 				stderr: note,
 				timedOut,
 				failed: !!error || (!timedOut && child.exitCode !== 0),
+				code: child.exitCode,
 				peakBytes: peakBytes > 0 ? peakBytes : undefined
 			});
 		};

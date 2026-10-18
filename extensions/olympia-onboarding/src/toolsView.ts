@@ -50,6 +50,8 @@ interface State {
 type TreeEntry = Section | Action | State;
 
 const COMPILER_MISSING = '未检测到';
+/** 探测到了 g++、它也会答话，但真编译跑不通——这一档以前没有，于是面板把半坏的安装写成了「就绪」。 */
+const TOOLCHAIN_BROKEN = '工具链不完整';
 const LIBRARY_UNKNOWN = '未统计';
 const LIBRARY_EMPTY = '还没拉过题面';
 
@@ -57,6 +59,7 @@ const LIBRARY_EMPTY = '还没拉过题面';
 interface CompilerState {
 	readonly label: string;
 	readonly icon: string;
+	readonly detail?: string;
 }
 
 class OlympiaToolsProvider implements vscode.TreeDataProvider<TreeEntry> {
@@ -78,7 +81,10 @@ class OlympiaToolsProvider implements vscode.TreeDataProvider<TreeEntry> {
 		const resolved = await resolveCompiler();
 		this.compiler = resolved.usable
 			? { label: `g++ ${resolved.version ?? '版本未知'}`, icon: 'pass' }
-			: { label: COMPILER_MISSING, icon: 'error' };
+			: resolved.version
+				// g++ --version 过了，但它要用的 cc1plus/as/ld 起不来：这句话说的是安装坏了，不是没装
+				? { label: TOOLCHAIN_BROKEN, icon: 'error', detail: resolved.broken }
+				: { label: COMPILER_MISSING, icon: 'error', detail: resolved.error };
 		this.fire();
 	}
 
@@ -191,7 +197,9 @@ class OlympiaToolsProvider implements vscode.TreeDataProvider<TreeEntry> {
 			{
 				kind: 'state', id: 'compiler', label: '编译器', value: this.compiler.label,
 				icon: this.compiler.icon, command: CMD.checkEnvironment,
-				tooltip: '点击运行环境自检，查看它来自哪里、和评测机差多少。'
+				tooltip: this.compiler.detail
+					? `${this.compiler.detail}\n\n点击运行环境自检，看是哪一步、哪个文件坏了。`
+					: '点击运行环境自检，查看它来自哪里、和评测机差多少。'
 			},
 			{
 				kind: 'state', id: 'profile', label: '编译配置', value: targetSummary(target),

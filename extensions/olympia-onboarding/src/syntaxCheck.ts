@@ -23,6 +23,7 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { compilerBinary, planCompile } from './compile';
+import { describeFailure } from './toolchain';
 import { Finding, MAX_FINDINGS, SOURCE_FILES } from './precheck';
 
 /** 语法检查的超时：一次完整编译的上限，比学生愿意等的时间短。 */
@@ -82,11 +83,11 @@ function parseErrors(stderr: string, tempFile: string, lineCount: number): Findi
 	return findings;
 }
 
-function runSyntax(compiler: string, args: readonly string[], cwd: string, source: string): Promise<{ code: number | null; stderr: string; failed?: string }> {
+function runSyntax(compiler: string, args: readonly string[], cwd: string, source: string, env: NodeJS.ProcessEnv): Promise<{ code: number | null; stderr: string; failed?: string }> {
 	return new Promise(resolve => {
 		let child: ReturnType<typeof spawn>;
 		try {
-			child = spawn(compiler, [...args, source], { cwd, windowsHide: true });
+			child = spawn(compiler, [...args, source], { cwd, env, windowsHide: true });
 		} catch (error) {
 			resolve({ code: null, stderr: '', failed: error instanceof Error ? error.message : String(error) });
 			return;
@@ -128,6 +129,7 @@ export async function syntaxCheck(document: vscode.TextDocument): Promise<Syntax
 	const tempFile = path.join(os.tmpdir(), `olympia-precheck-${process.pid}-${++tempCounter}.cpp`);
 	let args: string[];
 	let cwd: string;
+	let env: NodeJS.ProcessEnv;
 	try {
 		fs.writeFileSync(tempFile, document.getText(), 'utf8');
 		// 复用编译那条路的开关（-x、-std、评测机公布的参数），
@@ -135,20 +137,27 @@ export async function syntaxCheck(document: vscode.TextDocument): Promise<Syntax
 		const plan = planCompile(vscode.Uri.file(tempFile), 'none');
 		args = syntaxArgs(plan.args);
 		cwd = plan.cwd;
+		env = plan.env;
 	} catch (error) {
 		fs.rmSync(tempFile, { force: true });
 		return { findings: [], blocked: `没法开始语法检查：${error instanceof Error ? error.message : String(error)}` };
 	}
 	try {
-		const result = await runSyntax(compiler, args, cwd, tempFile);
+		const result = await runSyntax(compiler, args, cwd, tempFile, env);
 		if (result.failed) {
 			return { findings: [], blocked: result.failed };
 		}
 		const findings = parseErrors(result.stderr, tempFile, document.lineCount);
 		if (!findings.length && result.code !== 0) {
 			// 非零退出却一条都没解析出来：不能报「无问题」，把原因原样递出去。
+			// 一个字都没有的那种（工具链缺 DLL 就是这样）由 describeFailure 说清楚。
 			const first = result.stderr.split(/\r?\n/).find(line => line.trim().length > 0) ?? '';
-			return { findings: [], blocked: `编译器退出了（代码 ${result.code}），但没有报出行号可定位的错误：${first.slice(0, 200)}` };
+			return {
+				findings: [],
+				blocked: first
+					? `编译器退出了（代码 ${result.code}），但没有报出行号可定位的错误：${first.slice(0, 200)}`
+					: describeFailure(compiler, result.code, '', result.stderr)
+			};
 		}
 		return { findings };
 	} finally {

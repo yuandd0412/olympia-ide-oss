@@ -14,6 +14,7 @@ import * as vscode from 'vscode';
 import { basename, dirname } from 'path';
 
 import { isCompilable, planCompile, renderCommandLine, COMPILE_TIMEOUT_MS } from './compile';
+import { describeFailure } from './toolchain';
 import { CMD } from './commands';
 import { STATEMENT_EXTENSION, stripStatementExtension, statementFiles } from './problemFiles';
 import { runProcess } from './stressTest';
@@ -476,9 +477,12 @@ export function registerSampleJudge(context: vscode.ExtensionContext): vscode.Di
 
 		const built = await runProcess(plan.program, plan.args, plan.cwd, '', COMPILE_TIMEOUT_MS);
 		if (built.failed || built.timedOut) {
+			// 这一段曾经是面板上唯一的一句话：`--- 编译失败 ---` 后面跟着空行。
+			// 编译器缺运行库 DLL 时就是非零退出 + 零输出，只能由 describeFailure 补出来。
+			const why = describeFailure(plan.program, built.code, built.stdout, built.stderr);
 			log.appendLine('--- 编译失败 ---');
-			log.appendLine(`${built.stdout}${built.stderr}`);
-			await vscode.window.showErrorMessage('编译没过，先看「Olympia 评测」面板里的编译器输出。');
+			log.appendLine(why);
+			await vscode.window.showErrorMessage(`编译没过：${why.split(/\r?\n/)[0]}`);
 			return;
 		}
 
@@ -518,7 +522,10 @@ export function registerSampleJudge(context: vscode.ExtensionContext): vscode.Di
 						log.appendLine(`  峰值 ${formatMb(ran.peakBytes ?? 0)}，限制 ${limitMb} MB`);
 					}
 					if (verdict === 'RE' || verdict === 'TLE') {
-						log.appendLine(`  ${ran.stderr.trim() || '（无 stderr）'}`);
+						// 连 stderr 都没有的那次 RE，八成是 exe 自己没起来（工具链缺 DLL 就是这样）
+						log.appendLine(`  ${ran.stderr.trim() || (verdict === 'RE'
+							? describeFailure(plan.output, ran.code, ran.stdout, ran.stderr, '程序')
+							: '（无 stderr）')}`);
 					}
 				}
 			}

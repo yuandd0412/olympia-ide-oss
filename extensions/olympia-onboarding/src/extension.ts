@@ -23,6 +23,7 @@ import {
 	registerCompileTaskProvider, compileCurrentFile, compileJudgeAccurate, compileAndRun
 } from './compile';
 import { resolveCompiler, type ResolvedCompiler, type CompilerSource } from './toolchain';
+import { probeToolchain, type ProbeStep } from './envProbe';
 import { OJ_TARGETS, OJTarget, CUSTOM_TARGET_ID, activeTarget, profileId, renderFlags } from './ojTargets';
 import { registerToolsView } from './toolsView';
 import { registerStatusBar } from './statusBar';
@@ -54,6 +55,15 @@ export interface CompilerReport {
 	readonly source?: CompilerSource['kind'];
 	/** why detection failed, when it did */
 	readonly error?: string;
+	/** `g++ --version` answered but a subprogram it needs cannot be loaded */
+	readonly broken?: string;
+}
+
+/** 自检的全部结论：编译器探测 + 探针步骤。`healthy` 是所有探针都过了，不是 `g++` 会答话。 */
+export interface EnvironmentReport {
+	readonly compiler: CompilerReport;
+	readonly probes: readonly ProbeStep[];
+	readonly healthy: boolean;
 }
 
 export async function detectCompiler(): Promise<CompilerReport> {
@@ -69,7 +79,20 @@ export async function detectCompiler(): Promise<CompilerReport> {
 		matches,
 		source: resolved.kind,
 		error: resolved.error,
+		broken: resolved.broken,
 	};
+}
+
+/**
+ * The whole self-check. Probing `g++ --version` alone is what let a toolchain missing five runtime
+ * DLLs ship as "就绪": g++.exe imports none of them, so it answers while every real compile dies
+ * silently. The end-to-end probes are the ones that decide the verdict.
+ */
+export async function checkEnvironment(): Promise<EnvironmentReport> {
+	const compiler = await detectCompiler();
+	// 编译器都不在，探针就只是几个注定失败的 spawn；那一步交给补救建议去说。
+	const probes = compiler.available ? await probeToolchain() : [];
+	return { compiler, probes, healthy: compiler.available && probes.every(step => step.ok) };
 }
 
 /** Human label for where the compiler came from, shown in the environment report. */
@@ -116,31 +139,49 @@ function missingCompilerActions(source: CompilerSource['kind'] | undefined): rea
 	return source === 'configured' ? ['打开设置', '查看详情'] : ['下载完整版', '打开设置', '查看详情'];
 }
 
-function renderReport(report: CompilerReport): string {
+function renderReport(report: EnvironmentReport): string {
+	const { compiler: found, probes } = report;
 	const lines: string[] = [];
-	if (!report.available) {
+	if (!found.available) {
 		lines.push('状态：未检测到可用的 C++ 编译器');
-		lines.push(`探测的路径：${report.binary}`);
-		if (report.error) {
-			lines.push(`原因：${report.error}`);
+		lines.push(`探测的路径：${found.binary}`);
+		if (found.error) {
+			lines.push(`原因：${found.error}`);
 		}
 		lines.push('');
-		lines.push(...missingCompilerAdvice(report));
+		lines.push(...missingCompilerAdvice(found));
 		return lines.join('\n');
 	}
 
-	lines.push('状态：编译器就绪');
-	lines.push(`路径：${report.binary}`);
-	lines.push(`来源：${sourceLabel(report.source)}`);
-	lines.push(`版本：g++ ${report.version ?? '未知'}`);
+	lines.push(report.healthy
+		? '状态：编译器就绪'
+		: '状态：工具链不完整——g++ 能启动，但真正的编译或运行跑不通');
+	lines.push(`路径：${found.binary}`);
+	lines.push(`来源：${sourceLabel(found.source)}`);
+	lines.push(`版本：g++ ${found.version ?? '未知'}`);
+	if (found.broken) {
+		lines.push(`工具链自检：${found.broken}`);
+	}
+	lines.push('');
+	lines.push('自检探针（每一步都用 Olympia 自己拼的子进程环境）：');
+	for (const step of probes) {
+		lines.push(`  ${step.ok ? '[过]' : '[不过]'} ${step.label}`);
+		if (step.detail) {
+			lines.push(`         ${step.detail}`);
+		}
+	}
 	lines.push('');
 	lines.push('与评测机环境的对比：');
-	for (const match of report.matches) {
+	for (const match of found.matches) {
 		const mark = match.matched ? '完全一致' : '版本不同';
 		lines.push(`  - ${match.target.label}：需要 GCC ${match.target.gcc} / ${match.target.std.toUpperCase()}  [${mark}]`);
 	}
 	lines.push('');
-	if (report.source === 'path') {
+	if (!report.healthy) {
+		lines.push(...missingCompilerAdvice(found));
+		lines.push('');
+	}
+	if (found.source === 'path') {
 		lines.push('提示：当前使用的是系统 PATH 上的编译器。正式版 Olympia 自带工具链，');
 		lines.push('内置版本与评测机参数对齐度更高。若结果与评测机不一致，可手动指定路径。');
 		lines.push('');
@@ -163,20 +204,23 @@ function environmentChannel(): vscode.OutputChannel {
 	return environment;
 }
 
-async function showEnvironmentReport(): Promise<CompilerReport> {
-	const report = await detectCompiler();
+async function showEnvironmentReport(): Promise<EnvironmentReport> {
+	const report = await checkEnvironment();
 	const channel = environmentChannel();
 	channel.clear();
 	channel.appendLine(renderReport(report));
 	channel.show(true);
 
-	const summary = report.available
-		? `编译器就绪：g++ ${report.version ?? '未知'}（${sourceLabel(report.source)}）`
-		: report.source === 'path'
+	const failed = report.probes.filter(step => !step.ok);
+	const summary = !report.compiler.available
+		? report.compiler.source === 'path'
 			? '这台机器上没有可用的 C++ 编译器，编译和跑样例都用不了'
-			: `编译器跑不起来（${sourceLabel(report.source)}），详见环境自检`;
+			: `编译器跑不起来（${sourceLabel(report.compiler.source)}），详见环境自检`
+		: report.healthy
+			? `编译器就绪：g++ ${report.compiler.version ?? '未知'}（${sourceLabel(report.compiler.source)}）`
+			: `工具链不完整：g++ 自己能启动，但有 ${failed.length} 项自检没过——编译或运行会失败，详见环境自检`;
 
-	const actions = report.available ? ['查看详情'] : missingCompilerActions(report.source);
+	const actions = report.healthy ? ['查看详情'] : missingCompilerActions(report.compiler.source);
 	const choice = await vscode.window.showInformationMessage(summary, ...actions);
 	if (choice === '打开设置') {
 		await vscode.commands.executeCommand('workbench.action.openSettings', 'olympia.compiler.path');

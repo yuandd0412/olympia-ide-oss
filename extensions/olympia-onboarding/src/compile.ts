@@ -22,7 +22,7 @@ import * as vscode from 'vscode';
 import { execFile, spawn } from 'child_process';
 import { readFile } from 'fs/promises';
 import { dirname, basename, join } from 'path';
-import { locateCompiler } from './toolchain';
+import { compilerEnv, describeFailure, locateCompiler } from './toolchain';
 import { OJTarget, CUSTOM_TARGET_ID, findTarget, profileId } from './ojTargets';
 
 export const TASK_TYPE = 'olympia-compile';
@@ -53,6 +53,7 @@ export interface CompilePlan {
 	readonly program: string;
 	readonly args: string[];
 	readonly cwd: string;
+	readonly env: NodeJS.ProcessEnv;
 	readonly output: string;
 	readonly profile: OJTarget;
 	readonly optimized: boolean;
@@ -81,6 +82,7 @@ export function planCompile(source: vscode.Uri, overrideOptimization?: string): 
 	const config = vscode.workspace.getConfiguration('olympia');
 	const dir = dirname(source.fsPath);
 	const profile = activeProfile();
+	const compiler = locateCompiler();
 
 	const level = (overrideOptimization ?? config.get<string>('compiler.optimization', 'none')).trim();
 	const optSwitch = optimizationSwitch(level);
@@ -103,9 +105,12 @@ export function planCompile(source: vscode.Uri, overrideOptimization?: string): 
 	];
 
 	return {
-		program: compilerBinary(),
+		program: compiler.bin,
 		args,
 		cwd: dir,
+		// 子进程必须从同一个 resolver 拿到 bin 目录：换编译器就换它的 bin，
+		// 而编出来的 exe 找不到 libstdc++-6.dll 时「编译成功、运行没反应」是查不出来的。
+		env: compilerEnv(compiler),
 		output: join(dir, exeName),
 		profile,
 		optimized
@@ -137,7 +142,8 @@ function formatSwitch(source: vscode.Uri | undefined): vscode.Task | undefined {
 		vscode.TaskScope.Workspace,
 		name,
 		TASK_TYPE,
-		new vscode.ProcessExecution(plan.program, plan.args, { cwd: plan.cwd })
+		// ProcessExecution 的 env 是和父进程环境合并的，所以只需要覆盖 PATH 这一项。
+		new vscode.ProcessExecution(plan.program, plan.args, { cwd: plan.cwd, env: { PATH: plan.env.PATH ?? '' } })
 	);
 	command.group = vscode.TaskGroup.Build;
 	command.presentationOptions = {
@@ -200,7 +206,7 @@ function runCompiler(plan: CompilePlan): Promise<{ code: number | null; stdout: 
 		execFile(
 			plan.program,
 			plan.args,
-			{ cwd: plan.cwd, timeout: COMPILE_TIMEOUT_MS, windowsHide: true, maxBuffer: COMPILE_MAX_BUFFER_BYTES },
+			{ cwd: plan.cwd, env: plan.env, timeout: COMPILE_TIMEOUT_MS, windowsHide: true, maxBuffer: COMPILE_MAX_BUFFER_BYTES },
 			(error, stdout, stderr) => {
 				resolve({
 					code: error && typeof (error as { code?: number }).code === 'number'
@@ -269,10 +275,16 @@ async function buildAndReport(plan: CompilePlan): Promise<{ code: number | null;
 	channel.appendLine(renderCommandLine(plan));
 	channel.show(true);
 
-	const append = (result: { code: number | null; stderr: string }) => {
-		if (result.stderr.trim().length > 0) {
-			channel.appendLine(result.stderr);
+	const append = (result: { code: number | null; stdout: string; stderr: string }) => {
+		if (result.code === 0) {
+			// 编过了就只把警告递出去，别拿「没有任何输出」去解释一次成功的编译
+			if (result.stderr.trim().length > 0) {
+				channel.appendLine(result.stderr);
+			}
+			return;
 		}
+		// 一个字都没输出的那次失败也要有话说：`--- 编译失败 ---` 后面一片空白是查不出来的。
+		channel.appendLine(describeFailure(plan.program, result.code, result.stdout, result.stderr));
 	};
 
 	let build = await runCompiler(plan);
@@ -302,12 +314,12 @@ const RUN_TIMEOUT_MS = 30000;
  * 直接起进程并把数据写进 stdin。以前是 `cmd /c "exe < 文件"`：路径带空格时重定向会断，
  * 多开一个 shell 不说，POSIX 分支还漏了 `-c`，永远跑不起来。
  */
-function runBinary(binary: string, cwd: string, stdinFile: string | undefined): Promise<{ code: number | null; stdout: string; stderr: string }> {
+function runBinary(binary: string, cwd: string, stdinFile: string | undefined, env: NodeJS.ProcessEnv): Promise<{ code: number | null; stdout: string; stderr: string }> {
 	return (stdinFile ? readFile(stdinFile, 'utf8') : Promise.resolve('')).then(stdinText => new Promise(resolve => {
 		let stdout = '';
 		let stderr = '';
 		let timedOut = false;
-		const child = spawn(binary, [], { cwd, windowsHide: true });
+		const child = spawn(binary, [], { cwd, env, windowsHide: true });
 		const timer = setTimeout(() => {
 			timedOut = true;
 			child.kill();
@@ -369,8 +381,10 @@ const RUN_IN_TERMINAL_LABEL = '在终端里运行（可以手敲输入）';
  * 在集成终端里跑刚编出来的程序。终端是产品里唯一有键盘 stdin 的地方：
  * 输出面板那条路是管道，程序一 `cin >>` 就读到 EOF，看起来像"没有输出"。
  */
-function runInTerminal(exePath: string, cwd: string): void {
-	const terminal = vscode.window.createTerminal({ cwd });
+function runInTerminal(exePath: string, cwd: string, env: NodeJS.ProcessEnv): void {
+	// 终端起的进程同样要能看到工具链的 bin：编出来的 exe 是靠 libstdc++-6.dll 跑的，
+	// 那个 DLL 只在工具链里，既不在 exe 旁边也不在系统 PATH 上。
+	const terminal = vscode.window.createTerminal({ cwd, env: { PATH: env.PATH ?? process.env.PATH ?? '' } });
 	terminal.show(true);
 	// 路径要带引号：工作区目录里有空格是常态（"oler ide v3"、"Oler OI 2026"）。
 	// 但 PowerShell 里一个带引号的路径只是**一个字符串**——它会把路径原样打印出来，
@@ -427,19 +441,23 @@ export async function compileAndRun(): Promise<void> {
 	if (picked.label === RUN_IN_TERMINAL_LABEL) {
 		// 输出面板那条路是管道：程序一读 stdin 就拿到 EOF，`cin >>` 就那么走下去，
 		// 看起来像"程序没输出"。键盘输入只有终端有。
-		runInTerminal(plan.output, dir);
+		runInTerminal(plan.output, dir, plan.env);
 		return;
 	}
 
 	channel.appendLine('--- 运行 ---');
-	const run = await runBinary(plan.output, dir, stdinFile);
+	const run = await runBinary(plan.output, dir, stdinFile, plan.env);
 	channel.appendLine(run.stdout);
 	if (run.stderr.trim().length > 0) {
 		channel.appendLine(run.stderr);
 	}
 	channel.appendLine(`--- 退出码 ${run.code} ---`);
 
-	void vscode.window.showInformationMessage(
-		run.code === 0 ? '程序运行结束，退出码 0。' : `程序退出码 ${run.code}，详见输出面板。`
-	);
+	// 一个 DLL 都没加载起来的 exe 只会留下一个像乱码的退出码，那句话说给谁都没用。
+	const note = run.code === 0
+		? '程序运行结束，退出码 0。'
+		: `${describeFailure(plan.output, run.code, run.stdout, run.stderr, '程序')}——详见输出面板。`;
+	void (run.code === 0
+		? vscode.window.showInformationMessage(note)
+		: vscode.window.showErrorMessage(note));
 }
