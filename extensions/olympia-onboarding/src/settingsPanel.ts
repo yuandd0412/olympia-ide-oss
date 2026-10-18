@@ -95,6 +95,11 @@ function groupRank(group: string): number {
 	return index < 0 ? GROUP_ORDER.length : index;
 }
 
+/** 搜索框比对的文本：除标签/键名/说明之外还要带上档位值与分组名，否则框里自己举的例子「-O2」一条都搜不到。 */
+function searchText(item: SettingItem): string {
+	return [item.label, item.key, item.hint, item.group, ...item.choices.flatMap(choice => [choice.value, choice.label])].join(' ');
+}
+
 function propertyKind(raw: { type?: string; enum?: readonly string[] }): SettingItem['kind'] {
 	if (raw.enum?.length) {
 		return 'enum';
@@ -147,11 +152,15 @@ function collectSettings(): SettingItem[] {
 }
 
 function currentValue(key: string): SettingValue {
-	const inspected = vscode.workspace.getConfiguration().inspect(key);
+	const config = vscode.workspace.getConfiguration();
+	const inspected = config.inspect(key);
+	// 读「生效值」，不是 globalValue：olympia.compiler.profile 是「选择评测机编译配置」
+	// 写到 Workspace 作用域的（见 extension.ts 那条 update）。只看 globalValue 的话，
+	// 学生选完档位回到这一页，下拉框显示的是出厂默认，F9 却按刚选的编译——这一栏就是假账。
 	return {
 		key,
-		value: inspected?.globalValue ?? inspected?.defaultValue,
-		overridden: inspected?.globalValue !== undefined
+		value: config.get(key),
+		overridden: inspected?.workspaceValue !== undefined || inspected?.globalValue !== undefined
 	};
 }
 
@@ -160,8 +169,12 @@ function allValues(items: readonly SettingItem[]): SettingValue[] {
 }
 
 async function writeSetting(key: string, value: unknown): Promise<string | undefined> {
+	// 写回真正在生效的那一层：某项已经被写到 Workspace 了还硬写 Global，
+	// 工作区那份继续盖着它——页面上改了，编译照旧，而且没有任何地方说为什么。
+	const hasWorkspaceValue = vscode.workspace.getConfiguration().inspect(key)?.workspaceValue !== undefined;
+	const target = hasWorkspaceValue ? vscode.ConfigurationTarget.Workspace : vscode.ConfigurationTarget.Global;
 	try {
-		await vscode.workspace.getConfiguration().update(key, value, vscode.ConfigurationTarget.Global);
+		await vscode.workspace.getConfiguration().update(key, value, target);
 		return undefined;
 	} catch (error) {
 		return (error as Error)?.message ?? String(error);
@@ -188,7 +201,7 @@ function control(item: SettingItem, index: number): string {
 function rowHtml(item: SettingItem, index: number): string {
 	const reset = `<button class="secondary tiny" data-reset="${index}">恢复默认</button>`;
 	const hint = item.hint ? `<p class="hint">${renderMarkdownLite(item.hint)}</p>` : '';
-	return `<div class="row" data-row="${index}" data-search="${escapeHtml((item.label + ' ' + item.key + ' ' + item.hint).toLowerCase())}">
+	return `<div class="row" data-row="${index}" data-search="${escapeHtml(searchText(item).toLowerCase())}">
 	<div class="main"><span class="name">${renderMarkdownLite(item.label)}</span><code class="key">${escapeHtml(item.key)}</code><span class="badge" data-badge="${index}">已改</span></div>
 	<div class="side">${control(item, index)}${reset}</div>
 	${hint}
@@ -279,12 +292,19 @@ function renderHtml(nonce: string, cspSource: string, items: readonly SettingIte
 			if (!el) { return; }
 			const commit = () => {
 				const raw = row.kind === 'boolean' ? el.checked : el.value;
-				const value = row.kind === 'number' ? (raw === '' ? undefined : Number(raw)) : raw;
-				if (row.kind === 'number' && value !== undefined && !Number.isFinite(value)) {
-					setNote('这一项要填数字，没填进去。', 'err');
-					return;
+				if (row.kind === 'number') {
+					// 空着不等于「恢复默认」：以前空值会走 update(key, undefined) 把这一项删掉，
+					// 然后回一句「已保存」——学生只是误删了一个字符，设置就没了，还没有提示。
+					if (raw === '' || !Number.isFinite(Number(raw))) {
+						setNote('这一项要填数字，没填进去。', 'err');
+						return;
+					}
+					if (el.validity && (el.validity.rangeUnderflow || el.validity.rangeOverflow)) {
+						setNote('这一项只能在 ' + (el.min || '-∞') + ' 到 ' + (el.max || '+∞') + ' 之间，没填进去。', 'err');
+						return;
+					}
 				}
-				send({ type: 'set', key: row.key, value });
+				send({ type: 'set', key: row.key, value: row.kind === 'number' ? Number(raw) : raw });
 			};
 			el.addEventListener('change', commit);
 		});
@@ -301,9 +321,20 @@ function renderHtml(nonce: string, cspSource: string, items: readonly SettingIte
 		document.getElementById('openSettings').addEventListener('click', () => send({ type: 'openSettings' }));
 		document.getElementById('filter').addEventListener('input', event => {
 			const text = event.target.value.trim().toLowerCase();
+			// 以前只藏行不藏卡片：搜一个对不上的词会留下 8 个空标题的框，看着像页面坏了。
+			const boxes = new Map();
 			document.querySelectorAll('[data-row]').forEach(row => {
-				row.style.display = !text || row.getAttribute('data-search').includes(text) ? '' : 'none';
+				const on = !text || row.getAttribute('data-search').includes(text);
+				row.style.display = on ? '' : 'none';
+				const box = row.closest('section');
+				if (box) { boxes.set(box, (boxes.get(box) ?? 0) + (on ? 1 : 0)); }
 			});
+			let hits = 0;
+			boxes.forEach((count, box) => { hits += count; box.style.display = count ? '' : 'none'; });
+			const empty = document.getElementById('no-match');
+			const query = document.getElementById('no-match-q');
+			if (query) { query.textContent = text; }
+			if (empty) { empty.style.display = hits ? 'none' : ''; }
 		});
 
 		send({ type: 'ready' });
@@ -322,6 +353,7 @@ function renderHtml(nonce: string, cspSource: string, items: readonly SettingIte
 	<p class="lead">改这里就够了：编译档位、跑样例的内存上限、对拍轮数、题面存放位置。写的是 settings.json 里同样的键，改完立刻生效。</p>
 	<input type="text" id="filter" placeholder="搜一下，例如「对拍」「内存」「-O2」" />
 	${body}
+	<p class="lead" id="no-match" style="display:none">没有哪一项对得上「<span id="no-match-q"></span>」。换个词试试，或者直接按编译档位、跑样例、对拍这些分区标题里的字。</p>
 	<footer>
 		<button id="openSettings" class="secondary">在设置页里搜 olympia</button>
 		<span class="note" id="note"></span>

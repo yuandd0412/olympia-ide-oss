@@ -280,6 +280,8 @@
 				"olympia.problem.requestTimeoutMs": {
 					"type": "number",
 					"default": 15000,
+					"minimum": 1000,
+					"maximum": 120000,
 					"description": "拉取题面时的网络请求超时时间（毫秒）。"
 				},
 				"olympia.problem.cfMetadata": {
