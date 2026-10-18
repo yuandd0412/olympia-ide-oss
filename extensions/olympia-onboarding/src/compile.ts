@@ -124,14 +124,19 @@ export function renderCommandLine(plan: CompilePlan): string {
 		.join(' ');
 }
 
+/** 回显编译命令这条设置只在一处读，任务面板与输出面板共用一个口径。 */
+function showCompileCommandEnabled(): boolean {
+	return vscode.workspace
+		.getConfiguration('olympia')
+		.get<boolean>('compiler.showCompileCommand', true);
+}
+
 function formatSwitch(source: vscode.Uri | undefined): vscode.Task | undefined {
 	if (!source) {
 		return undefined;
 	}
 	const plan = planCompile(source);
-	const showCommand = vscode.workspace
-		.getConfiguration('olympia')
-		.get<boolean>('compiler.showCompileCommand', true);
+	const showCommand = showCompileCommandEnabled();
 
 	const definition: vscode.TaskDefinition = { type: TASK_TYPE, source: source.fsPath };
 	const name = plan.profile.id === CUSTOM_TARGET_ID
@@ -159,6 +164,10 @@ function formatSwitch(source: vscode.Uri | undefined): vscode.Task | undefined {
 
 class OlympiaTaskProvider implements vscode.TaskProvider {
 	provideTasks(): vscode.Task[] {
+		// 空工作区里这条任务起不来（终端的 cwd 守卫），列出来就是给用户留一条必然失败的入口。
+		if (!vscode.workspace.workspaceFolders?.length) {
+			return [];
+		}
 		const task = formatSwitch(vscode.window.activeTextEditor?.document.uri);
 		return task ? [task] : [];
 	}
@@ -272,15 +281,18 @@ function stopProcesses(pids: number[]): Promise<void> {
 async function buildAndReport(plan: CompilePlan): Promise<{ code: number | null; stderr: string; locked: boolean }> {
 	const channel = outputChannel();
 	channel.clear();
-	channel.appendLine(renderCommandLine(plan));
+	if (showCompileCommandEnabled()) {
+		channel.appendLine(renderCommandLine(plan));
+	}
 	channel.show(true);
 
 	const append = (result: { code: number | null; stdout: string; stderr: string }) => {
 		if (result.code === 0) {
-			// 编过了就只把警告递出去，别拿「没有任何输出」去解释一次成功的编译
+			// 警告先说，再说这次编译成了：只有一行命令行、什么结论都没有，看起来像什么都没发生
 			if (result.stderr.trim().length > 0) {
 				channel.appendLine(result.stderr);
 			}
+			channel.appendLine(`编译成功，产物：${basename(plan.output)}`);
 			return;
 		}
 		// 一个字都没输出的那次失败也要有话说：`--- 编译失败 ---` 后面一片空白是查不出来的。
@@ -349,11 +361,13 @@ export async function compileCurrentFile(): Promise<void> {
 		void vscode.window.showWarningMessage('Olympia 编译：请先打开一个 C/C++ 源文件。');
 		return;
 	}
-	const task = formatSwitch(editor.document.uri);
-	if (!task) {
-		return;
+	// 不走 vscode.tasks.executeTask：任务终端在空工作区里被上游挡掉
+	// （terminalInstance._createProcess 要求 cwd === 用户主目录），双击 .cpp 打开的窗口
+	// 按 Shift+F9 就只剩一句「不能在空工作区中启动终端进程」，什么也编不出来。
+	const build = await buildAndReport(planCompile(editor.document.uri));
+	if (build.code !== 0 && !build.locked) {
+		void vscode.window.showErrorMessage('编译失败，详见「Olympia 编译」输出面板。');
 	}
-	await vscode.tasks.executeTask(task);
 }
 
 export async function compileJudgeAccurate(): Promise<void> {
