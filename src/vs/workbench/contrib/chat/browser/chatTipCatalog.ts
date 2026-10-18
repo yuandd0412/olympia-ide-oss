@@ -270,7 +270,7 @@ const ALL_TIPS: readonly ITipDefinition[] = [
 		tier: ChatTipTier.Qol,
 		buildMessage() {
 			return new MarkdownString(
-				localize('tip.attachFiles', "使用 # 引用文件或文件夹，以便为智能体提供有关任务的更多上下文。")
+				localize('tip.attachFiles', "用 # 引用文件或文件夹，把题面、数据或另一份代码一起发给教练。")
 			);
 		},
 		excludeWhenCommandsExecuted: [
@@ -524,6 +524,12 @@ const TIPS_HIDDEN_IN_OLYMPIA: readonly string[] = [
 	'tip.createPrompt',
 	'tip.troubleshoot',
 	'tip.forkConversation',
+	// tip.codeActions 是全新 profile 首屏实测到的那一条：它写着「选中代码块，然后右键单击
+	// 以访问更多 AI 操作」，而那些右键项是上游 Copilot 的代码操作菜单；本产品没有托管助手，
+	// 学生照做只会点开一个跟自己无关的菜单。首屏提示位不能拿这个占格子。
+	// （tip.btw 那条文案还是英文，不用动：它自己的 when 挂着 IsSessionsWindowContext，
+	// 只可能在智能体窗口出现，而那个窗口在本产品整条关掉了——学生看不到。）
+	'tip.codeActions',
 ];
 
 export const TIP_CATALOG: readonly ITipDefinition[] = ALL_TIPS.filter(tip => !TIPS_HIDDEN_IN_OLYMPIA.includes(tip.id));
