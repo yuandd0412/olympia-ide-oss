@@ -809,7 +809,7 @@ export const terminalChatAgentToolsConfiguration: IStringDictionary<IConfigurati
 		experiment: {
 			mode: 'auto'
 		},
-		markdownDescription: localize('outputCompaction.description', "When enabled, the output of commands run by the run in terminal tool is compacted before being returned to the model, reducing the number of tokens spent on noisy output (for example progress bars or repeated log lines) while preserving the important information."),
+		markdownDescription: localize('outputCompaction.description', "启用后，「在终端中运行」工具跑出来的命令输出会先压缩一遍再交回模型：进度条、重复的日志行这类噪音少占 token，重要信息仍然保留。"),
 	}
 };
 
