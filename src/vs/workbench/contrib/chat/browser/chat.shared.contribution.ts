@@ -599,7 +599,7 @@ configurationRegistry.registerConfiguration({
 		},
 		'chat.implicitContext.includeActiveEditor': {
 			type: 'boolean',
-			markdownDescription: nls.localize('chat.implicitContext.includeActiveEditor', "When enabled, the active editor is automatically forwarded as context, even when it would otherwise only be suggested. Selections and explicitly attached files are always included regardless of this setting.\n\nNote: this setting currently only applies to Agent Host sessions (such as Copilot)."),
+			markdownDescription: nls.localize('chat.implicitContext.includeActiveEditor', "启用后，当前编辑器里的文件会自动作为上下文发出去，而不是只作为建议附上。选中的内容和手动附加的文件始终会带上。\n\n注意：这一项目前只影响智能体主机那一类会话。"),
 			default: true,
 			tags: ['experimental'],
 			agentsWindow: { default: false },
@@ -691,7 +691,7 @@ configurationRegistry.registerConfiguration({
 		},
 		[ChatConfiguration.RichLinks]: {
 			type: 'boolean',
-			description: nls.localize('chat.experimental.richLinks.enabled', "Controls whether supported links in chat are rendered as rich links with live metadata. Enabling this may make authenticated requests to services such as GitHub."),
+			description: nls.localize('chat.experimental.richLinks.enabled', "启用后，聊天里受支持的链接会渲染成带实时信息的卡片；为此可能向链接所属的服务发起需要登录态的请求。"),
 			default: false,
 			tags: ['experimental'],
 			experiment: { mode: 'auto' },
@@ -2302,7 +2302,7 @@ configurationRegistry.registerConfiguration({
 			default: {
 				[LEGACY_MODE_DEFAULT_SOURCE_FOLDER]: true,
 			},
-			markdownDeprecationMessage: nls.localize('chat.mode.config.locations.deprecated', "This setting and the Local agent harness will be removed in a future release. Chat modes are now called custom agents and are located in `.github/agents`. Review the {0} in the Agent Customizations editor to move them into supported locations.", migrationsTabLink),
+			markdownDeprecationMessage: nls.localize('chat.mode.config.locations.deprecated', "这条设置和内置的本地 agent 运行环境会在后续版本移除。聊天模式现在叫自定义 agent，文件放在 .github/agents 目录下；旧的可以在 {0} 里迁到受支持的位置。", migrationsTabLink),
 			deprecationMessageSeverity: 'info',
 			additionalProperties: { type: 'boolean' },
 			unevaluatedProperties: { type: 'boolean' },
