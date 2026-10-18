@@ -225,7 +225,11 @@ function normalizeList(entry: unknown): PracticeList | undefined {
 	return Object.assign({}, entry, {
 		name,
 		problems,
-		minutes: typeof raw.minutes === 'number' ? raw.minutes : undefined,
+		// 手写 practice.json 的学生会把时长写成 "120"。以前只认 number，字符串被判成
+		// 「不设时限」，而 minutes: undefined 在 JSON.stringify 里直接消失——他写的那个数
+		// 就没了。这里跟输入框用同一套解析，别在第二个地方再判一遍。
+		minutes: typeof raw.minutes === 'string' ? parseMinutes(raw.minutes)
+			: typeof raw.minutes === 'number' ? raw.minutes : undefined,
 		createdAt: typeof raw.createdAt === 'string' ? raw.createdAt : ''
 	});
 }

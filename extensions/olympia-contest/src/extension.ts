@@ -319,6 +319,14 @@ async function saveList(list: PracticeList): Promise<PracticeList | undefined> {
 
 /** 三步输入：名字 → 题号 → 时长。任何一步取消都算没建，不留半份清单。 */
 async function createPracticeList(): Promise<PracticeList | undefined> {
+	// 先问有没有文件夹，再开始问内容：清单要落在工程的 .olympia/ 里，而「双击一个 .cpp
+	// 打开窗口」是学生最常见的开法，那种窗口没有文件夹。这一条检查以前排在
+	// 名字→题号→时长 三轮之后，学生把整份清单填完只得到一句「先打开一个文件夹」，
+	// 刚敲的题号全没了。
+	if (!practiceFile()) {
+		void vscode.window.showWarningMessage(`先打开一个文件夹：清单存在工程的 ${TEMPLATE_FOLDER}/${PRACTICE_FILE} 里，跟着工程走到机房。`);
+		return undefined;
+	}
 	const name = await vscode.window.showInputBox({
 		title: '新建集训清单',
 		prompt: '给这份清单起个名字，例如「CSP-J 模拟 3」。同名清单会被这一份顶掉，改题目不用先删。',
@@ -350,10 +358,6 @@ async function createPracticeList(): Promise<PracticeList | undefined> {
 	});
 	if (minutesText === undefined) { return undefined; }
 
-	if (!practiceFile()) {
-		void vscode.window.showWarningMessage(`先打开一个文件夹：清单存在工程的 ${TEMPLATE_FOLDER}/${PRACTICE_FILE} 里，跟着工程走到机房。`);
-		return undefined;
-	}
 	const list: PracticeList = { name: name.trim(), problems, minutes: parseMinutes(minutesText), createdAt: new Date().toISOString() };
 	return await saveList(list);
 }
