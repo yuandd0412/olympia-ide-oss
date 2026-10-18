@@ -90,6 +90,13 @@ function render(context: vscode.ExtensionContext): void {
 		statusItem.tooltip = '比赛时间到。点这里结束比赛模式。';
 		statusItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
 		announceEnd(context);
+		// 到点之后不用再数了：以前 ticker 一直跑到下次重载，每秒把整棵工具面板刷新一遍
+		// （render → onChange → tree.fire），而界面上只是一枚不动的橙色 chip。
+		// chip 要留着让学生点，所以这里只停表，不调 stop()。
+		if (ticker) {
+			clearInterval(ticker);
+			ticker = undefined;
+		}
 	} else {
 		statusItem.text = `$(clock) ${format(left)}`;
 		statusItem.tooltip = `比赛剩余 ${format(left)}，结束于 ${new Date(endsAt as number).toLocaleTimeString()}。点这里结束比赛模式。`;
@@ -237,12 +244,11 @@ export function registerContestMode(context: vscode.ExtensionContext): vscode.Di
 				return;
 			}
 			stop(context, false);
-			if (requested === undefined) {
-				return;
-			}
-			// 时间已过但还没收尾：从清单点「开始这一场」就是要再来一场，不该只把上一场清掉让人再点一次。
-			start(context, requested);
-			return;
+			// 上一场已经时间到、还没人收尾：这一按就是要开新的一场上，不能只把旧的清掉就返回。
+			// 以前 requested 为空时直接 return，实测第一次 Ctrl+Alt+C 什么也不发生（chip 消失、
+			// 也不问时长），得再按一次才出时长框——学生只会认为快捷键坏了。
+			// 收尾之后往下走就行：带着时长来的（清单上点「开始这一场」）由下面第一个分支开新场，
+			// 空手来的落到时长询问，跟「没有在进行中的比赛」完全同一条路。
 		}
 		if (requested !== undefined) {
 			start(context, requested);
