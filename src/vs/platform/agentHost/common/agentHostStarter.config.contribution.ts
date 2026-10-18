@@ -216,6 +216,7 @@ configurationRegistry.registerConfiguration({
 			agentHost: { key: AgentHostAgentOrchestrationLimitsConfigKey },
 		},
 		[AgentHostSystemProxyEnabledSettingId]: {
+			included: !product.defaultChatAgent?.byokOnly, // 本产品没有托管助手，也没有可挂的第三方编码智能体
 			type: 'boolean',
 			description: nls.localize('chat.agentHost.systemProxy.enabled', "When enabled, Copilot sessions automatically discover and use the operating system's proxy configuration when no proxy environment variable is set."),
 			default: true,
@@ -361,6 +362,7 @@ configurationRegistry.registerConfiguration({
 			},
 		},
 		[AgentHostOTelExporterTypeSettingId]: {
+			included: !product.defaultChatAgent?.byokOnly, // 本产品没有托管助手，也没有可挂的第三方编码智能体
 			type: 'string',
 			enum: ['otlp-http', 'otlp-grpc', 'console', 'file'],
 			markdownDescription: nls.localize('chat.agentHost.otel.exporterType', "开启 `#chat.agentHost.otel.enabled#` 时，Copilot SDK 使用的导出程序后端。仅可在用户设置中配置。`otlp-grpc` 会在 CLI 运行时以透明方式降级为 `otlp-http`。"),
@@ -418,6 +420,7 @@ configurationRegistry.registerConfiguration({
 			},
 		},
 		[AgentHostOTelOtlpEndpointSettingId]: {
+			included: !product.defaultChatAgent?.byokOnly, // 本产品没有托管助手，也没有可挂的第三方编码智能体
 			type: 'string',
 			markdownDescription: nls.localize('chat.agentHost.otel.otlpEndpoint', "导出程序类型为 `otlp-http` 或 `otlp-grpc` 时的 OTLP 终结点 URL。仅可在用户设置中配置。在智能体主机进程内设置 `OTEL_EXPORTER_OTLP_ENDPOINT`。"),
 			default: '',
@@ -441,6 +444,7 @@ configurationRegistry.registerConfiguration({
 			},
 		},
 		[AgentHostOTelCaptureContentSettingId]: {
+			included: !product.defaultChatAgent?.byokOnly, // 本产品没有托管助手，也没有可挂的第三方编码智能体
 			type: 'boolean',
 			markdownDescription: nls.localize('chat.agentHost.otel.captureContent', "启用后，将提示和响应内容包含在 OTel 跨度属性中。仅可在用户设置中配置。设置 `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT`。隐私敏感: 请勿在将跨度发送到共享接收器的环境中启用。"),
 			default: false,
@@ -489,6 +493,7 @@ configurationRegistry.registerConfiguration({
 			},
 		},
 		[AgentHostOTelOutfileSettingId]: {
+			included: !product.defaultChatAgent?.byokOnly, // 本产品没有托管助手，也没有可挂的第三方编码智能体
 			type: 'string',
 			markdownDescription: nls.localize('chat.agentHost.otel.outfile', "导出程序类型为 `file` 时跨度 JSON 行的输出路径。仅可在用户设置中配置。设置 `COPILOT_OTEL_FILE_EXPORTER_PATH`。"),
 			default: '',

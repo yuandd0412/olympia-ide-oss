@@ -68,6 +68,7 @@ Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration).regis
 	id: 'chat',
 	properties: {
 		[ChatConfiguration.UnifiedWorkspacePicker]: {
+			included: !product.defaultChatAgent?.byokOnly, // 本产品没有托管助手，也没有可挂的第三方编码智能体
 			type: 'boolean',
 			default: product.quality !== 'stable',
 			scope: ConfigurationScope.APPLICATION,

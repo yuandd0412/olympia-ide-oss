@@ -373,6 +373,7 @@ configurationRegistry.registerConfiguration({
 			}
 		},
 		'dictation.model': {
+			included: byokProductIneligible, // 本产品没有托管助手，这一条没有对应的东西可设
 			type: 'string',
 			enum: [
 				DEFAULT_LOCAL_TRANSCRIPTION_MODEL,
@@ -425,6 +426,7 @@ configurationRegistry.registerConfiguration({
 			tags: ['experimental']
 		},
 		'dictation.experimental.llmCleanup': {
+			included: byokProductIneligible, // 本产品没有托管助手，这一条没有对应的东西可设
 			type: 'boolean',
 			markdownDescription: nls.localize('dictation.experimental.llmCleanup', "Experimental: when dictation ends, the final transcript is passed through a small language model to restore punctuation, capitalization, paragraphs, and lists. Requires Copilot to be enabled; the transcript is sent to the language model for cleanup. Falls back to the raw transcript when no model is available. Use [dictation instructions](command:{0}) to customize terminology and formatting.", CONFIGURE_DICTATION_INSTRUCTIONS_ACTION_ID),
 			default: true,
@@ -442,6 +444,7 @@ configurationRegistry.registerConfiguration({
 			}
 		},
 		'dictation.experimental.llmCleanupModel': {
+			included: byokProductIneligible, // 本产品没有托管助手，这一条没有对应的东西可设
 			type: 'string',
 			enum: ['auto', 'copilot-utility-small', 'gpt-5.6-luna'],
 			markdownDescription: nls.localize('dictation.experimental.llmCleanupModel', "Controls the language model used for experimental dictation cleanup. `auto` follows the experiment-provided default."),
@@ -513,6 +516,7 @@ configurationRegistry.registerConfiguration({
 			tags: ['experimental'],
 		},
 		[ChatConfiguration.MigrateLegacyCopilotCliSessions]: {
+			included: byokProductIneligible, // 本产品没有托管助手，这一条没有对应的东西可设
 			type: 'boolean',
 			markdownDescription: nls.localize('chat.agentSessions.migrateLegacyCopilotCli', "Controls whether legacy extension host Copilot CLI chat sessions are migrated in place to the Agent host when opened, so their history becomes editable. When disabled, legacy sessions open as before.\n\nChanging this setting requires a restart to take effect."),
 			default: false,
@@ -1619,6 +1623,7 @@ configurationRegistry.registerConfiguration({
 			},
 		},
 		[ChatConfiguration.StrictMarketplaces]: {
+			included: byokProductIneligible, // 本产品没有托管助手，这一条没有对应的东西可设
 			type: ['array', 'null'],
 			items: {
 				type: 'object',
@@ -1852,6 +1857,7 @@ configurationRegistry.registerConfiguration({
 			},
 		},
 		[AgentHostShellToolInitScriptEnabledSettingId]: {
+			included: byokProductIneligible, // 本产品没有托管助手，这一条没有对应的东西可设
 			type: 'boolean',
 			markdownDescription: nls.localize('chat.agentHost.shellTool.initScript.enabled', "When enabled, Copilot SDK sessions load your shell profile (`~/.bashrc` on macOS and Linux, PowerShell profiles on Windows) and activate the Python environment selected for the workspace before each shell command. Python activation requires the Python Environments extension with `#python-envs.terminal.autoActivationType#` set to `shellStartup`. Local windows only."),
 			default: false,
@@ -1885,6 +1891,7 @@ configurationRegistry.registerConfiguration({
 			},
 		},
 		[CopilotClaudeAdvisorEnabledSettingId]: {
+			included: byokProductIneligible, // 本产品没有托管助手，这一条没有对应的东西可设
 			type: 'boolean',
 			markdownDescription: nls.localize('chat.copilot.claudeAdvisor.enabled', "When enabled, Copilot Agent Host sessions using a supported Claude model can call the provider-native Advisor tool. Changing this setting restarts the Copilot SDK client after active turns finish."),
 			default: false,
@@ -1892,6 +1899,7 @@ configurationRegistry.registerConfiguration({
 			scope: ConfigurationScope.APPLICATION,
 		},
 		[CopilotTgrepEnabledSettingId]: {
+			included: byokProductIneligible, // 本产品没有托管助手，这一条没有对应的东西可设
 			type: 'boolean',
 			markdownDescription: nls.localize('chat.copilot.tgrep.enabled', "When enabled, local Copilot Agent Host sessions force-enable tgrep indexed search, bypassing the repository-size threshold. Requires a local Git repository on a non-virtual filesystem. Changing this setting restarts the Copilot SDK client after active turns finish."),
 			default: false,
@@ -1900,6 +1908,7 @@ configurationRegistry.registerConfiguration({
 			scope: ConfigurationScope.APPLICATION,
 		},
 		[AgentHostMapLegacySettingsToManagedSettingsSettingId]: {
+			included: byokProductIneligible, // 本产品没有托管助手，这一条没有对应的东西可设
 			type: 'boolean',
 			markdownDescription: nls.localize('chat.agentHost.copilot.mapLegacySettingsToManagedSettings', "When enabled, maps supported legacy Olympia IDE settings to equivalent Copilot SDK managed settings for local Agent Host sessions. Only restrictions are mapped, and only from globally-scoped values — workspace and folder values are ignored. Applies to local sessions using the Copilot agent; remote hosts and other agents are unaffected. This compatibility bridge is temporary and is not used for new settings."),
 			default: false,
@@ -1953,6 +1962,7 @@ configurationRegistry.registerConfiguration({
 			tags: ['experimental', 'advanced'],
 		},
 		[AgentHostHydraFusionEnabledSettingId]: {
+			included: byokProductIneligible, // 本产品没有托管助手，这一条没有对应的东西可设
 			type: 'boolean',
 			markdownDescription: nls.localize('chat.copilot.hydraFusion.enabled', "When enabled, makes the experimental HydraFusion model available to local Copilot Agent Host sessions. Changing this setting restarts the local Copilot runtime."),
 			default: true,
@@ -1961,12 +1971,14 @@ configurationRegistry.registerConfiguration({
 			tags: ['preview', 'experimental', 'advanced'],
 		},
 		[CopilotAutoModeTierOverrideSettingId]: {
+			included: byokProductIneligible, // 本产品没有托管助手，这一条没有对应的东西可设
 			type: ['string', 'null'],
 			markdownDescription: nls.localize('chat.copilot.autoModeTierOverride', "Override Auto's \"Optimize for\" preference for evals and debugging. Accepts `efficiency`, `balance`, or `intelligence` in both Copilot Chat and Copilot SDK sessions; `fast` is extension-only. Set to `null` to clear."),
 			default: null,
 			tags: ['advanced'],
 		},
 		[AgentHostCopilotModelCapabilityOverridesSettingId]: {
+			included: byokProductIneligible, // 本产品没有托管助手，这一条没有对应的东西可设
 			type: 'object',
 			markdownDescription: nls.localize('chat.agentHost.copilot.modelCapabilityOverrides', "Per-model overrides for Copilot Agent Host sessions. Use `*` to match every model. Supports model family, reasoning effort, tool filters, model capabilities, and YAML prompt overrides."),
 			additionalProperties: {
@@ -2011,6 +2023,7 @@ configurationRegistry.registerConfiguration({
 			tags: ['experimental', 'advanced'],
 		},
 		[AgentHostAllowSignedOutWhenUsableSettingId]: {
+			included: byokProductIneligible, // 本产品没有托管助手，这一条没有对应的东西可设
 			type: 'boolean',
 			markdownDescription: nls.localize('chat.agentHost.allowSignedOutWhenUsable', "When enabled, Agent Host sessions remain available while signed out. The Agents window opens without forcing GitHub sign-in, and editor chat lets you select the Copilot harness. Agents usable without GitHub (for example Codex with ChatGPT authentication or Claude in native mode with your own Anthropic credentials) work while signed out; agents that require GitHub prompt you to add a model or sign in. When disabled (the default), GitHub sign-in is required before the Agents window opens."),
 			default: false,
@@ -2026,7 +2039,7 @@ configurationRegistry.registerConfiguration({
 			tags: ['experimental', 'advanced'],
 			// OLYMPIA-TRIM: 读它的是 chatSetupRunner.ts 那段「登录对话框要提供哪几个按钮」。
 			// 本产品 product.json 里 byokOnly: true，不走 Microsoft / GitHub 账户，所以默认的 false 就是终态。
-			// 我先前想把它 included: false 藏起来（以为是个没人读的死开关），是判断错了：
+			// 我先前想把它整个挡掉（以为是个没人读的死开关），是判断错了：
 			// 它有活的读者，只是在本产品里永远不该开启。留在设置里、用说明讲清楚，比藏掉更诚实。
 			// Read when a sign-in dialog opens, so `startup` keeps the offered buttons stable for the
 			// life of the window instead of changing under a dialog the user already has open.
@@ -2692,6 +2705,7 @@ configurationRegistry.registerConfiguration({
 			default: false,
 		},
 		[ChatConfiguration.WelcomePageSignInEnabled]: {
+			included: byokProductIneligible, // 本产品没有托管助手，这一条没有对应的东西可设
 			type: 'boolean',
 			description: nls.localize('chat.welcomePage.signIn.enabled', "Controls whether the Welcome page shows a GitHub sign-in button instead of the Agents window button when signed out."),
 			default: false,
