@@ -238,7 +238,7 @@ export class DisassemblyView extends EditorPane {
 					project(row: IDisassembledInstructionEntry): IDisassembledInstructionEntry { return row; }
 				},
 				{
-					label: localize('disassemblyTableColumnLabel', "条指令"),
+					label: localize('disassemblyTableColumnLabel', "指令"),
 					tooltip: '',
 					weight: 0.3,
 					templateId: InstructionRenderer.TEMPLATE_ID,

@@ -439,7 +439,7 @@ export class AnythingQuickAccessProvider extends PickerQuickAccessProvider<IAnyt
 				}
 
 				return additionalPicks.length > 0 ? [
-					{ type: 'separator', label: this.configuration.includeSymbols ? localize('fileAndSymbolResultsSeparator', "个文件和符号结果") : localize('fileResultsSeparator', "个文件结果") },
+					{ type: 'separator', label: this.configuration.includeSymbols ? localize('fileAndSymbolResultsSeparator', "文件和符号结果") : localize('fileResultsSeparator', "文件结果") },
 					...additionalPicks
 				] : [];
 			})(),

@@ -54,7 +54,7 @@ const markAsDoneActionPresentation: IChatSessionArchiveActionPresentation = {
 		icon: Codicon.check,
 	},
 	archiveAll: {
-		title: localize2('chatSession.markAllAsDone', "Mark All as Done"),
+		title: localize2('chatSession.markAllAsDone', "全部标记为已完成"),
 		icon: Codicon.checkAll,
 	},
 	unarchive: {

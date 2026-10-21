@@ -2585,7 +2585,7 @@ suite('Sessions - SessionsList', () => {
 				actions: actions.map(action => action.label),
 				options: configure instanceof SubmenuAction ? configure.actions.map(action => action.label) : [],
 			}, {
-				actions: ['Configure External Sessions', 'Mark All as Done'],
+				actions: ['Configure External Sessions', '全部标记为已完成'],
 				options: ['None', 'Recent', 'Last 24 Hours', 'Last 7 Days', 'Last 30 Days'],
 			});
 		});

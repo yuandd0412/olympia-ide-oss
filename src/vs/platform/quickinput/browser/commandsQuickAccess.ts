@@ -226,7 +226,7 @@ export abstract class AbstractCommandsQuickAccessProvider extends PickerQuickAcc
 			}
 
 			if (addSuggestedSeparator && commandPick.tfIdfScore !== undefined) {
-				commandPicks.push({ type: 'separator', label: localize('suggested', "个相似命令") });
+				commandPicks.push({ type: 'separator', label: localize('suggested', "相似命令") });
 				addSuggestedSeparator = false;
 			}
 
@@ -239,7 +239,7 @@ export abstract class AbstractCommandsQuickAccessProvider extends PickerQuickAcc
 
 			// Separator: other commands
 			if (addOtherSeparator && commandPick.tfIdfScore === undefined && !isInHistory && !this.options.suggestedCommandIds?.has(commandPick.commandId)) {
-				commandPicks.push({ type: 'separator', label: localize('morecCommands', "个其他命令") });
+				commandPicks.push({ type: 'separator', label: localize('morecCommands', "其他命令") });
 				addOtherSeparator = false;
 			}
 
@@ -263,7 +263,7 @@ export abstract class AbstractCommandsQuickAccessProvider extends PickerQuickAcc
 				// Basically, if we haven't already added a separator, we add one before the additional picks so long
 				// as one hasn't been added to the start of the array.
 				if (addSuggestedSeparator && commandPicks[0]?.type !== 'separator') {
-					commandPicks.unshift({ type: 'separator', label: localize('suggested', "个相似命令") });
+					commandPicks.unshift({ type: 'separator', label: localize('suggested', "相似命令") });
 				}
 				return commandPicks;
 			})()

@@ -1146,7 +1146,7 @@ configurationRegistry.registerConfiguration({
 			enum: ['archive', 'done'],
 			enumDescriptions: [
 				nls.localize('chat.experimental.sessionArchiveActionWording.archive', "Use Archive, Archive All, Unarchive, and Unarchive All."),
-				nls.localize('chat.experimental.sessionArchiveActionWording.done', "Use Mark as Done, Mark All as Done, Restore, and Restore All."),
+				nls.localize('chat.experimental.sessionArchiveActionWording.done', "使用「标记为已完成」「全部标记为已完成」「恢复」「全部恢复」。"),
 			],
 			default: 'done',
 			tags: ['experimental'],
