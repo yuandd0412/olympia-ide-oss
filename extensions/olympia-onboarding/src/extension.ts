@@ -35,10 +35,8 @@ import { registerSettingsPanel } from './settingsPanel';
 import { openLicenceNotices } from './licences';
 import { CMD } from './commands';
 
-const WEBSITE = 'https://olympia.dpdns.org';
-const DOCS = `${WEBSITE}/docs`;
+import { DOCS, DOWNLOAD_PAGE, WEBSITE } from './site';
 /** 官网首页的下载区锚点。环境自检发现这台机器没编译器时直接把它点开，省得用户自己找。 */
-const DOWNLOAD_PAGE = `${WEBSITE}/#download`;
 const ENVIRONMENT_CHANNEL_TITLE = 'Olympia 环境自检';
 
 export interface TargetMatch {

@@ -17,6 +17,8 @@ import { dirname, join } from 'path';
  * 按打开的优先级排：先是 Olympia 自己的中文清单，再是上游的 MIT 与第三方清单，最后是 Chromium
  * 那份巨大的 HTML。文件名就是产品目录里看到的样子，不在第二个地方复制一遍。
  */
+import { DOCS } from './site';
+
 const LICENCE_DOCS: readonly { readonly file: string; readonly label: string }[] = [
 	{ file: 'NOTICE.olympia.txt', label: 'Olympia 许可证与第三方组件' },
 	{ file: 'GPL-3.0.txt', label: 'GPL-3.0 许可证（Olympia 自研部分）' },
@@ -70,7 +72,7 @@ export async function openLicenceNotices(): Promise<boolean> {
 			'打开官网查看'
 		);
 		if (action === '打开官网查看') {
-			await vscode.env.openExternal(vscode.Uri.parse('https://olympia.dpdns.org/docs/'));
+			await vscode.env.openExternal(vscode.Uri.parse(DOCS));
 		}
 		return false;
 	}
