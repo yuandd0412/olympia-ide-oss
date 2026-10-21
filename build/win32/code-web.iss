@@ -49,9 +49,11 @@ Name: "simplifiedChinese"; MessagesFile: "{#SourcePath}i18n\Default.zh-cn.isl,{#
 
 [Code]
 const
-  // 主站国内直连快；GitHub 只在 Gitee 那一发失败时兜底，逐文件切换而不是整包切换。
+  // 只有一个来源：Gitee 上本标签的发行版附件。GitHub 那个仓库没有这个标签的 release
+  // （.../releases/download/<tag>/SHA256SUMS.txt 取不到东西），留着它只会让每次失败多绕一圈，
+  // 所以不再兜底；真要加第二个站，先确认那个标签下真的有这批文件。
   GITEE_BASE = 'https://gitee.com/yuanddMSK/olympia-ide/releases/download/';
-  GITHUB_BASE = 'https://github.com/yuandd0412/olympia-ide/releases/download/';
+  RELEASE_PAGE = 'https://gitee.com/yuanddMSK/olympia-ide/releases';
   USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)';
   MAX_ATTEMPTS = 3;
 
@@ -100,30 +102,25 @@ begin
     WorkDir, SW_HIDE, ewWaitUntilTerminated, Res) and (Res = 0) and FileExists(DestPath);
 end;
 
-{ Downloads Url into DestPath, preferring Gitee and falling back to GitHub per attempt. }
+{ Downloads Url into DestPath. One source only, retried; there is no second host carrying
+  this tag, so switching sites could never succeed. }
 function FetchInto(const Name, DestPath: string): Boolean;
 var
-  Attempt, I: Integer;
-  Bases: array[0..1] of string;
+  Attempt: Integer;
   Url: string;
 begin
-  Bases[0] := GITEE_BASE;
-  Bases[1] := GITHUB_BASE;
+  Url := GITEE_BASE + '{#ReleaseTag}/' + Name;
   Result := False;
   for Attempt := 1 to MAX_ATTEMPTS do
   begin
-    for I := 0 to 1 do
+    DeleteFile(DestPath);
+    if OneFetch(Url, DestPath) then
     begin
-      DeleteFile(DestPath);
-      Url := Bases[I] + '{#ReleaseTag}/' + Name;
-      if OneFetch(Url, DestPath) then
-      begin
-        Say('got ' + Url);
-        Result := True;
-        Exit;
-      end;
-      Say('fetch failed from ' + Url + ' (attempt ' + IntToStr(Attempt) + ')');
+      Say('got ' + Url);
+      Result := True;
+      Exit;
     end;
+    Say('fetch failed from ' + Url + ' (attempt ' + IntToStr(Attempt) + ')');
   end;
 end;
 
@@ -266,7 +263,8 @@ begin
   begin
     { 注意：续行不要以 # 开头，ISPP 会把行首的 # 当成预处理指令。 }
     AbortWith('这台机器上没有 curl.exe（Windows 10 1803 及以后自带），无法联网下载安装包。' + #13#10 + #13#10 +
-      '请把引导器和安装器的分卷文件放在同一个目录里再运行。');
+      '请把引导器和安装器的分卷文件放在同一个目录里再运行。' + #13#10 +
+      '这套文件在 ' + RELEASE_PAGE + ' 的 {#ReleaseTag} 附件里，除了那一处没有别的来源。');
     Exit;
   end;
 
@@ -274,7 +272,9 @@ begin
   ManifestPath := WorkDir + '{#ManifestName}';
   if not FetchInto('{#ManifestName}', ManifestPath) then
   begin
-    AbortWith('无法取得文件清单，请检查这台机器的网络。');
+    AbortWith('无法取得文件清单。这一版的文件只在 Gitee 发行版上：' + RELEASE_PAGE + #13#10 + #13#10 +
+      '请确认这台机器能打开 gitee.com 后重新运行；一直不行的话，把那一页 {#ReleaseTag} 附件里的' + #13#10 +
+      'OlympiaSetup.exe 和各 .bin 下到同一个目录，双击 OlympiaSetup.exe 一样能装。');
     Exit;
   end;
   if not ParseManifest(ManifestPath) then
@@ -294,8 +294,10 @@ begin
     ShowStatus('正在下载安装包（' + IntToStr(Done + 1) + '/' + IntToStr(Total) + '）：' + Name);
     if not FetchVerified(Name, FileHashes[I], DestPath) then
     begin
-      AbortWith('下载或校验失败：' + Name + #13#10 +
-        '可能是网络中断，也可能这个版本的文件被替换过。重新运行安装程序即可续传已完成的部分。');
+      AbortWith('下载或校验失败：' + Name + #13#10 + #13#10 +
+        '这个文件只有 Gitee 上的一份，没有别的站备着它，换源救不回来：' + RELEASE_PAGE + #13#10 + #13#10 +
+        '重新运行安装程序会接着下已经断掉的那一片；下不动就把上面那页的整套文件下到同一个目录，' +
+        '双击 OlympiaSetup.exe。');
       Exit;
     end;
     Done := Done + 1;

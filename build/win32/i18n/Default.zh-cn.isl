@@ -26,6 +26,31 @@ LanguageCodePage=0
 ;CopyrightFontSize=8
 
 [Messages]
+ErrorFileHash1=文件校验失败：%1
+ErrorFileHash2=文件校验不匹配：期望 %1，实际 %2
+FileExists2=该文件已存在。
+ExistingFileNewer2=已有文件比安装程序要写入的文件更新。
+ButtonStopDownload=停止下载(&S)
+ButtonStopExtraction=停止解压缩(&S)
+DownloadingLabel=正在下载附加文件...
+ErrorDownloadAborted=下载已中止
+ErrorDownloadFailed=下载失败：%1 %2
+ErrorDownloadSizeFailed=获取文件大小失败：%1 %2
+ErrorExtractionAborted=解压缩已中止
+ErrorExtractionFailed=解压缩失败：%1
+ErrorFileSize=文件大小无效：应为 %1，实际为 %2
+ErrorProgress=进度无效：%1 / %2
+ExistingFileNewerKeepExisting=保留已有文件（推荐）(&K)
+ExistingFileNewerOverwriteExisting=覆盖已有文件(&O)
+ExistingFileNewerOverwriteOrKeepAll=对后续冲突项也执行此操作(&D)
+ExistingFileNewerSelectAction=请选择操作
+ExtractionLabel=正在解压缩附加文件...
+FileExistsKeepExisting=保留已有文件(&K)
+FileExistsOverwriteExisting=覆盖已有文件(&O)
+FileExistsSelectAction=请选择操作
+FileExistsOverwriteOrKeepAll=对后续冲突项也执行此操作(&D)
+StopDownload=确定要停止下载吗？
+StopExtraction=确定要停止解压缩吗？
 
 ; *** 应用程序标题
 SetupAppTitle=安装
