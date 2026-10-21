@@ -11,11 +11,13 @@
  *  at code it cannot see produces confident nonsense about a wrong answer.
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
-import { CONTEST_STATE_COMMAND, EXAMPLE_BASE_URL } from './constants';
+import { CONTEST_STATE_COMMAND, EXAMPLE_BASE_URL, EXTRACT_INPUT_CHAR_CAP as MAX_DOCUMENT_CHARS } from './constants';
 import { listModels, resolveOrAskModel } from './model';
 
 const HISTORY_TURNS = 6;
-const MAX_DOCUMENT_CHARS = 12_000;
+// 一次请求里塞给模型的代码只有一个上限，就是 `EXTRACT_INPUT_CHAR_CAP`（这边按
+// `MAX_DOCUMENT_CHARS` 用）：调高一处而另一处没跟上，同一个题面在两条入口里就会被
+// 截成两种长度，教练看到的代码半截不同。
 /** 题面比代码更容易长（洛谷一份题面常带大段说明与多组样例），给得比代码少一点，留给问题与历史。 */
 const MAX_STATEMENT_CHARS = 6_000;
 /**
