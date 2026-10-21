@@ -123,6 +123,11 @@ function buildWin32Setup(arch: string, target: string): task.CallbackTask {
 			}
 		}
 
+// Ship a smaller installer when the machine already has its own g++: same product tree, minus the bundled MinGW.
+		if (process.env['OLYMPIA_LITE']) {
+			definitions['NoToolchain'] = '1';
+		}
+
 		fs.writeFileSync(productJsonPath, JSON.stringify(productJson, undefined, '\t'));
 
 		packageInnoSetup(issPath, { definitions }, cb as (err?: Error | null) => void);

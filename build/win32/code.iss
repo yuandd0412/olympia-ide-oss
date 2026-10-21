@@ -3,6 +3,13 @@
 ; 所以真正的生效路径是「按语言」那一份：让它的兜底指向随包的中文组件清单，
 ; 学生装的时候读到的就是那份说明（内含 MIT 正文），而不是只有 Microsoft 的英文 MIT。
 ; licenses\LICENSE-<lang>.rtf 本产品没有，所以下面那个 DirExists 分支恒为假。
+// lite 版开关：传 /dNoToolchain=1 时安装器不收内置 MinGW（\resources\app\toolchain）。
+// 默认不定义，所以完整版的产物字节一个都不变。
+#define ToolchainExcludes ''
+#ifdef NoToolchain
+  #define ToolchainExcludes ',\resources\app\toolchain,\resources\app\toolchain\*'
+#endif
+
 #define OlympiaNoticeFileName 'NOTICE.olympia.txt'
 #define RootLicenseFileName FileExists(RepoDir + '\' + OlympiaNoticeFileName) ? OlympiaNoticeFileName : (FileExists(RepoDir + '\LICENSE.rtf') ? 'LICENSE.rtf' : 'LICENSE.txt')
 #define LocalizedLanguageFile(Language = "") \
@@ -21,7 +28,11 @@ AppUpdatesURL=https://olympia.dpdns.org/
 DefaultGroupName={#NameLong}
 AllowNoIcons=yes
 OutputDir={#OutputDir}
+#ifdef NoToolchain
+OutputBaseFilename=OlympiaSetup-lite
+#else
 OutputBaseFilename=OlympiaSetup
+#endif
 Compression=lzma
 SolidCompression=yes
 ; 官网分发：托管方（Gitee Release 附件）单文件上限 100 MB，这里让 Inno 自己切片，
@@ -112,7 +123,7 @@ Name: "runcode"; Description: "{cm:RunAfter,{#NameShort}}"; GroupDescription: "{
 Name: "{app}"; AfterInstall: DisableAppDirInheritance
 
 [Files]
-Source: "*"; Excludes: "\CodeSignSummary*.md,\tools,\tools\*,\policies,\policies\*,\appx,\appx\*,\{#ProductJsonRelativePath},\{#ExeBasename}.exe,\{#ExeBasename}.VisualElementsManifest.xml,\bin,\bin\*"; DestDir: "{code:GetDestDir}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "*"; Excludes: "\CodeSignSummary*.md,\tools,\tools\*,\policies,\policies\*,\appx,\appx\*,\{#ProductJsonRelativePath},\{#ExeBasename}.exe,\{#ExeBasename}.VisualElementsManifest.xml,\bin,\bin\*{#ToolchainExcludes}"; DestDir: "{code:GetDestDir}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#ExeBasename}.exe"; DestDir: "{code:GetDestDir}"; DestName: "{code:GetExeBasename}"; Flags: ignoreversion
 Source: "{#ExeBasename}.VisualElementsManifest.xml"; DestDir: "{code:GetDestDir}"; DestName: "{code:GetVisualElementsManifest}"; Flags: ignoreversion
 Source: "tools\*"; DestDir: "{app}\{#VersionedResourcesFolder}\tools"; Flags: ignoreversion skipifsourcedoesntexist
