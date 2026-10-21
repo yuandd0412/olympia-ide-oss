@@ -10,6 +10,18 @@
   #define ToolchainExcludes ',\resources\app\toolchain,\resources\app\toolchain\*'
 #endif
 
+// Copilot 运行时裁剪。本产品只有 BYOK，没有 Copilot 登录，所以那 97 MB 的
+// Copilot 原生运行时不可能被走到：agent host 顶层 `import` 的是这个包里的 JS
+// （必须留在包内，否则子进程一加载就抛），而 prebuilds\*（runtime.node 的 FFI
+// 运行时 + GitHub 认证 interop + copilot-runtime.exe）要等 new CopilotClient()
+// 才 koffi.load，animations\* 是 Copilot CLI 的安装引导动画。
+// 传 /dKeepCopilotRuntime=1 可以原样收进来（复现上游行为时留的口）。
+#define CopilotSdkDir '\resources\app\node_modules.asar.unpacked\@github\copilot-sdk-win32-x64'
+#define CopilotRuntimeExcludes ''
+#ifndef KeepCopilotRuntime
+  #define CopilotRuntimeExcludes ',' + CopilotSdkDir + '\prebuilds,' + CopilotSdkDir + '\prebuilds\*,' + CopilotSdkDir + '\animations,' + CopilotSdkDir + '\animations\*'
+#endif
+
 #define OlympiaNoticeFileName 'NOTICE.olympia.txt'
 #define RootLicenseFileName FileExists(RepoDir + '\' + OlympiaNoticeFileName) ? OlympiaNoticeFileName : (FileExists(RepoDir + '\LICENSE.rtf') ? 'LICENSE.rtf' : 'LICENSE.txt')
 #define LocalizedLanguageFile(Language = "") \
@@ -123,7 +135,7 @@ Name: "runcode"; Description: "{cm:RunAfter,{#NameShort}}"; GroupDescription: "{
 Name: "{app}"; AfterInstall: DisableAppDirInheritance
 
 [Files]
-Source: "*"; Excludes: "\CodeSignSummary*.md,\tools,\tools\*,\policies,\policies\*,\appx,\appx\*,\{#ProductJsonRelativePath},\{#ExeBasename}.exe,\{#ExeBasename}.VisualElementsManifest.xml,\bin,\bin\*{#ToolchainExcludes}"; DestDir: "{code:GetDestDir}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "*"; Excludes: "\CodeSignSummary*.md,\tools,\tools\*,\policies,\policies\*,\appx,\appx\*,\{#ProductJsonRelativePath},\{#ExeBasename}.exe,\{#ExeBasename}.VisualElementsManifest.xml,\bin,\bin\*{#ToolchainExcludes}{#CopilotRuntimeExcludes}"; DestDir: "{code:GetDestDir}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#ExeBasename}.exe"; DestDir: "{code:GetDestDir}"; DestName: "{code:GetExeBasename}"; Flags: ignoreversion
 Source: "{#ExeBasename}.VisualElementsManifest.xml"; DestDir: "{code:GetDestDir}"; DestName: "{code:GetVisualElementsManifest}"; Flags: ignoreversion
 Source: "tools\*"; DestDir: "{app}\{#VersionedResourcesFolder}\tools"; Flags: ignoreversion skipifsourcedoesntexist
