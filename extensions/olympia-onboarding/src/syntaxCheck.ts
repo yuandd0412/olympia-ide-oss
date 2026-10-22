@@ -25,9 +25,7 @@ import * as vscode from 'vscode';
 import { compilerBinary, planCompile } from './compile';
 import { describeFailure } from './toolchain';
 import { Finding, MAX_FINDINGS, SOURCE_FILES } from './precheck';
-
-/** 语法检查的超时：一次完整编译的上限，比学生愿意等的时间短。 */
-const SYNTAX_TIMEOUT_MS = 20000;
+import { SYNTAX_TIMEOUT_MS } from './timeouts';
 
 export interface SyntaxResult {
 	readonly findings: readonly Finding[];

@@ -24,6 +24,7 @@ import { readFile } from 'fs/promises';
 import { dirname, basename, join } from 'path';
 import { compilerEnv, describeFailure, locateCompiler } from './toolchain';
 import { OJTarget, CUSTOM_TARGET_ID, findTarget, profileId } from './ojTargets';
+import { COMPILE_TIMEOUT_MS } from './timeouts';
 
 export const TASK_TYPE = 'olympia-compile';
 
@@ -207,7 +208,7 @@ function exeNameFor(fsPath: string): string {
  * Runs `g++` directly. Used by the compile-and-run path where a background task would make it
  * impossible to feed stdin from a test file before the program starts.
  */
-export const COMPILE_TIMEOUT_MS = 120000;
+export { COMPILE_TIMEOUT_MS } from './timeouts';
 export const COMPILE_MAX_BUFFER_BYTES = 16 * 1024 * 1024;
 
 function runCompiler(plan: CompilePlan): Promise<{ code: number | null; stdout: string; stderr: string }> {

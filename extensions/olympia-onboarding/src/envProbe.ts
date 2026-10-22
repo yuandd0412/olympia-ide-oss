@@ -28,6 +28,7 @@ import * as vscode from 'vscode';
 import { activeProfile } from './compile';
 import { CUSTOM_TARGET_ID } from './ojTargets';
 import { compilerBinDir, compilerEnv, describeFailure, locateCompiler, pathInjection, probeSubprograms, runCapture } from './toolchain';
+import { COMPILE_BUDGET_MS } from './timeouts';
 
 export interface ProbeStep {
 	readonly label: string;
@@ -36,7 +37,6 @@ export interface ProbeStep {
 }
 
 /** 编译与运行各自的上限：探针是点一下「环境自检」就要出结果的，不能像正式编译那样等两分钟。 */
-const COMPILE_BUDGET_MS = 60000;
 const RUN_BUDGET_MS = 10000;
 
 /** 评测机接受的两个标准档；只测一个的话另一档坏掉就看不见。 */
