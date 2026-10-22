@@ -363,6 +363,45 @@ async function preSubmitCheck(): Promise<void> {
 	}
 }
 
+/**
+ * 首启一次性把「Olympia：竞赛工具」面板带出来一次。
+ *
+ * 招牌面板不该由学生自己去活动栏里找，但也不该每次启动都抢焦点 —— 标记记在
+ * globalState 里，跟着用户配置走，所以只发生一次。
+ *
+ * 刻意不依赖工作区文件夹：双击单文件直接打开的那种形态根本没有文件夹，
+ * 这一步也必须照样成立 —— 所以这里只用全局状态和一条命令。
+ *
+ * 延后一点再执行：首启的「演练」弹窗和侧栏展开会打架，等它先落定。
+ */
+const FIRST_RUN_REVEALED_KEY = 'olympia.firstRun.toolsPanelRevealed';
+/** 等首启的演练先落定，再把面板带出来。 */
+const FIRST_RUN_REVEAL_DELAY_MS = 2000;
+
+function revealToolsPanelOnce(context: vscode.ExtensionContext): void {
+	if (context.globalState.get(FIRST_RUN_REVEALED_KEY, false)) {
+		return;
+	}
+	const timer = setTimeout(() => {
+		void (async () => {
+			const channel = environmentChannel();
+			try {
+				// 命令 id 由**视图容器**推出来：workbench.view.extension.<容器 id>。
+				// 容器 id 在 package.json 的 viewsContainers.activitybar[0].id（olympia），
+				// 不是视图 id（olympia.tools）—— 用后者拼出来的命令根本不存在。
+				await vscode.commands.executeCommand('workbench.view.extension.olympia');
+				channel.appendLine('首次启动：已带出「Olympia：竞赛工具」面板。');
+			} catch (error) {
+				channel.appendLine('首次启动：带出竞赛工具面板失败 —— '
+					+ (error instanceof Error ? error.message : String(error)));
+			}
+			// 成功失败都记上：这是一次性动作，失败不该每次启动都重试抢焦点。
+			await context.globalState.update(FIRST_RUN_REVEALED_KEY, true);
+		})();
+	}, FIRST_RUN_REVEAL_DELAY_MS);
+	context.subscriptions.push(new vscode.Disposable(() => clearTimeout(timer)));
+}
+
 export function activate(context: vscode.ExtensionContext): void {
 	extensionDir = context.extensionPath;
 	diagnostics = vscode.languages.createDiagnosticCollection('olympia-precheck');
@@ -390,6 +429,8 @@ export function activate(context: vscode.ExtensionContext): void {
 	// the persistent bars: the activity-bar panel and the status-bar chips. The palette stays
 	// available, but it is no longer the only way to reach any of this.
 	registerToolsView(context);
+	// 首启一次性把招牌面板带出来（只一次，细节见 revealToolsPanelOnce）。
+	revealToolsPanelOnce(context);
 	registerStatusBar(context);
 	registerStressTest(context);
 	registerContestMode(context);
