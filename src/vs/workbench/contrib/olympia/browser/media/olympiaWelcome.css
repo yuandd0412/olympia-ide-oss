@@ -1,0 +1,27 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+/*
+ * Olympia 开始页样式。
+ *
+ * 红线（见 src/vs/workbench/contrib/modernUI/CSS_PERFORMANCE.md）：
+ *  - 禁止 class substring 选择器（例如 [class*="xxx"]）
+ *  - 禁止在 workbench / root 作用域使用 :has()
+ *  - 动画只允许走 transform / opacity，不得动 width / height / top / left / margin / padding
+ *
+ * M1 只提供容器骨架；落地页布局与一镜到底动画的样式在原型评审通过后追加到这里。
+ */
+
+.olympiaWelcome {
+	box-sizing: border-box;
+	width: 100%;
+	height: 100%;
+	overflow: auto;
+	padding: 24px 28px;
+	color: var(--vscode-foreground);
+	background: var(--vscode-editor-background);
+	font-size: 13px;
+	line-height: 1.55;
+}

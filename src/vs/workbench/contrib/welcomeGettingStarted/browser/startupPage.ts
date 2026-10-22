@@ -34,9 +34,16 @@ import { getActiveElement } from '../../../../base/browser/dom.js';
 import { isWeb } from '../../../../base/common/platform.js';
 import { IOnboardingService } from '../../welcomeOnboarding/common/onboardingService.js';
 import { ONBOARDING_STORAGE_KEY } from '../../welcomeOnboarding/common/onboardingTypes.js';
+import { OlympiaWelcomeInput, olympiaWelcomeInputTypeId } from '../../olympia/browser/olympiaWelcomeInput.js';
 
 export const restoreWalkthroughsConfigurationKey = 'workbench.welcomePage.restorableWalkthroughs';
 export type RestoreWalkthroughsConfigurationValue = { folder: string; category?: string; step?: string };
+
+// Olympia 开始页开关。本产品自己的键，不复用上游 `workbench.startupEditor`：
+// 上游那个 enum 只有 7 个值，且 `registerConfiguration` 按 property key 逐个写入，
+// 往上游节点里加 key 会污染上游配置面板，同名 key 则会覆盖上游定义。
+// 配置注册在 contrib/olympia/browser/olympiaWelcome.contribution.ts（node id 用独立的 'olympia'）。
+const olympiaStartPageConfigurationKey = 'olympia.startPage';
 
 const configurationKey = 'workbench.startupEditor';
 const oldConfigurationKey = 'workbench.welcome.enabled';
@@ -133,6 +140,16 @@ export class StartupPageRunnerContribution extends Disposable implements IWorkbe
 			return;
 		}
 
+		// Olympia 开始页：本产品自己的开关，优先于上游 `workbench.startupEditor`。
+		// 上游这条分支本身一行没动，这里只多了一个出口；其余接线都在 contrib/olympia 里。
+		const olympiaStartPageEnabled = this.configurationService.getValue<boolean>(olympiaStartPageConfigurationKey) ?? true;
+		if (olympiaStartPageEnabled
+			&& this.lifecycleService.startupKind !== StartupKind.ReloadedWindow
+			&& (!this.editorService.activeEditor || this.layoutService.openedDefaultEditors)) {
+			await this.openOlympiaWelcome();
+			return;
+		}
+
 		const enabled = isStartupPageEnabled(this.configurationService, this.contextService, this.environmentService);
 		if (enabled && this.lifecycleService.startupKind !== StartupKind.ReloadedWindow) {
 
@@ -220,6 +237,27 @@ export class StartupPageRunnerContribution extends Disposable implements IWorkbe
 				},
 			});
 		}
+	}
+
+	/**
+	 * 打开 Olympia 开始页。去重逻辑与上游 `openGettingStarted` 同构：
+	 * 已经开着就别再开一次，否则每次启动都抢焦点。
+	 */
+	private async openOlympiaWelcome() {
+		const editor = this.editorService.activeEditor;
+
+		if (editor?.typeId === olympiaWelcomeInputTypeId || this.editorService.editors.some(e => e.typeId === olympiaWelcomeInputTypeId)) {
+			return;
+		}
+
+		this.editorService.openEditor({
+			resource: OlympiaWelcomeInput.RESOURCE,
+			options: {
+				index: editor ? 0 : undefined,
+				pinned: false,
+				preserveFocus: this.shouldPreserveFocus(),
+			},
+		});
 	}
 
 	private shouldPreserveFocus(): boolean {
