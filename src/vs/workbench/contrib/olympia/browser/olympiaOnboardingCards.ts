@@ -275,8 +275,28 @@ export class OlympiaOnboardingCards implements IDisposable {
 	 */
 	private readonly pendingWrites = new Map<string, unknown>();
 
-	/** 正在写、还没回来的键，避免同一个键被重复写。 */
-	private readonly writingKeys = new Set<string>();
+	/**
+	 * 用户**最后表达过**的意图，不管写进去没有。
+	 *
+	 * `pendingWrites` 会被消费掉 —— 写成功一次就删一次。于是它答不了
+	 * 「这个键现在**应该**是什么值」。而这个答案在一种情况下是必需的：
+	 * 一次卡住的写入被放弃之后又**迟到落地**，把配置盖回旧值；
+	 * 那时候得拿它跟真值对一下，把用户的选择补写回去。
+	 */
+	private readonly lastIntended = new Map<string, unknown>();
+
+	/**
+	 * 正在写、还没回来的键，避免同一个键被重复写。
+	 *
+	 * 值是**这一次写入的代号**，不是单纯的「这个键在写」：
+	 * 「放弃写入」会把键从表里摘掉，而**上一次**写入的 promise 之后还可能才回来 ——
+	 * 它的 `finally` 如果照旧无脑 `delete(key)`，就会把**新一轮**写入的标记一起摘掉。
+	 * 于是同一个键上跑起两个并发写入，配置最终落在谁手里全看完成顺序 ——
+	 * 慢的那次会盖掉用户后来选的那个值。
+	 *
+	 * 代号对不上就不摘：标记只属于发起它的那一次写入。
+	 */
+	private readonly writingKeys = new Map<string, symbol>();
 
 	/** 补写重试的帧计数（约每 30 帧试一次）。 */
 	private flushCounter = 0;
@@ -755,6 +775,8 @@ export class OlympiaOnboardingCards implements IDisposable {
 	 */
 	private async writeConfig(key: string, value: unknown): Promise<void> {
 		this.pendingWrites.set(key, value);
+		// 意图单独记一份 —— 待写值会被消费掉，但「用户最后想要什么」不能跟着消失。
+		this.lastIntended.set(key, value);
 		await this.flushPendingWrites();
 	}
 
@@ -774,6 +796,8 @@ export class OlympiaOnboardingCards implements IDisposable {
 	 */
 	private async flushPendingWrites(isRetryRound: boolean = false): Promise<void> {
 		for (const key of [...this.pendingWrites.keys()]) {
+			// 本轮看到的待写值 —— 放弃写入时靠它判断「用户是不是又改过了」。
+			const pendingValue = this.pendingWrites.get(key);
 			if (this.writingKeys.has(key)) {
 				// 正在写 —— 但**这一轮照样消耗额度**。
 				// 不消耗的话有两个洞：
@@ -781,11 +805,11 @@ export class OlympiaOnboardingCards implements IDisposable {
 				//   ② 写入的 promise 永不 settle 时（配置服务抽风），这个键每一轮都被跳过，
 				//      配额永远用不完 —— 「到点就放弃」的承诺就彻底破了（变成无限心跳）。
 				if (isRetryRound) {
-					this.abandonWriteIfExhausted(key, `配置 ${key} 的写入还没回来`);
+					this.abandonWriteIfExhausted(key, `配置 ${key} 的写入还没回来`, undefined, pendingValue);
 				}
 				continue;
 			}
-			const value = this.pendingWrites.get(key);
+			const value = pendingValue;
 			if (value === undefined) {
 				// 没有值可写。留着它只会让重试定时器永远停不下来。
 				this.pendingWrites.delete(key);
@@ -798,14 +822,16 @@ export class OlympiaOnboardingCards implements IDisposable {
 				// 但也不能无限重试：这条路径以前**不计数**，于是「400ms × 60」的额度承诺
 				// 在这里根本不成立 —— 扩展永远不注册，就永远重试下去。
 				if (isRetryRound) {
-					if (this.abandonWriteIfExhausted(key, `配置 ${key} 尚未注册（内置扩展还没注册这个配置项）`)) {
+					if (this.abandonWriteIfExhausted(key, `配置 ${key} 尚未注册（内置扩展还没注册这个配置项）`, undefined, value)) {
 						continue;
 					}
 				}
 				this.scheduleFlushRetry();
 				continue;
 			}
-			this.writingKeys.add(key);
+			// 这次写入的**代号** —— `finally` 里只摘自己发起的那一次。
+			const writeToken = Symbol(key);
+			this.writingKeys.set(key, writeToken);
 			try {
 				await this.configurationService.updateValue(key, value, ConfigurationTarget.USER);
 				// 期间用户又改过的话，留着新值，下一轮再写 —— 别把新选择抹掉。
@@ -818,13 +844,20 @@ export class OlympiaOnboardingCards implements IDisposable {
 				// 这里必须留痕：静默吞掉的话，用户点了「开始」却发现设置没变，
 				// 而我们连「为什么」都不知道。
 				if (isRetryRound) {
-					if (this.abandonWriteIfExhausted(key, `配置 ${key} 写入失败：${error}`, error)) {
+					if (this.abandonWriteIfExhausted(key, `配置 ${key} 写入失败：${error}`, error, value)) {
 						continue;
 					}
 				}
 				this.scheduleFlushRetry();
 			} finally {
-				this.writingKeys.delete(key);
+				// 只摘**自己发起的那一次**。
+				if (this.writingKeys.get(key) === writeToken) {
+					this.writingKeys.delete(key);
+				} else {
+					// 这次写入已经被放弃（或已经被新一轮接管）了。
+					// 它要是最后真的落地，写的可能是**过时**的值 —— 得把用户的选择补写回去。
+					this.rewriteIfStale(key, value);
+				}
 			}
 		}
 		// 还有没写下去的键，就一定要有下一次尝试。
@@ -849,7 +882,7 @@ export class OlympiaOnboardingCards implements IDisposable {
 	 * chip 的高亮还停在用户刚点的那个选项上，不刷一次的话界面就在撒谎。
 	 * 这里刷行状态 + 预览，但**不**走 `refresh()`：它会再触发一轮写入，形成递归。
 	 */
-	private abandonWriteIfExhausted(key: string, reason: string, error?: unknown): boolean {
+	private abandonWriteIfExhausted(key: string, reason: string, error?: unknown, attemptedValue?: unknown): boolean {
 		const rounds = (this.pendingWriteRounds.get(key) ?? 0) + 1;
 		this.pendingWriteRounds.set(key, rounds);
 		if (rounds === 1 || rounds % 10 === 0) {
@@ -859,14 +892,52 @@ export class OlympiaOnboardingCards implements IDisposable {
 			return false;
 		}
 		console.error(`[Olympia] 配置 ${key} 等了 ${rounds} 轮还没写进去，已放弃写入：${error === undefined ? reason : String(error)}`);
-		this.pendingWrites.delete(key);
+		// 只摘**用户还没改过**的那个待写值。
+		// 用户在这 24 秒里又点了一次（待写值换成了新的）的话，新值还得写进去 ——
+		// 跟着旧值一起摘掉的话，用户刚点的选择就白点了。
+		if (this.pendingWrites.get(key) === attemptedValue) {
+			this.pendingWrites.delete(key);
+			// 这个意图已经彻底放弃了 —— 留着它，迟到的写入会拿它当「用户还想要」，
+			// 把一个用户已经不想要的旧值又补写回去。
+			this.lastIntended.delete(key);
+		}
+		// 留下的（用户改过的）新值算**另一次尝试**，给它自己的预算 ——
+		// 不然新值只配捡旧值的残羹。
 		this.pendingWriteRounds.delete(key);
 		// 卡死的写入也别占着这个键 —— 不然用户后来再点同一个选项，
 		// 写入会被「正在写」挡住，他的选择就白点了。
+		//
+		// 摘的时候**代号**也一起失效：旧写入回来时 `finally` 发现代号对不上，
+		// 就不会把新一轮写入的标记误摘掉（那会造成同一个键并发写）。
 		this.writingKeys.delete(key);
 		this.refreshRowStates();
 		this.refreshPreview();
 		return true;
+	}
+
+	/**
+	 * 一次**被放弃**的写入最后真的落地了 —— 而且它写的值已经过时。
+	 *
+	 * 时序：写入卡住 → 24 秒后放弃（键被摘掉）→ 用户又点了同一项 → 新一轮写入先完成
+	 * → 旧写入这时才回来，把配置盖回**旧值**。用户看到的是「我选了 B，设置里却是 A」。
+	 *
+	 * 所以旧写入落地时要比一下「用户最后想要什么」和「现在实际是什么」：
+	 * 不一致就把用户的选择补写回去。
+	 *
+	 * 写入**失败**走到这里不会重复排队 —— 失败时写的值就是用户想要的值，
+	 * 两者相等，直接返回。
+	 */
+	private rewriteIfStale(key: string, writtenValue: unknown): void {
+		const intended = this.lastIntended.get(key);
+		if (intended === undefined || intended === writtenValue) {
+			return;
+		}
+		if (this.configurationService.getValue(key) === intended) {
+			return;
+		}
+		this.pendingWrites.set(key, intended);
+		this.pendingWriteRounds.delete(key);
+		this.scheduleFlushRetry();
 	}
 
 	/**
