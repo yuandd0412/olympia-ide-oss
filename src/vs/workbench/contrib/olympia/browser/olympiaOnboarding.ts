@@ -16,6 +16,7 @@ import { ILifecycleService, LifecyclePhase } from '../../../services/lifecycle/c
 import { IWorkbenchLayoutService, Parts } from '../../../services/layout/browser/layoutService.js';
 import { OlympiaOnboardingBackdrop } from './olympiaOnboardingBackdrop.js';
 import { OlympiaOnboardingCards } from './olympiaOnboardingCards.js';
+import { olympiaWelcomeReady } from './olympiaWelcomeReady.js';
 import {
 	OLYMPIA_ONBOARDING_CARD_COUNT,
 	OLYMPIA_ONBOARDING_ENTER_DURATION,
@@ -92,8 +93,24 @@ export class OlympiaOnboarding implements IDisposable {
 	 */
 	static readonly STORAGE_KEY = 'olympia.onboarding.completed.v1';
 
-	/** 等工作台恢复的最长等待（秒）。超时后照常开始 —— 工作台会自己把剩下的补齐。 */
-	private static readonly RESTORE_WAIT_LIMIT = 2.0;
+	/**
+	 * 起跑闸门的**硬上限**（秒）。
+	 *
+	 * 起跑要同时满足两个条件：工作台骨架已恢复（`Restored`），且开始页已经画出来。
+	 * 少任何一个，洞擦开那一刻露出来的就是半成品 —— 那本身就是一次断点。
+	 *
+	 * 但也不能无限等：万一某个扩展把工作台卡住，用户会永远停在这层极光上，
+	 * 那比露一次半成品更糟。所以到点强制放行。
+	 */
+	private static readonly ENTER_GATE_WAIT_LIMIT = 15.0;
+
+	/**
+	 * 开始页打不开时的收场淡出时长（毫秒）。
+	 *
+	 * 260ms：比 CSS 里 `.olympia-onboarding-fading` 的 transition 长一点，
+	 * 保证淡出走完了才把整层删掉 —— 提前删会在淡到一半时硬切。
+	 */
+	private static readonly ABORT_FADE_MS = 300;
 
 	private readonly rootElement: HTMLElement;
 	private readonly waitingElement: HTMLElement;
@@ -120,7 +137,16 @@ export class OlympiaOnboarding implements IDisposable {
 	private enterStart: number | null = null;
 	/** 用户已经点了「开始 / 跳过」，但工作台还没恢复。 */
 	private enterRequested = false;
-	private enterRequestedAt = 0;
+	/**
+	 * 「点了开始」的时刻（rAF 帧时间戳）。-1 = 还没点。
+	 *
+	 * 用 -1 而不是 0 当哨兵：rAF 时间戳是**非负**的单调时钟，0 也是它的合法取值。
+	 * 拿合法域里的一个值当「未设置」，等于赌「0 永不出现」——
+	 * 真出现了，等待时长恒为 0，硬上限就永远不触发，闸门无限等待。
+	 */
+	private enterRequestedAt = -1;
+	/** 收场淡出用的定时器（开始页打不开时的退路）。 */
+	private fadeTimer: number | null = null;
 
 	private viewportWidth = 0;
 	private viewportHeight = 0;
@@ -238,6 +264,10 @@ export class OlympiaOnboarding implements IDisposable {
 			mainWindow.cancelAnimationFrame(this.animationFrame);
 			this.animationFrame = null;
 		}
+		if (this.fadeTimer !== null) {
+			mainWindow.clearTimeout(this.fadeTimer);
+			this.fadeTimer = null;
+		}
 		for (const disposable of this.disposables) {
 			disposable.dispose();
 		}
@@ -342,32 +372,57 @@ export class OlympiaOnboarding implements IDisposable {
 			return;
 		}
 		this.enterRequested = true;
-		this.enterRequestedAt = 0;
-		// 界面 chrome 让位给星光。卡片本身不能整体淡出 —— 它们要化成粒子。
-		this.cards.element.classList.add('olympia-onboarding-entering');
+		this.enterRequestedAt = -1;
+		// 注意：**这里不能**摘掉界面 chrome。
+		// 摘了 chrome，用户就只剩一颗药丸 —— 「跳过」和翻页全都没了。
+		// 万一闸门等了很久（工作台被扩展卡住），用户连退路都没有。
+		// chrome 让位给星光，要等闸门真正放行的那一帧才发生（见 `maybeStartEnter`）。
 	}
 
 	/**
-	 * 起跑前的最后一道闸：工作台必须已经恢复。
+	 * 起跑前的最后一道闸：**工作台已恢复，且开始页已就位**。
 	 *
-	 * 如果在 `Restored` 之前就擦洞，露出来的是半成品工作台（编辑器区可能还在转圈、
-	 * 侧栏还没建好）—— 那本身就是一次断点。所以这里等。
+	 * ## 为什么两个条件都要
 	 *
-	 * 等也有上限：超过 2 秒就照常开始，因为再等下去用户会以为点不动了，
-	 * 而且工作台剩下的加载是它自己的事，不是我们的断点。
+	 * - `LifecyclePhase.Restored` 只保证「工作台骨架建好了」；
+	 * - `olympiaWelcomeReady.isReady` 保证「开始页真的画出来了」。
+	 *
+	 * 只等前者的旧版本有个真实存在的洞：上游 `startupPage.ts` 打开开始页时
+	 * **没有 await** `openEditor`，所以 `Restored` 先到、编辑器后到。
+	 * 洞一擦开，底下是空编辑器区；几百毫秒后开始页才弹出来 —— 画面内容突变，
+	 * 那一下就是断点。
+	 *
+	 * ## 等待期间不擦洞
+	 *
+	 * 等就等，**不能**因为等太久就提前擦洞 —— 擦出来的半成品工作台比继续等更糟。
+	 * 只有硬上限到了才强制放行（宁可露一次半成品，也不能把用户永远卡在这里）。
 	 */
 	private maybeStartEnter(timestamp: number): void {
-		if (this.enterRequestedAt === 0) {
+		if (this.enterRequestedAt < 0) {
 			this.enterRequestedAt = timestamp;
 		}
-		const restored = this.lifecycleService.phase >= LifecyclePhase.Restored;
 		const waited = (timestamp - this.enterRequestedAt) / 1000;
-		if (!restored && waited < OlympiaOnboarding.RESTORE_WAIT_LIMIT) {
+		const restored = this.lifecycleService.phase >= LifecyclePhase.Restored;
+		const welcomeReady = olympiaWelcomeReady.isReady;
+
+		if (olympiaWelcomeReady.isFailed) {
+			// 开始页打不开 ——「擦洞露出开始页」这场演出做不了，洞里只能是空的。
+			// 改走收场：整层极光淡出，露出（没有开始页的）真实工作台。
+			// 那是一个正常的空工作台，而不是「洞里空着」。
+			this.abortEnter();
+			return;
+		}
+
+		if ((!restored || !welcomeReady) && waited < OlympiaOnboarding.ENTER_GATE_WAIT_LIMIT) {
 			this.waitingElement.classList.add('on');
 			return;
 		}
 
 		this.waitingElement.classList.remove('on');
+		// 界面 chrome 让位给星光。卡片本身不能整体淡出 —— 它们要化成粒子。
+		// 这一行**必须**在闸门放行之后：放行之前摘掉 chrome，用户就只剩一颗药丸，
+		// 「跳过」和翻页全被关掉 —— 出了岔子连退路都没有。
+		this.cards.element.classList.add('olympia-onboarding-entering');
 		// 起点用 rAF 帧时间戳 —— 和卡片补间、背景时钟是同一个时间源。
 		// 早先版本这里用 `performance.now()`，与 rAF 时间戳不同源，守卫永远不成立，动画挂死。
 		this.enterStart = timestamp;
@@ -375,6 +430,28 @@ export class OlympiaOnboarding implements IDisposable {
 		this.captureParticleOrigins();
 		this.updateSweepRects();
 		this.storageService.store(OlympiaOnboarding.STORAGE_KEY, true, StorageScope.PROFILE, StorageTarget.MACHINE);
+	}
+
+	/**
+	 * 收场：开始页打不开时的退路。
+	 *
+	 * 「擦洞露出开始页」这场演出做不了 —— 洞里只能是空的编辑器区。
+	 * 那就整层极光淡出，露出（没有开始页的）真实工作台：
+	 * 那是一个**正常的**空工作台（用户可以自己开文件），
+	 * 而不是「洞里空着、像坏了」。
+	 *
+	 * 淡出而不是直接删：直接删是硬切（极光没了、工作台突然冒出来），
+	 * 那也是断点。淡出是这层极光自己退场。
+	 */
+	private abortEnter(): void {
+		this.enterRequested = false;
+		this.enterStart = null;
+		this.waitingElement.classList.remove('on');
+		this.rootElement.classList.add('olympia-onboarding-fading');
+		this.fadeTimer = mainWindow.setTimeout(() => {
+			this.fadeTimer = null;
+			this.finish();
+		}, OlympiaOnboarding.ABORT_FADE_MS);
 	}
 
 	//#endregion

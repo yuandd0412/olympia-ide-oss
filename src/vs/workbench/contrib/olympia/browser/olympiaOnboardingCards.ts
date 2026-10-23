@@ -115,6 +115,32 @@ interface IOlympiaOnboardingCardDescriptor {
 }
 
 /**
+ * 一行在 DOM 上的**绑定**：结构归结构，状态归状态。
+ *
+ * 分成两层是为了「配置一变不硬切」：
+ *
+ *  - **结构** = 有哪些行、每行什么 kind、有哪些选项。结构变了才重建 DOM；
+ *  - **状态** = 当前选中哪个、开关开没开、这一行的值是多少。状态变了只就地改。
+ *
+ * 早先这里是「配置一变就把 4 张卡的行区整片 `replaceChildren`」——
+ * 用户手指正按着的那个按钮会被整个换掉，换掉的一瞬间就是硬切。
+ */
+interface IOlympiaOnboardingRowBinding {
+	/** 行容器。 */
+	readonly container: HTMLElement;
+	/** `kind === 'value'` 时的取值元素。 */
+	valueElement?: HTMLElement;
+	/** `kind === 'options'` 时的选项片。 */
+	chips?: { readonly element: HTMLElement; readonly value: string }[];
+	/** `kind === 'toggle'` 时的开关按钮。 */
+	toggle?: HTMLElement;
+	/** 没有 `configurationKey` 的开关用的本地回退状态。 */
+	fallbackChecked?: boolean;
+	/** 异步取值的令牌：只有最后一次请求的结果算数，过期的一律丢弃。 */
+	valueToken?: number;
+}
+
+/**
  * 最近打开的是「文件夹」还是「工作区」。
  *
  * 两者结构不同（`IRecentFolder` 有 `folderUri`，`IRecentWorkspace` 有 `workspace`），
@@ -136,6 +162,17 @@ export class OlympiaOnboardingCards implements IDisposable {
 	 */
 	private static readonly MONO_FALLBACK = `ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, 'Liberation Mono', monospace`;
 
+	/** 补写重试的间隔（毫秒）。 */
+	private static readonly FLUSH_RETRY_INTERVAL = 400;
+
+	/**
+	 * 补写重试的上限（次）。
+	 *
+	 * 400ms × 60 ≈ 24 秒，足够等内置扩展把 `olympia.*` 注册完。
+	 * 到点还写不进去就放弃 —— 那是扩展的问题，不该把用户永远吊在这儿。
+	 */
+	private static readonly FLUSH_RETRY_LIMIT = 60;
+
 	readonly element: HTMLElement;
 
 	private readonly delegate: IOlympiaOnboardingCardsDelegate;
@@ -146,6 +183,12 @@ export class OlympiaOnboardingCards implements IDisposable {
 	private readonly bodyElements: HTMLElement[] = [];
 	private readonly previewElements: HTMLElement[] = [];
 	private readonly footerElements: HTMLElement[] = [];
+
+	/** 每张卡的行绑定（与 `bodyElements` 一一对应）。 */
+	private readonly rowBindings: IOlympiaOnboardingRowBinding[][] = [];
+
+	/** 每张卡当前行区的结构签名。签名没变就只更新状态，不重建 DOM。 */
+	private readonly rowSignatures: string[] = [];
 
 	/** 卡片轨道位置（浮点）。 */
 	private position = 0;
@@ -160,8 +203,11 @@ export class OlympiaOnboardingCards implements IDisposable {
 	 * 时刻，补间起点会比渲染时钟晚半帧到一帧，滑动跟手度会随帧率抖动。
 	 * 记下帧时间戳就够了：事件回调发生在两帧之间，用最近一帧的时刻当起点，
 	 * 下一帧算出来的进度正好是 0 起算，误差恒为 0。
+	 *
+	 * 初值用 -1 而不是 0：rAF 时间戳是非负的单调时钟，0 也是合法取值。
+	 * 拿合法域里的一个值当「还没渲染过」，等于赌「0 永不出现」。
 	 */
-	private lastFrameTime = 0;
+	private lastFrameTime = -1;
 
 	/** 跟手拖拽。 */
 	private dragging = false;
@@ -184,6 +230,28 @@ export class OlympiaOnboardingCards implements IDisposable {
 
 	/** 补写重试的帧计数（约每 30 帧试一次）。 */
 	private flushCounter = 0;
+
+	/**
+	 * 补写重试的定时器。
+	 *
+	 * **故意不进 `disposables`** —— overlay 消失之后也得继续写。
+	 * 用户点完卡片就点「开始」的话，内置扩展往往还没注册完，
+	 * 这时 overlay 已经没了、rAF 也停了；没有这个重试，选择就白点了。
+	 */
+	private flushRetryTimer: number | null = null;
+
+	/**
+	 * 每个键各自失败了多少次。
+	 *
+	 * 早先这里是**一个全局**计数，任一键写成功就把它清零。后果是：
+	 * 一个键（比如配置项被上游删了）会永久失败，它带着别的键一起把额度耗光；
+	 * 而它自己失败多少次，全被别的键的成功掩盖。额度耗尽后直接 `return` ——
+	 * 用户的选择静默消失，控制台外没有任何痕迹。
+	 *
+	 * 改成 per-key 之后：写不进去的键自己算自己的账，到自己的上限就摘掉并明确报错，
+	 * 不再拖累别的键。
+	 */
+	private readonly pendingWriteAttempts = new Map<string, number>();
 
 	private readonly disposables: IDisposable[] = [];
 
@@ -220,6 +288,13 @@ export class OlympiaOnboardingCards implements IDisposable {
 		this.element.appendChild(this.createDots());
 		this.element.appendChild(this.createNav());
 		this.element.appendChild(this.createHint());
+
+		// 页脚只建一次：它的内容（「还有几张」+ CTA）只跟卡片序号有关，跟配置无关。
+		// 每次配置变化都重建它没有意义，只会把用户正按着的按钮换掉。
+		for (let index = 0; index < OLYMPIA_ONBOARDING_CARD_COUNT; index++) {
+			const descriptor = this.descriptorFor(index);
+			this.footerElements[index].replaceChildren(...this.buildFooter(descriptor, index));
+		}
 
 		this.registerInteractions();
 		this.refresh();
@@ -295,6 +370,15 @@ export class OlympiaOnboardingCards implements IDisposable {
 	goto(index: number): void {
 		const target = olympiaOnboardingClamp(index, 0, this.cardElements.length - 1);
 		this.positionTarget = target;
+		if (this.lastFrameTime < 0) {
+			// 还没渲染过第一帧 —— 没有「当前位置」可以补间。
+			// 早先这里照样起补间，`start` 是 0，进度一步就冲到 1，
+			// 卡片会从当前位置瞬移过去（跟手滑动的第一下就跳）。
+			// 首帧之前本来也没有「当前画面」，直接定位到目标是最诚实的做法。
+			this.position = target;
+			this.tween = null;
+			return;
+		}
 		this.tween = { from: this.position, to: target, start: this.lastFrameTime, duration: 460 };
 	}
 
@@ -303,15 +387,144 @@ export class OlympiaOnboardingCards implements IDisposable {
 		this.goto(Math.round(this.positionTarget) + delta);
 	}
 
-	/** 配置变化后重新渲染卡片内容。 */
+	/**
+	 * 配置变化后刷新卡片内容。
+	 *
+	 * 分两层：
+	 *  - **结构**（有哪些行、有哪些选项）变了 → 只重建那几行的 DOM；
+	 *  - **状态**（选中哪个、开关开没开、这一行的值）变了 → 就地改，DOM 元素不动。
+	 *
+	 * 早先这里是整片 `replaceChildren`，等于「配置一变就把 4 张卡的行区全换掉」——
+	 * 用户手指正按着的按钮会被换掉，换掉的那一瞬间就是硬切。
+	 * 页脚不在这里刷：它只跟卡片序号有关，建一次就够。
+	 */
 	refresh(): void {
 		for (let index = 0; index < OLYMPIA_ONBOARDING_CARD_COUNT; index++) {
 			const descriptor = this.descriptorFor(index);
-			this.bodyElements[index].replaceChildren(...this.buildRows(descriptor.rows));
-			this.footerElements[index].replaceChildren(...this.buildFooter(descriptor, index));
+			this.updateRows(index, descriptor.rows);
 		}
 		this.refreshPreview();
 		void this.flushPendingWrites();
+	}
+
+	/**
+	 * 刷新一张卡的行区。
+	 *
+	 * 结构签名 = 行数 + 每行的 kind / label / 配置键 / 选项集合。
+	 * **不含**行里的值 —— 值变了属于「状态」，走就地更新，不该重建 DOM。
+	 */
+	private updateRows(index: number, rows: readonly IOlympiaOnboardingRow[]): void {
+		const signature = OlympiaOnboardingCards.rowsSignature(rows);
+		const bindings = this.rowBindings[index];
+		if (!bindings || bindings.length !== rows.length || this.rowSignatures[index] !== signature) {
+			this.rebuildRows(index, rows, signature);
+			return;
+		}
+		for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+			this.updateRowState(rows[rowIndex], bindings[rowIndex]);
+		}
+	}
+
+	/** 结构变了：重建这张卡的行区，然后立刻把状态刷成当前真值。 */
+	private rebuildRows(index: number, rows: readonly IOlympiaOnboardingRow[], signature: string): void {
+		const built = this.buildRows(rows);
+		this.bodyElements[index].replaceChildren(...built.elements);
+		this.rowBindings[index] = built.bindings;
+		this.rowSignatures[index] = signature;
+		for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+			this.updateRowState(rows[rowIndex], built.bindings[rowIndex]);
+		}
+	}
+
+	/**
+	 * 就地更新一行的状态。
+	 *
+	 * 这一层是「配置一变不硬切」的关键：DOM 元素不动，只改类名和文本。
+	 */
+	private updateRowState(row: IOlympiaOnboardingRow, binding: IOlympiaOnboardingRowBinding): void {
+		switch (row.kind) {
+			case 'value': {
+				const value = binding.valueElement;
+				if (!value) {
+					return;
+				}
+				value.textContent = row.value ?? '';
+				if (row.asyncValue) {
+					// 异步取值：只有**最后一次**请求的结果算数，过期的一律丢弃 ——
+					// 否则先发后到的旧请求会覆盖新值。
+					const token = (binding.valueToken ?? 0) + 1;
+					binding.valueToken = token;
+					row.asyncValue().then(text => {
+						if (binding.valueToken !== token || binding.valueElement !== value) {
+							return;
+						}
+						value.textContent = text;
+					}, () => {
+						if (binding.valueToken !== token || binding.valueElement !== value) {
+							return;
+						}
+						value.textContent = '';
+					});
+				}
+				break;
+			}
+			case 'options': {
+				const chips = binding.chips;
+				if (!chips || !row.configurationKey) {
+					return;
+				}
+				const current = this.readConfig(row.configurationKey);
+				for (const chip of chips) {
+					chip.element.classList.toggle('selected', String(current) === chip.value);
+				}
+				break;
+			}
+			case 'toggle': {
+				const toggle = binding.toggle;
+				if (!toggle) {
+					return;
+				}
+				const checked = this.isRowChecked(row, binding.fallbackChecked === true);
+				toggle.setAttribute('aria-checked', String(checked));
+				toggle.classList.toggle('on', checked);
+				break;
+			}
+		}
+	}
+
+	/**
+	 * 开关当前是不是打开的。
+	 *
+	 * 真值取自 `readConfig()` —— 它优先读 `pendingWrites`（用户刚按下的选择），
+	 * 所以外部配置变化能同步过来，用户刚点的也不会被一次迟到的刷新覆盖。
+	 */
+	private isRowChecked(row: IOlympiaOnboardingRow, fallback: boolean): boolean {
+		if (!row.configurationKey) {
+			return fallback;
+		}
+		const current = this.readConfig(row.configurationKey);
+		if (row.toggleValues) {
+			return current === row.toggleValues.on;
+		}
+		return current === true;
+	}
+
+	/**
+	 * 行区的结构签名。
+	 *
+	 * 只包含**结构**信息：行的数量、kind、label、绑定的配置键、选项集合、开关取值。
+	 * 行里的值不参与 —— 值变是状态，不该触发重建。
+	 */
+	private static rowsSignature(rows: readonly IOlympiaOnboardingRow[]): string {
+		return rows.map(row => {
+			const options = (row.options ?? [])
+				.map(option => `${option.value}|${String(option.configValue ?? '')}`)
+				.join(',');
+			const toggleValues = row.toggleValues
+				? `${String(row.toggleValues.on)}/${String(row.toggleValues.off)}`
+				: '';
+			return `${row.kind}#${row.label}#${row.configurationKey ?? ''}#${options}#${toggleValues}`;
+		}).join(';');
 	}
 
 	/**
@@ -336,6 +549,8 @@ export class OlympiaOnboardingCards implements IDisposable {
 		}
 		this.disposables.length = 0;
 		this.element.remove();
+		// `flushRetryTimer` **故意不取消** —— 还没写下去的选择要继续写完，
+		// 不能因为引导已经消失就把用户的选择丢掉（见 scheduleFlushRetry 的说明）。
 	}
 
 	//#region 读取与写入配置
@@ -394,8 +609,15 @@ export class OlympiaOnboardingCards implements IDisposable {
 				continue;   // 正在写，等它回来再说
 			}
 			const value = this.pendingWrites.get(key);
-			if (value === undefined || this.configurationService.getValue(key) === undefined) {
-				continue;   // 还是没注册，下一次再试
+			if (value === undefined) {
+				continue;
+			}
+			if (this.configurationService.getValue(key) === undefined) {
+				// 扩展还没注册这个键 —— 现在写下去必定抛「unknown configuration」。
+				// 这里**不能**直接跳过：跳过就没有下一次尝试了，用户的选择会永远存不下来。
+				// 安排一次重试，等扩展注册好了自然会写进去。
+				this.scheduleFlushRetry();
+				continue;
 			}
 			this.writingKeys.add(key);
 			try {
@@ -404,12 +626,49 @@ export class OlympiaOnboardingCards implements IDisposable {
 				if (this.pendingWrites.get(key) === value) {
 					this.pendingWrites.delete(key);
 				}
-			} catch {
+				this.pendingWriteAttempts.delete(key);
+			} catch (error) {
 				// 还是写不进去 —— 留在 map 里，等下一轮。
+				// 这里必须留痕：静默吞掉的话，用户点了「开始」却发现设置没变，
+				// 而我们连「为什么」都不知道。
+				const attempts = (this.pendingWriteAttempts.get(key) ?? 0) + 1;
+				this.pendingWriteAttempts.set(key, attempts);
+				if (attempts === 1 || attempts % 10 === 0) {
+					console.warn(`[Olympia] 配置 ${key} 写入失败（第 ${attempts} 次）：${error}`);
+				}
+				if (attempts >= OlympiaOnboardingCards.FLUSH_RETRY_LIMIT) {
+					// 这个键彻底写不进去了 —— 别让它静默消失：
+					// 明确报出来，并把它从待写队列里摘掉，好让别的键继续写。
+					// 摘掉之后 `readConfig` 就会回到配置真值，卡片显示的和实际存的一致。
+					console.error(`[Olympia] 配置 ${key} 连续 ${attempts} 次写入失败，已放弃写入：${error}`);
+					this.pendingWrites.delete(key);
+					this.pendingWriteAttempts.delete(key);
+					continue;
+				}
+				this.scheduleFlushRetry();
 			} finally {
 				this.writingKeys.delete(key);
 			}
 		}
+	}
+
+	/**
+	 * 安排下一次补写重试。
+	 *
+	 * 这个定时器**不进 `disposables`** —— overlay 消失之后也得继续写。
+	 * 用户点完卡片就点「开始」的话，内置扩展往往还没注册完，
+	 * 这时 overlay 已经没了、rAF 也停了；没有这个重试，选择就白点了。
+	 */
+	private scheduleFlushRetry(): void {
+		if (this.flushRetryTimer !== null || this.pendingWrites.size === 0) {
+			return;
+		}
+		// 额度是**每个键各自的**（见 `pendingWriteAttempts`）——
+		// 这里不再有一道全局闸门，否则一个永远写不进去的键会把别的键一起拖死。
+		this.flushRetryTimer = mainWindow.setTimeout(() => {
+			this.flushRetryTimer = null;
+			void this.flushPendingWrites();
+		}, OlympiaOnboardingCards.FLUSH_RETRY_INTERVAL);
 	}
 
 	//#endregion
@@ -705,7 +964,8 @@ export class OlympiaOnboardingCards implements IDisposable {
 				{
 					label: localize('olympia.onboarding.practice.recent', "最近工程"),
 					kind: 'value',
-					value: '',
+					// 异步取值期间先显示占位 —— 空白的一行看起来像「这一项坏了」。
+					value: localize('olympia.onboarding.practice.recent.loading', "读取中…"),
 					asyncValue: () => this.recentWorkspaceLabel()
 				}
 			],
@@ -840,8 +1100,15 @@ export class OlympiaOnboardingCards implements IDisposable {
 		return { element, body, preview, footer };
 	}
 
-	private buildRows(rows: readonly IOlympiaOnboardingRow[]): HTMLElement[] {
+	/**
+	 * 建出行区 DOM。
+	 *
+	 * 返回 DOM 和**绑定**两份：DOM 用来挂，行绑定用来之后就地更新状态。
+	 * 选中态不在这儿算 —— 统一由 `updateRowState` 负责，避免两处各算一半。
+	 */
+	private buildRows(rows: readonly IOlympiaOnboardingRow[]): { elements: HTMLElement[]; bindings: IOlympiaOnboardingRowBinding[] } {
 		const elements: HTMLElement[] = [];
+		const bindings: IOlympiaOnboardingRowBinding[] = [];
 		for (const row of rows) {
 			const container = document.createElement('div');
 			container.className = 'olympia-onboarding-row';
@@ -850,22 +1117,21 @@ export class OlympiaOnboardingCards implements IDisposable {
 			label.textContent = row.label;
 			container.appendChild(label);
 
+			const binding: IOlympiaOnboardingRowBinding = { container };
+
 			switch (row.kind) {
 				case 'value': {
 					const value = document.createElement('span');
 					value.className = 'olympia-onboarding-row-value';
 					value.textContent = row.value ?? '';
 					container.appendChild(value);
-					if (row.asyncValue) {
-						row.asyncValue().then(text => { value.textContent = text; }, () => { value.textContent = ''; });
-					}
+					binding.valueElement = value;
 					break;
 				}
 				case 'options': {
 					const group = document.createElement('div');
 					group.className = 'olympia-onboarding-options';
-					const current = row.configurationKey ? this.readConfig(row.configurationKey) : undefined;
-					const chips: HTMLElement[] = [];
+					const chips: { element: HTMLElement; value: string }[] = [];
 					for (const option of row.options ?? []) {
 						const chip = document.createElement('button');
 						chip.className = 'olympia-onboarding-option';
@@ -874,13 +1140,12 @@ export class OlympiaOnboardingCards implements IDisposable {
 						if (option.title) {
 							chip.title = option.title;
 						}
-						chip.classList.toggle('selected', String(current) === option.value);
 						chip.addEventListener('click', event => {
 							event.stopPropagation();
 							// 立刻改选中态。配置写下去是异步的（`olympia.*` 还要等扩展注册），
 							// 等配置事件再改，用户会觉得「点了没反应」。
 							for (const sibling of chips) {
-								sibling.classList.remove('selected');
+								sibling.element.classList.remove('selected');
 							}
 							chip.classList.add('selected');
 							if (row.configurationKey) {
@@ -890,12 +1155,18 @@ export class OlympiaOnboardingCards implements IDisposable {
 								// 预览区读的就是它 —— 顺序反了预览会显示旧值。
 								void this.writeConfig(row.configurationKey, value);
 							}
-							this.refreshPreview();
+							// 刷新整张卡，不只是预览块。
+							// 值行可能是**别的**配置项派生的（比如「C++ 标准」跟着编译器 profile 走），
+							// 只刷预览块的话，预览已经是新值、卡片上的值行还是旧文本 ——
+							// 直到扩展注册完触发配置事件才跳变。刷新整卡走 `updateRowState`，
+							// 签名没变就不会重建 DOM，用户正按着的按钮不会被换掉。
+							this.refresh();
 						});
-						chips.push(chip);
+						chips.push({ element: chip, value: option.value });
 						group.appendChild(chip);
 					}
 					container.appendChild(group);
+					binding.chips = chips;
 					break;
 				}
 				case 'toggle': {
@@ -903,34 +1174,39 @@ export class OlympiaOnboardingCards implements IDisposable {
 					toggle.className = 'olympia-onboarding-toggle';
 					toggle.type = 'button';
 					toggle.setAttribute('role', 'switch');
-					// 本地状态：连点两次必须写两个不同的值，不能一直写初始值。
-					let checked = row.checked === true;
-					toggle.setAttribute('aria-checked', String(checked));
-					toggle.classList.toggle('on', checked);
+					// 没有配置键的开关才用 `row.checked` 当初值；
+					// 有配置键的真值一律由 `isRowChecked` 从配置真值取。
+					binding.fallbackChecked = row.checked === true;
 					toggle.addEventListener('click', event => {
 						event.stopPropagation();
-						checked = !checked;
-						toggle.setAttribute('aria-checked', String(checked));
-						toggle.classList.toggle('on', checked);
+						// 当前状态从 `readConfig()` 取真值 —— 这样连点两次写的是两个不同的值，
+						// 不会一直写初始值；有配置键时也不依赖闭包里的旧状态。
+						const next = !this.isRowChecked(row, binding.fallbackChecked === true);
+						binding.fallbackChecked = next;
+						toggle.setAttribute('aria-checked', String(next));
+						toggle.classList.toggle('on', next);
 						if (row.configurationKey) {
 							// 枚举型开关（比如光标动画）写的是字符串，不是布尔。
 							const values = row.toggleValues;
 							const value = values
-								? (checked ? values.on : values.off)
-								: checked;
+								? (next ? values.on : values.off)
+								: next;
 							// 先写：`writeConfig` 会同步把值记进 `pendingWrites`，
 							// 预览区读的就是它 —— 顺序反了预览会显示旧值。
 							void this.writeConfig(row.configurationKey, value);
 						}
-						this.refreshPreview();
+						// 同上：刷新整张卡，派生值行才不会停在旧文本上。
+						this.refresh();
 					});
 					container.appendChild(toggle);
+					binding.toggle = toggle;
 					break;
 				}
 			}
 			elements.push(container);
+			bindings.push(binding);
 		}
-		return elements;
+		return { elements, bindings };
 	}
 
 	private buildFooter(descriptor: IOlympiaOnboardingCardDescriptor, index: number): HTMLElement[] {

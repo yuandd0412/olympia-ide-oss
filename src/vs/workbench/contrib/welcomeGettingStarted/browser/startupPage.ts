@@ -35,6 +35,7 @@ import { isWeb } from '../../../../base/common/platform.js';
 import { IOnboardingService } from '../../welcomeOnboarding/common/onboardingService.js';
 import { ONBOARDING_STORAGE_KEY } from '../../welcomeOnboarding/common/onboardingTypes.js';
 import { OlympiaWelcomeInput, olympiaWelcomeInputTypeId } from '../../olympia/browser/olympiaWelcomeInput.js';
+import { olympiaWelcomeReady } from '../../olympia/browser/olympiaWelcomeReady.js';
 
 export const restoreWalkthroughsConfigurationKey = 'workbench.welcomePage.restorableWalkthroughs';
 export type RestoreWalkthroughsConfigurationValue = { folder: string; category?: string; step?: string };
@@ -146,7 +147,21 @@ export class StartupPageRunnerContribution extends Disposable implements IWorkbe
 		if (olympiaStartPageEnabled
 			&& this.lifecycleService.startupKind !== StartupKind.ReloadedWindow
 			&& (!this.editorService.activeEditor || this.layoutService.openedDefaultEditors)) {
-			await this.openOlympiaWelcome();
+			// 开始页正在打开 —— 引导侧的进入动画要等它画完才能擦洞。
+			// 不发这个信号的话，工作台的 `Restored` 会先到、开始页后到，
+			// 洞擦开那一刻露出来的是空编辑器区，几百毫秒后开始页才弹出来 —— 那就是断点。
+			olympiaWelcomeReady.markOpening();
+			try {
+				await this.openOlympiaWelcome();
+				olympiaWelcomeReady.markReady();
+			} catch (error) {
+				// 打不开就是打不开 —— **不能**报成「已就位」。
+				// 报成已就位的话，引导侧会擦开一个洞，而洞里只可能是空的编辑器区
+				// （开始页已经失败了，不会再出现）—— 那一下是没法自愈的断点。
+				// 报失败的话，引导侧会改走「整层极光淡出、露出真实工作台」的收场。
+				olympiaWelcomeReady.markFailed();
+				onUnexpectedError(error);
+			}
 			return;
 		}
 
@@ -250,7 +265,9 @@ export class StartupPageRunnerContribution extends Disposable implements IWorkbe
 			return;
 		}
 
-		this.editorService.openEditor({
+		// 这一行必须 await：`openEditor` 是异步的，不等它落地的话
+		// 「开始页已就位」的信号会早于编辑器真正画出来的时刻。
+		await this.editorService.openEditor({
 			resource: OlympiaWelcomeInput.RESOURCE,
 			options: {
 				index: editor ? 0 : undefined,

@@ -95,6 +95,11 @@
 				"title": "题面：以文本方式打开（改题面用）",
 				"category": "Olympia",
 				"icon": "$(go-to-file)"
+			},
+			{
+				"command": "olympia.problem.receiveHandoff",
+				"title": "接收题面交接",
+				"category": "Olympia"
 			}
 		],
 		"viewsContainers": {

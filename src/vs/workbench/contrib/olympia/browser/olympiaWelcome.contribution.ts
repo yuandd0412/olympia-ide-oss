@@ -25,7 +25,21 @@ import { OlympiaWelcomePage } from './olympiaWelcomePage.js';
  * 并且配置节点用独立 id `'olympia'`（上游 `workbenchConfigurationNodeBase` 的 id 是 `'workbench'`）。
  */
 export const OLYMPIA_START_PAGE_CONFIGURATION_KEY = 'olympia.startPage';
-export const OLYMPIA_START_PAGE_INTRO_ANIMATION_CONFIGURATION_KEY = 'olympia.startPage.showIntroAnimation';
+
+/**
+ * 「首次启动播放开始引导」开关。
+ *
+ * ## 为什么不是 `olympia.startPage.showIntroAnimation`
+ *
+ * `olympia.startPage` 是**布尔**类型。VS Code 的配置值树里，父节点一旦是标量，
+ * 子键就**写不进去** —— `configuration.ts` 的 `addToValueTree` 会直接报
+ * `Ignoring olympia.startPage.showIntroAnimation as olympia.startPage is true`。
+ * 也就是说原来那个键名**从来没生效过**，而且每次启动都在控制台刷一条错误。
+ *
+ * 所以这里是 `olympia.startPageIntroAnimation` —— 与 `olympia.startPage` **平级**，
+ * 两边都是 `olympia` 节点下的独立叶子，谁也不是谁的父。
+ */
+export const OLYMPIA_START_PAGE_INTRO_ANIMATION_CONFIGURATION_KEY = 'olympia.startPageIntroAnimation';
 
 const configurationRegistry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration);
 configurationRegistry.registerConfiguration({
@@ -44,7 +58,7 @@ configurationRegistry.registerConfiguration({
 			scope: ConfigurationScope.RESOURCE,
 			type: 'boolean',
 			default: true,
-			description: localize('olympia.startPage.showIntroAnimation', "首次启动时播放 Olympia 开始引导：动态背景 + 卡片配置 + 无介绍的进入动画。关闭后直接进入开始页。")
+			description: localize('olympia.startPageIntroAnimation', "首次启动时播放 Olympia 开始引导：动态背景 + 卡片配置 + 无介绍的进入动画。关闭后直接进入开始页。")
 		},
 	}
 });
