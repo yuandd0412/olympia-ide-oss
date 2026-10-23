@@ -157,6 +157,21 @@ interface IOlympiaOnboardingRowBinding {
 	 * 令牌机制只保证「最后一次的结果算数」，它挡不住请求本身被重复发出去。
 	 */
 	valuePending?: boolean;
+	/**
+	 * 异步取值是否已经**确认取不到**（重试用尽）。
+	 *
+	 * 跟 `valueResolved` 分开是有意的：
+	 * `valueResolved` 的意思是「**取到了值**」，而这里是「**试过了，确实取不到**」。
+	 * 两者混在一起的话，一次被吞掉的失败会被当成「取到了『还没有』」——
+	 * 那一行就此冻住，用户看到的却是假的。
+	 */
+	valueFailed?: boolean;
+	/**
+	 * 异步取值已经**试了几次**（失败计数）。
+	 *
+	 * 用来给重试封顶：取不到就如实说取不到，而不是让这一行永远停在「读取中…」。
+	 */
+	valueAttempts?: number;
 }
 
 /**
@@ -194,6 +209,19 @@ export class OlympiaOnboardingCards implements IDisposable {
 	 * 用户随手点一下触发的补写不算（否则多戳两下就提前放弃）。
 	 */
 	private static readonly FLUSH_RETRY_LIMIT = 60;
+
+	/**
+	 * 异步取值失败后的重试间隔（毫秒）。
+	 */
+	private static readonly VALUE_RETRY_INTERVAL = 800;
+
+	/**
+	 * 异步取值最多试几次（**含**第一次）。
+	 *
+	 * 3 次 × 800ms ≈ 2.4 秒。取不到就如实说取不到 ——
+	 * 让这一行永远停在「读取中…」是在骗用户。
+	 */
+	private static readonly VALUE_RETRY_LIMIT = 3;
 
 	readonly element: HTMLElement;
 
@@ -263,7 +291,7 @@ export class OlympiaOnboardingCards implements IDisposable {
 	private flushRetryTimer: number | null = null;
 
 	/**
-	 * 每个键各自失败了多少次。
+	 * 每个键各自**等了多少个重试轮**。
 	 *
 	 * 早先这里是**一个全局**计数，任一键写成功就把它清零。后果是：
 	 * 一个键（比如配置项被上游删了）会永久失败，它带着别的键一起把额度耗光；
@@ -272,8 +300,23 @@ export class OlympiaOnboardingCards implements IDisposable {
 	 *
 	 * 改成 per-key 之后：写不进去的键自己算自己的账，到自己的上限就摘掉并明确报错，
 	 * 不再拖累别的键。
+	 *
+	 * 计的是**轮**不是**次数**：额度承诺的是「400ms × 60 ≈ 24 秒」这个**时间预算**。
+	 * 在途 / 未注册 / 写异常三条路径各算一轮，所以「这个键等了多久」和「额度还剩多少」
+	 * 始终对得上 —— 按尝试次数算的话，一次在途跳过就能把预算拖长，
+	 * 而一个永不 settle 的写入会让预算永远用不完。
 	 */
-	private readonly pendingWriteAttempts = new Map<string, number>();
+	private readonly pendingWriteRounds = new Map<string, number>();
+
+	/**
+	 * 异步取值失败后的**重试队列**与定时器。
+	 *
+	 * 队列而不是单个回调：以后再加异步行时，多个失败也能各自排上队。
+	 * 定时器**不进 `disposables`**（那是写入补写的规矩），而是在 `dispose()` 里清掉 ——
+	 * overlay 都没了，这一行也就没人看了，没必要再试。
+	 */
+	private readonly valueRetryQueue: (() => void)[] = [];
+	private valueRetryTimer: number | null = null;
 
 	private readonly disposables: IDisposable[] = [];
 
@@ -481,17 +524,17 @@ export class OlympiaOnboardingCards implements IDisposable {
 					return;
 				}
 				if (row.asyncValue) {
-					// 异步取值：只有**最后一次**请求的结果算数，过期的一律丢弃 ——
-					// 否则先发后到的旧请求会覆盖新值。
+					// 异步取值：**三道**闸门，缺一不可。
 					//
-					// 两道闸门，缺一不可：
-					// ① `valueResolved` —— 已经落地过的行**直接跳过**：既不把文本打回占位，
+					// ① `valueResolved` —— **取到了值**的行直接跳过：既不把文本打回占位，
 					//    也不重发请求。不跳过的话，用户点一下别的选项就会看到「最近工程」
 					//    闪回「读取中…」，后台还多跑一次 `getRecentlyOpened()`。
-					// ② `valuePending` —— 请求**在途**时也跳过。扩展注册 `olympia.*` 配置项
+					// ② `valueFailed` —— **确认取不到**的行也跳过：已经如实报过错了，
+					//    再试只是重复 IO。
+					// ③ `valuePending` —— 请求**在途**时跳过。扩展注册 `olympia.*` 配置项
 					//    会连着触发一串 refresh，而它们多半发生在第一次请求还没回来的时候；
 					//    只靠 ① 的话，那段时间里请求会被重复发出去。
-					if (binding.valueResolved) {
+					if (binding.valueResolved || binding.valueFailed) {
 						break;
 					}
 					if (binding.valuePending) {
@@ -510,14 +553,36 @@ export class OlympiaOnboardingCards implements IDisposable {
 						}
 						binding.valueResolved = true;
 						value.textContent = text;
-					}, () => {
+					}, error => {
 						binding.valuePending = false;
 						if (binding.valueToken !== token || binding.valueElement !== value) {
 							return;
 						}
-						// 取不到就还留占位 —— 空白的一行看起来像「这一项坏了」。
-						// 这里**不**标记为已落地：下一次刷新还会再试一次。
+						// 取不到就**如实说取不到**，但也别急着下结论：
+						// 存储服务在启动早期偶尔会抽风，先按有界次数重试。
+						//
+						// 这里**不**置 `valueResolved` —— 那是「取到了值」的标记。
+						// 一旦置上，这一行就被冻住：一次被吞掉的失败会被当成
+						// 「取到了『还没有』」，用户看到的是假的。
+						const attempts = (binding.valueAttempts ?? 0) + 1;
+						binding.valueAttempts = attempts;
+						console.warn(`[Olympia] 取「最近工程」失败（第 ${attempts} 次）：${error}`);
+						if (attempts >= OlympiaOnboardingCards.VALUE_RETRY_LIMIT) {
+							// 到上限还是取不到 —— 如实说取不到，
+							// 别让这一行永远停在「读取中…」骗用户。
+							binding.valueFailed = true;
+							value.textContent = localize('olympia.onboarding.practice.recent.failed', "读取失败");
+							return;
+						}
+						// 还留占位 —— 空白的一行看起来像「这一项坏了」。
 						value.textContent = row.value ?? '';
+						this.scheduleValueRetry(() => {
+							// 行区早就被重建过的话，这个绑定指向的是 detached 元素，重试没有意义。
+							if (!value.isConnected) {
+								return;
+							}
+							this.updateRowState(row, binding);
+						});
 					});
 					break;
 				}
@@ -566,6 +631,34 @@ export class OlympiaOnboardingCards implements IDisposable {
 	}
 
 	/**
+	 * 异步取值失败后的**有界重试**。
+	 *
+	 * 「最近工程」取不到有两种可能：存储服务真的坏了，或者它只是**还没准备好** ——
+	 * 引导是在 `WorkbenchPhase.BlockStartup` 阶段建的，那时候存储可能还没就绪。
+	 * 前者不该让这一行永远停在「读取中…」，后者不该一次失败就宣判。
+	 *
+	 * 所以：失败先按 `VALUE_RETRY_LIMIT` 次重试，每次间隔 `VALUE_RETRY_INTERVAL`；
+	 * 到上限还没取到，就如实显示「读取失败」，不再重试。
+	 *
+	 * 用队列而不是单个回调：以后再加异步行时，多个失败也能各自排上队。
+	 * 定时器**不进 `disposables`**（那是写入补写的规矩），而是在 `dispose()` 里清掉 ——
+	 * overlay 都没了，这一行也就没人看了，没必要再试。
+	 */
+	private scheduleValueRetry(task: () => void): void {
+		this.valueRetryQueue.push(task);
+		if (this.valueRetryTimer !== null) {
+			return;
+		}
+		this.valueRetryTimer = mainWindow.setTimeout(() => {
+			this.valueRetryTimer = null;
+			const queue = this.valueRetryQueue.splice(0, this.valueRetryQueue.length);
+			for (const item of queue) {
+				item();
+			}
+		}, OlympiaOnboardingCards.VALUE_RETRY_INTERVAL);
+	}
+
+	/**
 	 * 行区的结构签名。
 	 *
 	 * 只包含**结构**信息：行的数量、kind、label、绑定的配置键、选项集合、开关取值。
@@ -604,6 +697,13 @@ export class OlympiaOnboardingCards implements IDisposable {
 			disposable.dispose();
 		}
 		this.disposables.length = 0;
+		// 异步取值的重试**要取消** —— 跟写入补写不一样：overlay 都没了，
+		// 那一行也就没人看了，再试只是白跑 IO。
+		if (this.valueRetryTimer !== null) {
+			mainWindow.clearTimeout(this.valueRetryTimer);
+			this.valueRetryTimer = null;
+		}
+		this.valueRetryQueue.length = 0;
 		this.element.remove();
 		// `flushRetryTimer` **故意不取消** —— 还没写下去的选择要继续写完，
 		// 不能因为引导已经消失就把用户的选择丢掉（见 scheduleFlushRetry 的说明）。
@@ -663,21 +763,33 @@ export class OlympiaOnboardingCards implements IDisposable {
 	 *
 	 * `isRetryRound` 区分「用户随手点了一下」和「重试定时器又转了一圈」：
 	 *
-	 *  - **重试轮**才消耗额度（`pendingWriteAttempts`）。额度承诺的是
+	 *  - **重试轮**才消耗额度（`pendingWriteRounds`）。额度承诺的是
 	 *    「400ms × 60 ≈ 24 秒」——那是**重试轮数**，不是用户点击次数。
 	 *    如果每次点击都计数，用户多戳两下就会提前放弃，24 秒的承诺变成几秒。
 	 *  - 非重试轮只是「顺手试一次」，不计数，但一样会把重试定时器续上。
+	 *
+	 * 额度按**轮**消耗，而且**每个还在等的键每一轮都消耗** ——
+	 * 不管这一轮它到底写没写成功。三条分支（在途 / 未注册 / 写异常）
+	 * 走的都是同一个计数器，所以「等了多少轮」和「额度还剩多少」始终对得上。
 	 */
 	private async flushPendingWrites(isRetryRound: boolean = false): Promise<void> {
 		for (const key of [...this.pendingWrites.keys()]) {
 			if (this.writingKeys.has(key)) {
-				continue;   // 正在写，等它回来再说
+				// 正在写 —— 但**这一轮照样消耗额度**。
+				// 不消耗的话有两个洞：
+				//   ① 一次正常的在途写入就能白嫖掉一轮，24 秒的承诺被拖长；
+				//   ② 写入的 promise 永不 settle 时（配置服务抽风），这个键每一轮都被跳过，
+				//      配额永远用不完 —— 「到点就放弃」的承诺就彻底破了（变成无限心跳）。
+				if (isRetryRound) {
+					this.abandonWriteIfExhausted(key, `配置 ${key} 的写入还没回来`);
+				}
+				continue;
 			}
 			const value = this.pendingWrites.get(key);
 			if (value === undefined) {
 				// 没有值可写。留着它只会让重试定时器永远停不下来。
 				this.pendingWrites.delete(key);
-				this.pendingWriteAttempts.delete(key);
+				this.pendingWriteRounds.delete(key);
 				continue;
 			}
 			if (this.configurationService.getValue(key) === undefined) {
@@ -700,7 +812,7 @@ export class OlympiaOnboardingCards implements IDisposable {
 				if (this.pendingWrites.get(key) === value) {
 					this.pendingWrites.delete(key);
 				}
-				this.pendingWriteAttempts.delete(key);
+				this.pendingWriteRounds.delete(key);
 			} catch (error) {
 				// 还是写不进去 —— 留在 map 里，等下一轮。
 				// 这里必须留痕：静默吞掉的话，用户点了「开始」却发现设置没变，
@@ -724,7 +836,12 @@ export class OlympiaOnboardingCards implements IDisposable {
 	}
 
 	/**
-	 * 重试额度用尽时的收场：明确报出来、摘掉这个键、把界面拉回真值。
+	 * 记一轮账，并在额度用尽时收场。
+	 *
+	 * **每一轮都调用它**（在途 / 未注册 / 写异常三条分支都调），所以计数和
+	 * 「这个键等了多久」始终一致 —— 额度是**时间预算**（400ms × 60 ≈ 24 秒），
+	 * 不是「尝试次数」。按尝试次数算的话，一次在途跳过就能把预算拖长，
+	 * 而一个永不 settle 的写入会让预算永远用不完。
 	 *
 	 * 返回 true 表示「已经放弃写入」，调用方不要再往下走。
 	 *
@@ -733,17 +850,20 @@ export class OlympiaOnboardingCards implements IDisposable {
 	 * 这里刷行状态 + 预览，但**不**走 `refresh()`：它会再触发一轮写入，形成递归。
 	 */
 	private abandonWriteIfExhausted(key: string, reason: string, error?: unknown): boolean {
-		const attempts = (this.pendingWriteAttempts.get(key) ?? 0) + 1;
-		this.pendingWriteAttempts.set(key, attempts);
-		if (attempts === 1 || attempts % 10 === 0) {
-			console.warn(`[Olympia] ${reason}（第 ${attempts} 次）`);
+		const rounds = (this.pendingWriteRounds.get(key) ?? 0) + 1;
+		this.pendingWriteRounds.set(key, rounds);
+		if (rounds === 1 || rounds % 10 === 0) {
+			console.warn(`[Olympia] ${reason}（第 ${rounds} 轮）`);
 		}
-		if (attempts < OlympiaOnboardingCards.FLUSH_RETRY_LIMIT) {
+		if (rounds < OlympiaOnboardingCards.FLUSH_RETRY_LIMIT) {
 			return false;
 		}
-		console.error(`[Olympia] 配置 ${key} 连续 ${attempts} 次写入失败，已放弃写入：${error === undefined ? reason : String(error)}`);
+		console.error(`[Olympia] 配置 ${key} 等了 ${rounds} 轮还没写进去，已放弃写入：${error === undefined ? reason : String(error)}`);
 		this.pendingWrites.delete(key);
-		this.pendingWriteAttempts.delete(key);
+		this.pendingWriteRounds.delete(key);
+		// 卡死的写入也别占着这个键 —— 不然用户后来再点同一个选项，
+		// 写入会被「正在写」挡住，他的选择就白点了。
+		this.writingKeys.delete(key);
 		this.refreshRowStates();
 		this.refreshPreview();
 		return true;
@@ -760,7 +880,7 @@ export class OlympiaOnboardingCards implements IDisposable {
 		if (this.flushRetryTimer !== null || this.pendingWrites.size === 0) {
 			return;
 		}
-		// 额度是**每个键各自的**（见 `pendingWriteAttempts`）——
+		// 额度是**每个键各自的**（见 `pendingWriteRounds`）——
 		// 这里不再有一道全局闸门，否则一个永远写不进去的键会把别的键一起拖死。
 		this.flushRetryTimer = mainWindow.setTimeout(() => {
 			this.flushRetryTimer = null;
@@ -1083,19 +1203,19 @@ export class OlympiaOnboardingCards implements IDisposable {
 	 */
 	private async recentWorkspaceLabel(): Promise<string> {
 		const empty = localize('olympia.onboarding.practice.recent.empty', "还没有");
-		try {
-			const recent = await this.workspacesService.getRecentlyOpened();
-			const first = recent.workspaces[0];
-			if (!first) {
-				return empty;
-			}
-			if (isRecentFolder(first)) {
-				return first.folderUri.fsPath || empty;
-			}
-			return first.workspace.id || empty;
-		} catch {
+		// 这里**不**兜住异常 —— 兜住的话一次失败会被伪装成「还没有」，
+		// 而「取不到」和「确实没有」是两回事：前者该重试、该留痕，后者就该这么显示。
+		// 失败会一路 reject 到 `updateRowState()` 的失败分支，
+		// 那里负责留痕、有界重试，以及最后如实报「读取失败」。
+		const recent = await this.workspacesService.getRecentlyOpened();
+		const first = recent.workspaces[0];
+		if (!first) {
 			return empty;
 		}
+		if (isRecentFolder(first)) {
+			return first.folderUri.fsPath || empty;
+		}
+		return first.workspace.id || empty;
 	}
 
 	//#endregion
