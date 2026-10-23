@@ -44,7 +44,7 @@ configurationRegistry.registerConfiguration({
 			scope: ConfigurationScope.RESOURCE,
 			type: 'boolean',
 			default: true,
-			description: localize('olympia.startPage.showIntroAnimation', "首次启动时播放 Olympia 开始页的一镜到底开场动画。关闭后直接进入开始页。")
+			description: localize('olympia.startPage.showIntroAnimation', "首次启动时播放 Olympia 开始引导：动态背景 + 卡片配置 + 无介绍的进入动画。关闭后直接进入开始页。")
 		},
 	}
 });

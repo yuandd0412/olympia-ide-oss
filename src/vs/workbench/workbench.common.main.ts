@@ -406,6 +406,9 @@ import './contrib/welcomeOnboarding/browser/welcomeOnboarding.contribution.js';
 // Olympia 开始页（本产品自己的起始页，替代 VS Code 三段式欢迎页）
 import './contrib/olympia/browser/olympiaWelcome.contribution.js';
 
+// Olympia 开始引导（首次启动：动态背景 + 卡片配置 + 无介绍进入动画）
+import './contrib/olympia/browser/olympiaOnboarding.contribution.js';
+
 // Onboarding (scenario engine)
 import './contrib/onboarding/browser/onboarding.contribution.js';
 import './contrib/chat/browser/onboarding/modelPickerTryout.contribution.js';
