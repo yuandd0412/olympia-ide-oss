@@ -65,12 +65,37 @@ export const OLYMPIA_ONBOARDING_VIGNETTE_PEAK = 0.35;
 export const OLYMPIA_ONBOARDING_DISSOLVE_END = 0.60;
 
 /**
+ * 星光粒子的**起飞时刻**（秒）。
+ *
+ * 必须 ≥ 卡片消散结束时刻。
+ *
+ * 卡片还看得见的时候粒子就已经飞出去，两层东西叠在同一位置 —— 卡片半透明地漂着，
+ * 星光又从同一个地方冒出来 —— 那就是重影，看起来像两层脏东西叠在一起。
+ * 让粒子等卡片彻底化掉再起飞，观众看到的是「卡片没了 → 原地升起星光」。
+ */
+export const OLYMPIA_ONBOARDING_PARTICLE_START = OLYMPIA_ONBOARDING_DISSOLVE_END;
+
+/**
+ * 星光粒子的**第二批**推迟量（秒）。
+ *
+ * 粒子分两批起飞：
+ *
+ * - 第一批紧跟卡片消散（0.60s 起）—— 承接「卡片化光」，观众看到的是「卡片没了 → 原地升起星光」。
+ * - 第二批晚这么多 —— 让**工作台透出来的那一刻仍有星尘伴随**。
+ *
+ * 只用一批的话，粒子峰值（≈1.0s）会落在开洞（1.35~2.25s）之前，
+ * 等洞真正擦开，星尘早已散尽，画面上只剩一圈波前辉光 —— 前后两段接不上。
+ * 分两批之后：早的一批承接消散，晚的一批压住开洞，中间没有空档。
+ */
+export const OLYMPIA_ONBOARDING_PARTICLE_LATE_OFFSET = 0.45;
+
+/**
  * 星光粒子的整体飞行窗口（秒）。
  *
- * 必须 ≥ 单颗粒子的「延迟 + 时长」上限，否则尾部的粒子会在半空中被时间轴掐掉 ——
+ * 必须 ≥ 单颗粒子的「起飞时刻 + 延迟 + 时长」上限，否则尾部的粒子会在半空中被时间轴掐掉 ——
  * 那看着像粒子凭空消失，而不是飞完了。
  */
-export const OLYMPIA_ONBOARDING_PARTICLE_WINDOW = 1.60;
+export const OLYMPIA_ONBOARDING_PARTICLE_WINDOW = 2.75;
 
 /**
  * 确定性伪随机：只依赖索引，不依赖时间，也不依赖 `Math.random()`。
@@ -160,7 +185,7 @@ export interface OlympiaOnboardingParticle {
 	readonly radius: number;
 	/** 速度系数。 */
 	readonly speed: number;
-	/** 起飞延迟（秒）。 */
+	/** 起飞时刻（秒，进入动画开始后）。必须 ≥ 卡片消散结束时刻。 */
 	readonly delay: number;
 	/** 飞行时长（秒）。 */
 	readonly duration: number;
@@ -189,7 +214,7 @@ function buildParticles(): readonly OlympiaOnboardingParticle[] {
 				angle: olympiaOnboardingHash1(k * 1.7) * Math.PI * 2,
 				radius: 40 + olympiaOnboardingHash2(k * 2.3) * 150,
 				speed: 0.35 + olympiaOnboardingHash2(k * 3.1) * 0.55,
-				delay: olympiaOnboardingHash2(k * 4.7) * 0.42,
+				delay: OLYMPIA_ONBOARDING_PARTICLE_START + (index % 2 === 0 ? 0 : OLYMPIA_ONBOARDING_PARTICLE_LATE_OFFSET) + olympiaOnboardingHash2(k * 4.7) * 0.42,
 				duration: 0.62 + olympiaOnboardingHash2(k * 5.3) * 0.55,
 				size: 1.1 + olympiaOnboardingHash1(k * 6.1) * 2.1,
 				inward: olympiaOnboardingHash1(k) < 0.72,

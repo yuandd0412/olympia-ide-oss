@@ -290,7 +290,7 @@ export class OlympiaOnboarding implements IDisposable {
 	//#region 每帧
 
 	private renderFrame(timestamp: number): void {
-		const delta = this.lastTimestamp === 0 ? 0 : Math.min(0.05, (timestamp - this.lastTimestamp) / 1000);
+		const delta = this.lastTimestamp === 0 ? 0 : Math.min(0.05, Math.max(0, (timestamp - this.lastTimestamp) / 1000));
 		this.lastTimestamp = timestamp;
 		// 背景自己的时钟**永不重置** —— 进入动画期间极光还在流动，这是「同一张图」的前提。
 		this.backdropTime += delta;

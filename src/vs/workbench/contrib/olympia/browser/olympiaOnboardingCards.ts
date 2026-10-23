@@ -439,6 +439,19 @@ export class OlympiaOnboardingCards implements IDisposable {
 	 */
 	beginEnterAnimation(): void {
 		this.entering = true;
+		// 立刻断掉输入，不等下一帧。
+		//
+		// 时间线里的 `interactive` 只在 dissolve 完整（配置期）时为真，但起跑那一帧
+		// dissolve 还是 1 —— 那一帧卡片是**看得见**的。用户正好按住它开始拖拽的话，
+		// 拖拽是挂在 window 上的 pointermove，会跟着手指继续跑，把正在化掉的卡片拖偏。
+		// 所以这里当场把指针事件掐掉，并把可能已经起手的拖拽复位。
+		for (const element of this.cardElements) {
+			element.style.pointerEvents = 'none';
+		}
+		this.dragging = false;
+		this.dragDelta = 0;
+		this.tween = null;
+		this.trackElement.classList.remove('dragging');
 	}
 
 	/**
@@ -475,7 +488,11 @@ export class OlympiaOnboardingCards implements IDisposable {
 			element.style.transform = `translate3d(${layout.translateX.toFixed(2)}px, ${layout.translateY.toFixed(2)}px, 0) scale(${layout.scale.toFixed(4)})`;
 			element.style.opacity = layout.opacity.toFixed(3);
 			element.style.zIndex = String(layout.zIndex);
-			element.style.pointerEvents = layout.interactive ? 'auto' : 'none';
+			// 进入动画起跑后，卡片一律不再吃指针事件。
+			// 只看 `layout.interactive` 不够：起跑那一帧 dissolve 还是 1，
+			// interactive 还是 true —— 那一帧卡片看得见、点得动。
+			const clickable = !this.entering && layout.interactive;
+			element.style.pointerEvents = clickable ? 'auto' : 'none';
 		}
 
 		const active = olympiaOnboardingClamp(Math.round(effective), 0, this.cardElements.length - 1);
@@ -486,6 +503,12 @@ export class OlympiaOnboardingCards implements IDisposable {
 
 	/** 跳到指定卡片（0 基）。 */
 	goto(index: number): void {
+		// 进入动画起跑后，轨道不许再动。
+		// 正在化掉的卡片突然跳位（滚轮、翻页按钮、拖拽惯性）就是断点。
+		// 所有位置变化都从这里出去，所以守在这里就够 —— step() 也走这条。
+		if (this.entering) {
+			return;
+		}
 		const target = olympiaOnboardingClamp(index, 0, this.cardElements.length - 1);
 		this.positionTarget = target;
 		if (this.lastFrameTime < 0) {
@@ -1044,6 +1067,12 @@ export class OlympiaOnboardingCards implements IDisposable {
 			if (event.button !== 0) {
 				return;
 			}
+			// 进入动画起跑后，轨道不再接受新的按压。
+			// 卡片自己已经 pointer-events: none，但按压事件挂在整条轨道上 ——
+			// 不挡的话，起跑后按下轨道会重新置上 dragging，手感像还活着。
+			if (this.entering) {
+				return;
+			}
 			const target = event.target as HTMLElement | null;
 			if (target && target.closest('button')) {
 				return;   // 按在控件上，不当作拖拽
@@ -1060,7 +1089,7 @@ export class OlympiaOnboardingCards implements IDisposable {
 		}));
 
 		this.disposables.push(addDisposableListener(mainWindow, 'pointermove', (event: PointerEvent) => {
-			if (!this.dragging) {
+			if (!this.dragging || this.entering) {
 				return;
 			}
 			const delta = event.clientX - this.dragStartX;
