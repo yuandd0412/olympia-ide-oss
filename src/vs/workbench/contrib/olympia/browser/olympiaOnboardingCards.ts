@@ -129,6 +129,8 @@ interface IOlympiaOnboardingCardDescriptor {
 interface IOlympiaOnboardingRowBinding {
 	/** 行容器。 */
 	readonly container: HTMLElement;
+	/** 行标签里的状态位（「未保存」就写在这儿；平时是空的）。 */
+	statusElement?: HTMLElement;
 	/** `kind === 'value'` 时的取值元素。 */
 	valueElement?: HTMLElement;
 	/** `kind === 'options'` 时的选项片。 */
@@ -341,6 +343,13 @@ export class OlympiaOnboardingCards implements IDisposable {
 	 * 而一个永不 settle 的写入会让预算永远用不完。
 	 */
 	private readonly pendingWriteRounds = new Map<string, number>();
+	/**
+	 * 没能保存上的配置项 → 原因。
+	 *
+	 * 键是配置键，值是给用户看的原因（「配置 X 尚未注册」之类）。
+	 * 空 = 没有没保存上的项；这一行会因此在卡片上显示「未保存」。
+	 */
+	private readonly unsavedKeys = new Map<string, string>();
 
 	/**
 	 * 进入动画**已经起跑**。
@@ -443,6 +452,12 @@ export class OlympiaOnboardingCards implements IDisposable {
 	 * 它可能已经掉进底部渐隐区（用户看不见光标），也可能停在一行早就被裁掉的位置。
 	 */
 	handleViewportResize(): void {
+		// 进入动画期间**冻结** —— 和 `beginEnterAnimation` 说的是同一件事。
+		// 卡片正在化成粒子，这时候去量高度、挪光标，就是「全程没有断点」
+		// 要防的那一帧硬切（`placeCodeCarets` 会读 `clientHeight` 触发同步布局）。
+		if (this.entering) {
+			return;
+		}
 		this.placeCodeCarets();
 	}
 
@@ -630,6 +645,10 @@ export class OlympiaOnboardingCards implements IDisposable {
 	 * 这一层是「配置一变不硬切」的关键：DOM 元素不动，只改类名和文本。
 	 */
 	private updateRowState(row: IOlympiaOnboardingRow, binding: IOlympiaOnboardingRowBinding): void {
+		// 「没保存上」的标记要在 switch **之前**刷 ——
+		// 三个分支里都有提前 return 的写法（这一行没有对应元素就跳过），
+		// 放在 switch 后面的话，那些行就永远刷不到标记。
+		this.updateRowUnsavedState(row, binding);
 		switch (row.kind) {
 			case 'value': {
 				const value = binding.valueElement;
@@ -738,6 +757,37 @@ export class OlympiaOnboardingCards implements IDisposable {
 				toggle.classList.toggle('on', checked);
 				break;
 			}
+		}
+	}
+
+	/**
+	 * 把「这一项没能保存」如实说给用户。
+	 *
+	 * 读侧有行内通道（取不到值就显示「读取失败」），**写侧以前没有**：
+	 * 写入失败只往 console 里写一句，界面上看不出任何区别 ——
+	 * 用户点了「C++23」，配置写不进去，他看到的还是那个选中的芯片，
+	 * 于是以为配置生效了；等进了 IDE 才发现设置根本没变。
+	 *
+	 * 三个行类型（取值 / 选项 / 开关）没有共同的「值元素」，
+	 * 所以标记挂在**行标签**上：标签变红 + 紧跟一个「未保存」，
+	 * 原因写进 title（悬停能看全）。
+	 */
+	private updateRowUnsavedState(row: IOlympiaOnboardingRow, binding: IOlympiaOnboardingRowBinding): void {
+		const key = row.configurationKey;
+		const reason = key ? this.unsavedKeys.get(key) : undefined;
+		const status = binding.statusElement;
+		if (reason) {
+			binding.container.classList.add('olympia-onboarding-row-unsaved');
+			binding.container.title = reason;
+			if (status) {
+				status.textContent = localize('olympia.onboarding.row.unsaved', "未保存");
+			}
+			return;
+		}
+		binding.container.classList.remove('olympia-onboarding-row-unsaved');
+		binding.container.title = '';
+		if (status) {
+			status.textContent = '';
 		}
 	}
 
@@ -919,6 +969,7 @@ export class OlympiaOnboardingCards implements IDisposable {
 		this.codeSampleElement = undefined;
 		this.codeSampleLines = [];
 		this.codeSampleCaret = undefined;
+		this.unsavedKeys.clear();
 		this.element.remove();
 		// `flushRetryTimer` **故意不取消** —— 还没写下去的选择要继续写完，
 		// 不能因为引导已经消失就把用户的选择丢掉（见 scheduleFlushRetry 的说明）。
@@ -969,6 +1020,9 @@ export class OlympiaOnboardingCards implements IDisposable {
 	 * 否则用户的选择永远存不下来。
 	 */
 	private async writeConfig(key: string, value: unknown): Promise<void> {
+		// 用户又点了一次 —— 上一轮「没保存上」的标记先撤掉。
+		// 这次要是又写不进去，`abandonWriteIfExhausted` 会重新标上。
+		this.unsavedKeys.delete(key);
 		this.pendingWrites.set(key, value);
 		// 意图单独记一份 —— 待写值会被消费掉，但「用户最后想要什么」不能跟着消失。
 		this.lastIntended.set(key, value);
@@ -1034,6 +1088,8 @@ export class OlympiaOnboardingCards implements IDisposable {
 					this.pendingWrites.delete(key);
 				}
 				this.pendingWriteRounds.delete(key);
+				// 写进去了，之前那句「没保存上」就不成立了。
+				this.unsavedKeys.delete(key);
 			} catch (error) {
 				// 还是写不进去 —— 留在 map 里，等下一轮。
 				// 这里必须留痕：静默吞掉的话，用户点了「开始」却发现设置没变，
@@ -1092,6 +1148,11 @@ export class OlympiaOnboardingCards implements IDisposable {
 		// 跟着旧值一起摘掉的话，用户刚点的选择就白点了。
 		if (this.pendingWrites.get(key) === attemptedValue) {
 			this.pendingWrites.delete(key);
+			// **说给用户听** —— 只写 console 的话，界面跟没事一样，
+			// 用户以为自己的选择生效了（见 updateRowUnsavedState 的说明）。
+			// 放在这个 if 里面：用户后来又改过的话，新值还在写，
+			// 旧值的失败不该算到新值头上。
+			this.unsavedKeys.set(key, reason);
 			// 这个意图已经彻底放弃了 —— 留着它，迟到的写入会拿它当「用户还想要」，
 			// 把一个用户已经不想要的旧值又补写回去。
 			this.lastIntended.delete(key);
@@ -1510,7 +1571,10 @@ export class OlympiaOnboardingCards implements IDisposable {
 		const skip = document.createElement('button');
 		skip.className = 'olympia-onboarding-skip';
 		skip.type = 'button';
-		skip.textContent = localize('olympia.onboarding.skip', "跳过引导");
+		// 文案说的是「跳过**剩下**的引导」——
+		// 因为点行就已经把选择写进配置了，这个按钮只是不再往下走流程，
+		// 已经选好的照旧生效。说「跳过引导」会让人以为自己的选择被丢了。
+		skip.textContent = localize('olympia.onboarding.skip', "跳过剩余引导");
 		skip.addEventListener('click', () => this.delegate.onBeginEnter());
 		return skip;
 	}
@@ -1605,9 +1669,14 @@ export class OlympiaOnboardingCards implements IDisposable {
 			const label = document.createElement('span');
 			label.className = 'olympia-onboarding-row-label';
 			label.textContent = row.label;
+			// 行内状态位：**空的时候不占位**（空的 inline 元素宽度为 0），
+			// 需要说话的时候（比如「这一项没保存上」）才填字。
+			const status = document.createElement('i');
+			status.className = 'olympia-onboarding-row-status';
+			label.appendChild(status);
 			container.appendChild(label);
 
-			const binding: IOlympiaOnboardingRowBinding = { container };
+			const binding: IOlympiaOnboardingRowBinding = { container, statusElement: status };
 
 			switch (row.kind) {
 				case 'value': {

@@ -324,6 +324,21 @@
 	white-space: nowrap;
 }
 
+.olympia-onboarding-row-unsaved .olympia-onboarding-row-label {
+	color: var(--vscode-errorForeground);
+}
+
+.olympia-onboarding-row-status {
+	font-style: normal;
+	color: var(--vscode-errorForeground);
+}
+
+/* 空的时候不占位 —— 状态位平时是空的，不该把行标签顶歪。 */
+.olympia-onboarding-row-status:not(:empty) {
+	margin-left: 6px;
+	font-size: var(--vscode-fontSize-label2, 11px);
+}
+
 .olympia-onboarding-options {
 	display: flex;
 	flex-wrap: wrap;
