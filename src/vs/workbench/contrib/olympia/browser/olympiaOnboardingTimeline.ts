@@ -23,13 +23,13 @@
  *
  * ```
  *  0.00 ─ 0.60   卡片化成星光（逐张淡出）
- *  0.00 ─ 1.25   星光粒子飞向画面中心
+ *  0.00 ─ 1.60   星光粒子飞向画面中心
  *  0.18 ─ 1.18   光核聚合长大
+ *  0.95 ─ 1.45   暗角升起（峰值 0.35，把视线压回画面中心）
  *  1.14 ─ 1.62   闪点（一次性过曝，随后回落）
- *  1.30 ─ 2.10   暗角升起（峰值 0.35）
  *  1.35 ─ 2.25   波前剥离：在极光上擦开一个椭圆洞
- *  2.35 ─ 4.59   工作台「通电」扫光（标题栏 → 活动栏 → 编辑器 → 侧栏 → 面板）
- *  3.50 ─ 5.30   暗角退场归零
+ *  1.45 ─ 2.25   暗角退场归零（**必须在洞完全打开的同一刻归零**）
+ *  2.30 ─ 5.25   工作台「通电」扫光（标题栏 → 活动栏 → 编辑器 → 侧栏 → 状态栏）
  *  5.40          进入动画结束（洞已完全打开，极光 alpha 归零）
  * ```
  */
@@ -46,11 +46,19 @@ export const OLYMPIA_ONBOARDING_CARD_STEP = OLYMPIA_ONBOARDING_CARD_WIDTH + OLYM
 export const OLYMPIA_ONBOARDING_REVEAL_START = 1.35;
 export const OLYMPIA_ONBOARDING_REVEAL_END = 2.25;
 
-/** 暗角：升起 → 退场归零。结束时必须是 0，否则整窗带着一圈黑边，像加了一层滤镜。 */
-export const OLYMPIA_ONBOARDING_VIGNETTE_RISE_START = 1.30;
-export const OLYMPIA_ONBOARDING_VIGNETTE_RISE_END = 2.10;
-export const OLYMPIA_ONBOARDING_VIGNETTE_FALL_START = 3.50;
-export const OLYMPIA_ONBOARDING_VIGNETTE_FALL_END = 5.30;
+/**
+ * 暗角：升起 → 退场归零。
+ *
+ * 暗角是**给极光用的电影感压角**，不是给工作台用的滤镜。所以它必须在
+ * `REVEAL_END`（洞完全打开、工作台整屏可见）之前归零 —— 否则真实工作台会被
+ * 压着一层最高 35% 的黑，最重要的「揭示工作台」那一拍整个发闷。
+ *
+ * 归零之后再也不许升起来：那段时间工作台正在「通电」，任何压暗都是噪音。
+ */
+export const OLYMPIA_ONBOARDING_VIGNETTE_RISE_START = 0.95;
+export const OLYMPIA_ONBOARDING_VIGNETTE_RISE_END = 1.45;
+export const OLYMPIA_ONBOARDING_VIGNETTE_FALL_START = 1.45;
+export const OLYMPIA_ONBOARDING_VIGNETTE_FALL_END = 2.25;
 export const OLYMPIA_ONBOARDING_VIGNETTE_PEAK = 0.35;
 
 /** 卡片消散的时间窗（秒）。 */
@@ -195,8 +203,15 @@ function buildParticles(): readonly OlympiaOnboardingParticle[] {
 /** 星光粒子表。模块加载时构建一次，之后完全静态。 */
 export const OLYMPIA_ONBOARDING_PARTICLES: readonly OlympiaOnboardingParticle[] = buildParticles();
 
-/** 工作台「通电」扫光的部件。 */
-export type OlympiaOnboardingSweepTarget = 'titlebar' | 'activitybar' | 'editor' | 'sidebar' | 'panel';
+/**
+ * 工作台「通电」扫光的部件。
+ *
+ * 这里列的每一个部件都必须是**默认就存在**的：引导只在首次启动时出现，
+ * 那正是所有默认布局都成立的时候。列一个默认不存在的部件（底部面板
+ * `panel` 就是一个例子 —— 它默认收起），那条扫光就永远不会亮，
+ * 时间线上就留下一段「什么都没发生」的死区。
+ */
+export type OlympiaOnboardingSweepTarget = 'titlebar' | 'activitybar' | 'editor' | 'sidebar' | 'statusbar';
 
 export interface OlympiaOnboardingSweep {
 	readonly id: OlympiaOnboardingSweepTarget;
@@ -206,14 +221,44 @@ export interface OlympiaOnboardingSweep {
 	readonly axis: 'x' | 'y';
 }
 
-/** 扫光按「解剖顺序」排列：先标题栏，再活动栏、编辑器、侧栏、最后面板。 */
+/**
+ * 扫光按「解剖顺序」排列：先标题栏，再活动栏、编辑器、侧栏，最后状态栏。
+ *
+ * 相邻两道扫光**必须重叠**（0.50s 的错位 vs 0.95s 的时长 → 重叠 0.45s），
+ * 不重叠就会读成「一个部件亮了，停一下，下一个亮了」，那是一串提示音，
+ * 不是一次通电。
+ *
+ * 最后一道必须收在总时长之前不远处（5.25 / 5.40）：中间那段尾巴上
+ * 什么也不发生的话，整段动画就少了半个句号。
+ */
 export const OLYMPIA_ONBOARDING_SWEEPS: readonly OlympiaOnboardingSweep[] = [
-	{ id: 'titlebar', start: 2.35, end: 3.05, axis: 'x' },
-	{ id: 'activitybar', start: 2.67, end: 3.47, axis: 'y' },
-	{ id: 'editor', start: 2.97, end: 3.85, axis: 'y' },
-	{ id: 'sidebar', start: 3.35, end: 4.13, axis: 'y' },
-	{ id: 'panel', start: 3.79, end: 4.59, axis: 'y' },
+	{ id: 'titlebar', start: 2.30, end: 3.25, axis: 'x' },
+	{ id: 'activitybar', start: 2.80, end: 3.75, axis: 'y' },
+	{ id: 'editor', start: 3.30, end: 4.25, axis: 'x' },
+	{ id: 'sidebar', start: 3.80, end: 4.75, axis: 'y' },
+	{ id: 'statusbar', start: 4.30, end: 5.25, axis: 'x' },
 ];
+
+/**
+ * 扫光光带在部件区域里的位移（px）。
+ *
+ * `offset` 是 -1..1 的归一化位置：-1 = 刚从这一头进场，0 = 正中，+1 = 从另一头出场。
+ *
+ * ## 为什么不能写成「offset × 区域尺寸」
+ *
+ * 早先的写法是 `offset * (区域 + 带宽) + 区域/2 - 带宽/2`，那等于让光带
+ * **多走了一倍**：offset = -1 时它的中心已经跑到区域外半屏的地方，
+ * offset = +1 时又跑到区域外半屏的另一边。于是整道扫光里只有中间约 20%
+ * 的时间光带真的在屏幕上 —— 真机抓帧看到的就是「扫光不可见」，
+ * 而 DOM 上那条光带的 opacity 却是 0.9（数字很好看，画面上什么都没有）。
+ *
+ * 正确的走法：光带中心从「刚好在区域外 -带宽」走到「刚好在区域外 +区域」，
+ * 中点正好落在区域正中。这样整道扫光里光带**始终在屏上**，
+ * 观众看到的是一条光从这头扫到那头。
+ */
+export function olympiaOnboardingSweepTravel(offset: number, extent: number, band: number): number {
+	return ((offset + 1) / 2) * (extent + band) - band;
+}
 
 export interface OlympiaOnboardingSweepState {
 	readonly id: OlympiaOnboardingSweepTarget;
@@ -221,6 +266,14 @@ export interface OlympiaOnboardingSweepState {
 	readonly opacity: number;
 	/** -1..1，0 = 部件正中。 */
 	readonly offset: number;
+	/**
+	 * 扫光方向。**渲染层必须照着它走**。
+	 *
+	 * 之前渲染层写死成「只有 titlebar 是横向」，时间线上的 axis 字段形同虚设 ——
+	 * 哪天把某道扫光改成横向，时间线改了、渲染没改，方向就悄悄错了，
+	 * 而且没有任何断言能发现（因为断言钉的是同一个被写死的地方）。
+	 */
+	readonly axis: 'x' | 'y';
 }
 
 /** 某一帧的全部视觉状态。渲染层只需要读这个结构。 */
@@ -277,13 +330,14 @@ export function olympiaOnboardingFrame(enterTime: number, viewportWidth: number)
 		const progress = olympiaOnboardingSegment(t, sweep.start, sweep.end);
 		const active = t >= sweep.start && t <= sweep.end;
 		if (!active) {
-			return { id: sweep.id, opacity: 0, offset: 0 };
+			return { id: sweep.id, opacity: 0, offset: 0, axis: sweep.axis };
 		}
 		const eased = olympiaOnboardingEaseInOut(progress);
 		return {
 			id: sweep.id,
 			opacity: Math.sin(progress * Math.PI) * 0.95,
 			offset: eased * 2 - 1,
+			axis: sweep.axis,
 		};
 	});
 

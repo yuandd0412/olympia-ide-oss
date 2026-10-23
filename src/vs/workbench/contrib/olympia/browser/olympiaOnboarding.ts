@@ -24,6 +24,8 @@ import {
 	OLYMPIA_ONBOARDING_PARTICLE_WINDOW,
 	olympiaOnboardingEaseOutCubic,
 	olympiaOnboardingFrame,
+	olympiaOnboardingSweepTravel,
+	OlympiaOnboardingSweepState,
 	OlympiaOnboardingSweepTarget
 } from './olympiaOnboardingTimeline.js';
 
@@ -74,13 +76,19 @@ const OLYMPIA_ONBOARDING_Z_INDEX = 2530;
 /** 扫光带宽（px）。 */
 const OLYMPIA_ONBOARDING_SWEEP_BAND = 140;
 
-/** 每个部件对应的工作台 part。 */
+/**
+ * 每个部件对应的工作台 part。
+ *
+ * 只列**默认就存在**的部件。底部面板（`Parts.PANEL_PART`）默认是收起的，
+ * 拿不到矩形 → 那道扫光永远不会亮 → 时间线上留下一段死区。
+ * 状态栏（`Parts.STATUSBAR_PART`）是常驻的，替掉底部面板正好补上最后一道。
+ */
 const OLYMPIA_ONBOARDING_SWEEP_PARTS: readonly [OlympiaOnboardingSweepTarget, Parts][] = [
 	['titlebar', Parts.TITLEBAR_PART],
 	['activitybar', Parts.ACTIVITYBAR_PART],
 	['editor', Parts.EDITOR_PART],
 	['sidebar', Parts.SIDEBAR_PART],
-	['panel', Parts.PANEL_PART],
+	['statusbar', Parts.STATUSBAR_PART],
 ];
 
 export class OlympiaOnboarding implements IDisposable {
@@ -330,7 +338,8 @@ export class OlympiaOnboarding implements IDisposable {
 	 *
 	 * 这一步必须是**不可见**的 —— 判定条件全部在时间线里对齐了：
 	 * 洞在 2.25s 就擦净（reveal 进度 1 时全画布透明）、卡片在 0.60s 就化成星光、
-	 * 光核在 2.12s 收掉、扫光在 4.59s 结束、暗角在 5.30s 归零。
+	 * 光核在 2.12s 收掉、暗角在 2.25s 归零（与洞同步，工作台一露面就不再被压暗）、
+	 * 最后一道扫光在 5.25s 结束。
 	 * 5.40s 时屏幕上已经没有任何属于 overlay 的像素了。
 	 */
 	private finish(): void {
@@ -554,28 +563,46 @@ export class OlympiaOnboarding implements IDisposable {
 	 *
 	 * 扫光要沿着工作台的真实部件走，而不是按视口猜一个位置 —— 否则「通电」的
 	 * 感觉对不上画面里的实际布局（标题栏在哪、侧栏多宽都是布局决定的）。
+	 *
+	 * ## 取不到矩形时必须兜底，不能跳过
+	 *
+	 * 有些部件在这个窗口形状下压根不存在（底部面板默认收起、侧栏被折叠、
+	 * 用户把状态栏关掉了……）。早先的实现是 `continue` 跳过 —— 结果那道扫光
+	 * 永远不会亮，时间线上就留下一段「什么都没发生」的死区：整段通电演出
+	 * 凭空少一拍，观众一眼就看出那里缺了东西。
+	 *
+	 * 所以取不到真实矩形时退回到整块工作台：光带从屏幕这头扫到那头，
+	 * 语义上仍然是「工作台通电」，而且不依赖任何具体布局。
 	 */
 	private updateSweepRects(): void {
 		const rects = new Map<OlympiaOnboardingSweepTarget, DOMRect>();
+		const viewport = this.rootElement.getBoundingClientRect();
 		for (const [id, part] of OLYMPIA_ONBOARDING_SWEEP_PARTS) {
+			let rect: DOMRect | undefined;
 			try {
 				const element = this.layoutService.getContainer(mainWindow, part);
-				if (!element) {
-					continue;
+				if (element) {
+					const candidate = element.getBoundingClientRect();
+					if (candidate.width > 0 && candidate.height > 0) {
+						rect = candidate;
+					}
 				}
-				const rect = element.getBoundingClientRect();
-				if (rect.width <= 0 || rect.height <= 0) {
-					continue;
-				}
-				rects.set(id, rect);
 			} catch {
-				// 部件还没就绪（或者这个窗口形状下压根没有这个部件）—— 跳过即可。
+				// 部件还没就绪（或者这个窗口形状下压根没有这个部件）—— 走下面的兜底。
 			}
+			if (!rect) {
+				if (viewport.width <= 0 || viewport.height <= 0) {
+					// 连整块工作台都还没有尺寸（overlay 刚挂上去）：这一帧先不给矩形。
+					continue;
+				}
+				rect = viewport;
+			}
+			rects.set(id, rect);
 		}
 		this.sweepRects = rects;
 	}
 
-	private renderSweeps(sweeps: readonly { id: OlympiaOnboardingSweepTarget; opacity: number; offset: number }[]): void {
+	private renderSweeps(sweeps: readonly OlympiaOnboardingSweepState[]): void {
 		for (const state of sweeps) {
 			const element = this.sweepElements.get(state.id);
 			if (!element) {
@@ -587,8 +614,9 @@ export class OlympiaOnboarding implements IDisposable {
 				continue;
 			}
 
-			// axis 来自时间线；这里只用它决定光带的方向和推进轴。
-			const horizontal = state.id === 'titlebar';
+			// 方向**照时间线走**（axis 字段）。之前这里写死成「只有 titlebar 是横向」，
+			// 时间线上的 axis 改了也不会生效 —— 那个字段等于没有。
+			const horizontal = state.axis === 'x';
 			const band = OLYMPIA_ONBOARDING_SWEEP_BAND;
 			if (horizontal) {
 				element.classList.add('horizontal');
@@ -596,16 +624,14 @@ export class OlympiaOnboarding implements IDisposable {
 				element.style.top = `${rect.top}px`;
 				element.style.width = `${band}px`;
 				element.style.height = `${rect.height}px`;
-				const span = rect.width + band;
-				element.style.transform = `translate3d(${(state.offset * span + rect.width / 2 - band / 2).toFixed(2)}px, 0, 0)`;
+				element.style.transform = `translate3d(${olympiaOnboardingSweepTravel(state.offset, rect.width, band).toFixed(2)}px, 0, 0)`;
 			} else {
 				element.classList.remove('horizontal');
 				element.style.left = `${rect.left}px`;
 				element.style.top = `${rect.top}px`;
 				element.style.width = `${rect.width}px`;
 				element.style.height = `${band}px`;
-				const span = rect.height + band;
-				element.style.transform = `translate3d(0, ${(state.offset * span + rect.height / 2 - band / 2).toFixed(2)}px, 0)`;
+				element.style.transform = `translate3d(0, ${olympiaOnboardingSweepTravel(state.offset, rect.height, band).toFixed(2)}px, 0)`;
 			}
 			element.style.opacity = state.opacity.toFixed(3);
 		}
