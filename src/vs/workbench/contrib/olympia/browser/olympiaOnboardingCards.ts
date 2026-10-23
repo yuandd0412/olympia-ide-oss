@@ -138,6 +138,15 @@ interface IOlympiaOnboardingRowBinding {
 	fallbackChecked?: boolean;
 	/** 异步取值的令牌：只有最后一次请求的结果算数，过期的一律丢弃。 */
 	valueToken?: number;
+	/**
+	 * 异步取值是否已经**落地**。
+	 *
+	 * 落地之后就再也不动这一行：既不把文本打回占位，也不重复发请求。
+	 * 没有这个标记的话，每次状态刷新都会把「最近工程」重置成「读取中…」，
+	 * 并重新调一次 `getRecentlyOpened()` —— 用户点一下别的选项，
+	 * 眼前这行就闪回占位，同时后台多跑一次 IO。
+	 */
+	valueResolved?: boolean;
 }
 
 /**
@@ -170,6 +179,9 @@ export class OlympiaOnboardingCards implements IDisposable {
 	 *
 	 * 400ms × 60 ≈ 24 秒，足够等内置扩展把 `olympia.*` 注册完。
 	 * 到点还写不进去就放弃 —— 那是扩展的问题，不该把用户永远吊在这儿。
+	 *
+	 * 这里的「次」是**重试轮数**：由重试定时器驱动的轮次才计数，
+	 * 用户随手点一下触发的补写不算（否则多戳两下就提前放弃）。
 	 */
 	private static readonly FLUSH_RETRY_LIMIT = 60;
 
@@ -399,12 +411,22 @@ export class OlympiaOnboardingCards implements IDisposable {
 	 * 页脚不在这里刷：它只跟卡片序号有关，建一次就够。
 	 */
 	refresh(): void {
+		this.refreshRowStates();
+		this.refreshPreview();
+		void this.flushPendingWrites();
+	}
+
+	/**
+	 * 只重刷**行状态**（选中态 / 开关态 / 值），不重建 DOM、不重刷预览、不触发写入。
+	 *
+	 * 「放弃写入」之后必须走这条路：那时候 `pendingWrites` 里的值已经被摘掉，
+	 * 卡片的 chip 高亮还停在用户刚点的那个选项上 —— 界面在撒谎。
+	 */
+	private refreshRowStates(): void {
 		for (let index = 0; index < OLYMPIA_ONBOARDING_CARD_COUNT; index++) {
 			const descriptor = this.descriptorFor(index);
 			this.updateRows(index, descriptor.rows);
 		}
-		this.refreshPreview();
-		void this.flushPendingWrites();
 	}
 
 	/**
@@ -448,24 +470,36 @@ export class OlympiaOnboardingCards implements IDisposable {
 				if (!value) {
 					return;
 				}
-				value.textContent = row.value ?? '';
 				if (row.asyncValue) {
 					// 异步取值：只有**最后一次**请求的结果算数，过期的一律丢弃 ——
 					// 否则先发后到的旧请求会覆盖新值。
+					//
+					// 已经落地过的行**直接跳过**：既不把文本打回占位，也不重发请求。
+					// 不跳过的话，用户点一下别的选项就会看到「最近工程」闪回「读取中…」，
+					// 后台还多跑一次 `getRecentlyOpened()`。
+					if (binding.valueResolved) {
+						break;
+					}
+					value.textContent = row.value ?? '';
 					const token = (binding.valueToken ?? 0) + 1;
 					binding.valueToken = token;
 					row.asyncValue().then(text => {
 						if (binding.valueToken !== token || binding.valueElement !== value) {
 							return;
 						}
+						binding.valueResolved = true;
 						value.textContent = text;
 					}, () => {
 						if (binding.valueToken !== token || binding.valueElement !== value) {
 							return;
 						}
-						value.textContent = '';
+						// 取不到就还留占位 —— 空白的一行看起来像「这一项坏了」。
+						// 这里**不**标记为已落地：下一次刷新还会再试一次。
+						value.textContent = row.value ?? '';
 					});
+					break;
 				}
+				value.textContent = row.value ?? '';
 				break;
 			}
 			case 'options': {
@@ -602,20 +636,38 @@ export class OlympiaOnboardingCards implements IDisposable {
 		await this.flushPendingWrites();
 	}
 
-	/** 扩展注册完配置后，把之前攒着的写入补上。 */
-	private async flushPendingWrites(): Promise<void> {
+	/**
+	 * 扩展注册完配置后，把之前攒着的写入补上。
+	 *
+	 * `isRetryRound` 区分「用户随手点了一下」和「重试定时器又转了一圈」：
+	 *
+	 *  - **重试轮**才消耗额度（`pendingWriteAttempts`）。额度承诺的是
+	 *    「400ms × 60 ≈ 24 秒」——那是**重试轮数**，不是用户点击次数。
+	 *    如果每次点击都计数，用户多戳两下就会提前放弃，24 秒的承诺变成几秒。
+	 *  - 非重试轮只是「顺手试一次」，不计数，但一样会把重试定时器续上。
+	 */
+	private async flushPendingWrites(isRetryRound: boolean = false): Promise<void> {
 		for (const key of [...this.pendingWrites.keys()]) {
 			if (this.writingKeys.has(key)) {
 				continue;   // 正在写，等它回来再说
 			}
 			const value = this.pendingWrites.get(key);
 			if (value === undefined) {
+				// 没有值可写。留着它只会让重试定时器永远停不下来。
+				this.pendingWrites.delete(key);
+				this.pendingWriteAttempts.delete(key);
 				continue;
 			}
 			if (this.configurationService.getValue(key) === undefined) {
 				// 扩展还没注册这个键 —— 现在写下去必定抛「unknown configuration」。
 				// 这里**不能**直接跳过：跳过就没有下一次尝试了，用户的选择会永远存不下来。
-				// 安排一次重试，等扩展注册好了自然会写进去。
+				// 但也不能无限重试：这条路径以前**不计数**，于是「400ms × 60」的额度承诺
+				// 在这里根本不成立 —— 扩展永远不注册，就永远重试下去。
+				if (isRetryRound) {
+					if (this.abandonWriteIfExhausted(key, `配置 ${key} 尚未注册（内置扩展还没注册这个配置项）`)) {
+						continue;
+					}
+				}
 				this.scheduleFlushRetry();
 				continue;
 			}
@@ -631,25 +683,48 @@ export class OlympiaOnboardingCards implements IDisposable {
 				// 还是写不进去 —— 留在 map 里，等下一轮。
 				// 这里必须留痕：静默吞掉的话，用户点了「开始」却发现设置没变，
 				// 而我们连「为什么」都不知道。
-				const attempts = (this.pendingWriteAttempts.get(key) ?? 0) + 1;
-				this.pendingWriteAttempts.set(key, attempts);
-				if (attempts === 1 || attempts % 10 === 0) {
-					console.warn(`[Olympia] 配置 ${key} 写入失败（第 ${attempts} 次）：${error}`);
-				}
-				if (attempts >= OlympiaOnboardingCards.FLUSH_RETRY_LIMIT) {
-					// 这个键彻底写不进去了 —— 别让它静默消失：
-					// 明确报出来，并把它从待写队列里摘掉，好让别的键继续写。
-					// 摘掉之后 `readConfig` 就会回到配置真值，卡片显示的和实际存的一致。
-					console.error(`[Olympia] 配置 ${key} 连续 ${attempts} 次写入失败，已放弃写入：${error}`);
-					this.pendingWrites.delete(key);
-					this.pendingWriteAttempts.delete(key);
-					continue;
+				if (isRetryRound) {
+					if (this.abandonWriteIfExhausted(key, `配置 ${key} 写入失败：${error}`, error)) {
+						continue;
+					}
 				}
 				this.scheduleFlushRetry();
 			} finally {
 				this.writingKeys.delete(key);
 			}
 		}
+		// 还有没写下去的键，就一定要有下一次尝试。
+		// 上面每个 `continue` 分支都可能提前退出这一轮 —— 如果不在这里统一续上，
+		// 一个键放弃写入就会把**别的**键的重试链一起掐断。
+		if (this.pendingWrites.size > 0) {
+			this.scheduleFlushRetry();
+		}
+	}
+
+	/**
+	 * 重试额度用尽时的收场：明确报出来、摘掉这个键、把界面拉回真值。
+	 *
+	 * 返回 true 表示「已经放弃写入」，调用方不要再往下走。
+	 *
+	 * 摘掉之后 `readConfig()` 会回到配置真值 —— 但**界面不会自己变**：
+	 * chip 的高亮还停在用户刚点的那个选项上，不刷一次的话界面就在撒谎。
+	 * 这里刷行状态 + 预览，但**不**走 `refresh()`：它会再触发一轮写入，形成递归。
+	 */
+	private abandonWriteIfExhausted(key: string, reason: string, error?: unknown): boolean {
+		const attempts = (this.pendingWriteAttempts.get(key) ?? 0) + 1;
+		this.pendingWriteAttempts.set(key, attempts);
+		if (attempts === 1 || attempts % 10 === 0) {
+			console.warn(`[Olympia] ${reason}（第 ${attempts} 次）`);
+		}
+		if (attempts < OlympiaOnboardingCards.FLUSH_RETRY_LIMIT) {
+			return false;
+		}
+		console.error(`[Olympia] 配置 ${key} 连续 ${attempts} 次写入失败，已放弃写入：${error === undefined ? reason : String(error)}`);
+		this.pendingWrites.delete(key);
+		this.pendingWriteAttempts.delete(key);
+		this.refreshRowStates();
+		this.refreshPreview();
+		return true;
 	}
 
 	/**
@@ -667,7 +742,8 @@ export class OlympiaOnboardingCards implements IDisposable {
 		// 这里不再有一道全局闸门，否则一个永远写不进去的键会把别的键一起拖死。
 		this.flushRetryTimer = mainWindow.setTimeout(() => {
 			this.flushRetryTimer = null;
-			void this.flushPendingWrites();
+			// 定时器驱动的这一轮才消耗重试额度（见 flushPendingWrites 的说明）。
+			void this.flushPendingWrites(true);
 		}, OlympiaOnboardingCards.FLUSH_RETRY_INTERVAL);
 	}
 

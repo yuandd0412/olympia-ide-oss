@@ -445,7 +445,13 @@ export class OlympiaOnboarding implements IDisposable {
 	 */
 	private abortEnter(): void {
 		this.enterRequested = false;
-		this.enterStart = null;
+		// 这里**不**重置 `enterStart`：它此刻必然还是 `null`。
+		// 闸门放行之前 `enterStart` 只在 `maybeStartEnter` 里被赋值，而那一处
+		// 紧接着就把 `enterRequested` 置回 false —— 帧循环里
+		// `if (this.enterRequested && this.enterStart === null)` 的第二个条件
+		// 就不再成立，`maybeStartEnter` 不会再被调用。
+		// 换句话说，走到这里的路径上**从来没有**正在跑的进入动画要取消：
+		// 收场只可能发生在「还没起跑」的时候。
 		this.waitingElement.classList.remove('on');
 		this.rootElement.classList.add('olympia-onboarding-fading');
 		this.fadeTimer = mainWindow.setTimeout(() => {
