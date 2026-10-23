@@ -147,6 +147,16 @@ interface IOlympiaOnboardingRowBinding {
 	 * 眼前这行就闪回占位，同时后台多跑一次 IO。
 	 */
 	valueResolved?: boolean;
+	/**
+	 * 异步取值的请求是否**在途**（已发出、结果还没回来）。
+	 *
+	 * 没有这个标记的话，光有 `valueResolved` 挡不住重复请求：
+	 * 内置扩展注册 `olympia.*` 配置项时会连着触发一串
+	 * `onDidChangeConfiguration` → `refresh()`，而这些 refresh 往往发生在
+	 * 第一次请求**还没回来**的时候 —— 于是 `getRecentlyOpened()` 被连着发好几次。
+	 * 令牌机制只保证「最后一次的结果算数」，它挡不住请求本身被重复发出去。
+	 */
+	valuePending?: boolean;
 }
 
 /**
@@ -474,22 +484,34 @@ export class OlympiaOnboardingCards implements IDisposable {
 					// 异步取值：只有**最后一次**请求的结果算数，过期的一律丢弃 ——
 					// 否则先发后到的旧请求会覆盖新值。
 					//
-					// 已经落地过的行**直接跳过**：既不把文本打回占位，也不重发请求。
-					// 不跳过的话，用户点一下别的选项就会看到「最近工程」闪回「读取中…」，
-					// 后台还多跑一次 `getRecentlyOpened()`。
+					// 两道闸门，缺一不可：
+					// ① `valueResolved` —— 已经落地过的行**直接跳过**：既不把文本打回占位，
+					//    也不重发请求。不跳过的话，用户点一下别的选项就会看到「最近工程」
+					//    闪回「读取中…」，后台还多跑一次 `getRecentlyOpened()`。
+					// ② `valuePending` —— 请求**在途**时也跳过。扩展注册 `olympia.*` 配置项
+					//    会连着触发一串 refresh，而它们多半发生在第一次请求还没回来的时候；
+					//    只靠 ① 的话，那段时间里请求会被重复发出去。
 					if (binding.valueResolved) {
+						break;
+					}
+					if (binding.valuePending) {
 						break;
 					}
 					value.textContent = row.value ?? '';
 					const token = (binding.valueToken ?? 0) + 1;
 					binding.valueToken = token;
+					binding.valuePending = true;
 					row.asyncValue().then(text => {
+						// 无论结果对不对，都先把「在途」放掉 ——
+						// 不放的话这一行会永远停在「请求中」，再也拿不到值。
+						binding.valuePending = false;
 						if (binding.valueToken !== token || binding.valueElement !== value) {
 							return;
 						}
 						binding.valueResolved = true;
 						value.textContent = text;
 					}, () => {
+						binding.valuePending = false;
 						if (binding.valueToken !== token || binding.valueElement !== value) {
 							return;
 						}
