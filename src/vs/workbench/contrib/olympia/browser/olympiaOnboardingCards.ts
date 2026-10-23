@@ -329,6 +329,20 @@ export class OlympiaOnboardingCards implements IDisposable {
 	private readonly pendingWriteRounds = new Map<string, number>();
 
 	/**
+	 * 进入动画**已经起跑**。
+	 *
+	 * 从这一刻起，卡片区的 DOM **结构**不许再变。
+	 *
+	 * 进入动画里卡片正在化成粒子、工作台正在从洞里长出来 ——
+	 * 这时候把行区或预览区整个换掉（`replaceChildren`），
+	 * 就是「全程没有断点」要防的那一帧硬切。
+	 *
+	 * 「状态」照旧可以就地改（chip 高亮、开关态、行的文本）——
+	 * 那些不动 DOM 结构，不会造成跳变。
+	 */
+	private entering = false;
+
+	/**
 	 * 异步取值失败后的**重试队列**与定时器。
 	 *
 	 * 队列而不是单个回调：以后再加异步行时，多个失败也能各自排上队。
@@ -406,6 +420,25 @@ export class OlympiaOnboardingCards implements IDisposable {
 	/** 让卡片层整体淡出（进入动画开始时）。 */
 	setVisible(visible: boolean): void {
 		this.element.classList.toggle('hidden', !visible);
+	}
+
+	/**
+	 * 进入动画起跑：从这一刻起，卡片区的 DOM **结构**冻结。
+	 *
+	 * 为什么要有这个开关：
+	 *
+	 *  - 预览区是**整片重建**的（`replaceChildren`），行区在结构变了的时候也是。
+	 *    进入动画正在把卡片化成粒子的时候换掉它们，就是「全程没有断点」
+	 *    要防的那一帧硬切 —— 画面会「啪」地跳一下。
+	 *  - 触发源是真实存在的：扩展注册 `olympia.*` 配置项会连着触发
+	 *    `onDidChangeConfiguration` → `refresh()` → 重建预览区；
+	 *    「放弃写入」的收场路径也会刷一次。
+	 *
+	 * 冻结之后卡片保持进入动画那一刻的样子：它马上就要散掉了，
+	 * 最后一帧长什么样其实无所谓，但**不能跳**。
+	 */
+	beginEnterAnimation(): void {
+		this.entering = true;
 	}
 
 	/**
@@ -522,6 +555,19 @@ export class OlympiaOnboardingCards implements IDisposable {
 
 	/** 结构变了：重建这张卡的行区，然后立刻把状态刷成当前真值。 */
 	private rebuildRows(index: number, rows: readonly IOlympiaOnboardingRow[], signature: string): void {
+		if (this.entering) {
+			// 进入动画期间：行区**冻结**，不换 DOM。
+			// 换成 `replaceChildren` 就是「全程没有断点」要防的那一帧硬切。
+			// 状态还照刷 —— 就地改不动结构，跳不出来。
+			const bindings = this.rowBindings[index];
+			if (bindings) {
+				const count = Math.min(bindings.length, rows.length);
+				for (let rowIndex = 0; rowIndex < count; rowIndex++) {
+					this.updateRowState(rows[rowIndex], bindings[rowIndex]);
+				}
+			}
+			return;
+		}
 		const built = this.buildRows(rows);
 		this.bodyElements[index].replaceChildren(...built.elements);
 		this.rowBindings[index] = built.bindings;
@@ -551,9 +597,9 @@ export class OlympiaOnboardingCards implements IDisposable {
 					//    闪回「读取中…」，后台还多跑一次 `getRecentlyOpened()`。
 					// ② `valueFailed` —— **确认取不到**的行也跳过：已经如实报过错了，
 					//    再试只是重复 IO。
-					// ③ `valuePending` —— 请求**在途**时跳过。扩展注册 `olympia.*` 配置项
-					//    会连着触发一串 refresh，而它们多半发生在第一次请求还没回来的时候；
-					//    只靠 ① 的话，那段时间里请求会被重复发出去。
+					// ③ `valuePending` —— 请求**在途**（或者**在等重试**）时跳过。扩展注册
+					//    `olympia.*` 配置项会连着触发一串 refresh，而它们多半发生在第一次
+					//    请求还没回来的时候；只靠 ① 的话，那段时间里请求会被重复发出去。
 					if (binding.valueResolved || binding.valueFailed) {
 						break;
 					}
@@ -565,16 +611,16 @@ export class OlympiaOnboardingCards implements IDisposable {
 					binding.valueToken = token;
 					binding.valuePending = true;
 					row.asyncValue().then(text => {
-						// 无论结果对不对，都先把「在途」放掉 ——
-						// 不放的话这一行会永远停在「请求中」，再也拿不到值。
-						binding.valuePending = false;
+						// 先核对身份，再放掉「在途」——
+						// 放早了的话，更新的一次请求就失去了保护，
+						// 会被又一轮 refresh 顶掉。
 						if (binding.valueToken !== token || binding.valueElement !== value) {
 							return;
 						}
+						binding.valuePending = false;
 						binding.valueResolved = true;
 						value.textContent = text;
 					}, error => {
-						binding.valuePending = false;
 						if (binding.valueToken !== token || binding.valueElement !== value) {
 							return;
 						}
@@ -590,17 +636,32 @@ export class OlympiaOnboardingCards implements IDisposable {
 						if (attempts >= OlympiaOnboardingCards.VALUE_RETRY_LIMIT) {
 							// 到上限还是取不到 —— 如实说取不到，
 							// 别让这一行永远停在「读取中…」骗用户。
+							binding.valuePending = false;
 							binding.valueFailed = true;
 							value.textContent = localize('olympia.onboarding.practice.recent.failed', "读取失败");
 							return;
 						}
 						// 还留占位 —— 空白的一行看起来像「这一项坏了」。
 						value.textContent = row.value ?? '';
+						// 「在途」**不**在这里放掉 ——
+						// 放了的话，从失败到重试定时器真的 fire 之间这 800ms 里，
+						// 任何一次 refresh() 都会穿过上面三道闸门重发一次请求，
+						// 而它的失败又把 `valueAttempts` 加一：用户在 800ms 窗口里
+						// 点一下别的选项，就能把「3 次重试」的预算提前用光，
+						// 这一行从此永久停在「读取失败」—— 可存储服务其实早就好了。
+						// 所以这里保持 `valuePending = true`，直到下面排好的重试真的起跑。
 						this.scheduleValueRetry(() => {
 							// 行区早就被重建过的话，这个绑定指向的是 detached 元素，重试没有意义。
 							if (!value.isConnected) {
 								return;
 							}
+							if (binding.valueToken !== token) {
+								// 已经有更新的一次请求接管了这一行 —— 它自己会走它的那条重试链。
+								return;
+							}
+							// 这一轮重试真的起跑了 —— 现在才把「在途」放掉，
+							// 免得上面第 ③ 道闸门把自己挡住。
+							binding.valuePending = false;
 							this.updateRowState(row, binding);
 						});
 					});
@@ -704,6 +765,13 @@ export class OlympiaOnboardingCards implements IDisposable {
 	 * 所以两者分开刷：行区由点击就地更新，预览区才重建。
 	 */
 	private refreshPreview(): void {
+		if (this.entering) {
+			// 进入动画期间：预览区**冻结**。
+			// 预览区是整片 `replaceChildren` 重建的 —— 动画正在把卡片化成粒子
+			// 的时候换掉它，就是「全程没有断点」要防的那一帧硬切。
+			// 卡片马上就要散掉，最后一帧长什么样已经无所谓了，但**不能跳**。
+			return;
+		}
 		for (let index = 0; index < OLYMPIA_ONBOARDING_CARD_COUNT; index++) {
 			const descriptor = this.descriptorFor(index);
 			this.previewElements[index].replaceChildren(...descriptor.preview());

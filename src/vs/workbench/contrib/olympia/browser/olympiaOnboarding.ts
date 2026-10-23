@@ -432,6 +432,11 @@ export class OlympiaOnboarding implements IDisposable {
 		// 这一行**必须**在闸门放行之后：放行之前摘掉 chrome，用户就只剩一颗药丸，
 		// 「跳过」和翻页全被关掉 —— 出了岔子连退路都没有。
 		this.cards.element.classList.add('olympia-onboarding-entering');
+		// 卡片区的 DOM **结构**从这一刻起冻结 ——
+		// 扩展注册配置项触发的 refresh、以及「放弃写入」的收场路径，
+		// 都会重建预览区（`replaceChildren`）。在动画中间换掉它，
+		// 就是「全程没有断点」要防的那一帧硬切。
+		this.cards.beginEnterAnimation();
 		// 起点用 rAF 帧时间戳 —— 和卡片补间、背景时钟是同一个时间源。
 		// 早先版本这里用 `performance.now()`，与 rAF 时间戳不同源，守卫永远不成立，动画挂死。
 		this.enterStart = timestamp;
