@@ -36,6 +36,7 @@ import {
 import {
 	OLYMPIA_ONBOARDING_CARD_COUNT,
 	OLYMPIA_ONBOARDING_CARD_STEP,
+	OLYMPIA_ONBOARDING_CODE_CARET_ZONE,
 	olympiaOnboardingCardLayout,
 	olympiaOnboardingClamp,
 	olympiaOnboardingEaseOutCubic
@@ -232,6 +233,19 @@ export class OlympiaOnboardingCards implements IDisposable {
 	private readonly dotElements: HTMLElement[] = [];
 	private readonly bodyElements: HTMLElement[] = [];
 	private readonly previewElements: HTMLElement[] = [];
+
+	/**
+	 * 当前预览里那段代码样例 —— **直接持有引用**。
+	 *
+	 * 早先这里是回头用选择器找的：
+	 * 一是仓库规矩不允许用选择器取元素（脆），二是预览区是整片重建的，
+	 * 重建完再回头找，还得保证找到的是**当前**那一份。
+	 */
+	private codeSampleElement: HTMLElement | undefined;
+	/** 代码样例的每一行（与 `codeSampleElement` 同批构造）。 */
+	private codeSampleLines: readonly HTMLElement[] = [];
+	/** 光标元素（搬家时要先摘下来，再挂到新行末尾）。 */
+	private codeSampleCaret: HTMLElement | undefined;
 	private readonly footerElements: HTMLElement[] = [];
 
 	/** 每张卡的行绑定（与 `bodyElements` 一一对应）。 */
@@ -420,6 +434,16 @@ export class OlympiaOnboardingCards implements IDisposable {
 	/** 让卡片层整体淡出（进入动画开始时）。 */
 	setVisible(visible: boolean): void {
 		this.element.classList.toggle('hidden', !visible);
+	}
+
+	/**
+	 * 视口尺寸变了：重新量一次代码样例的可见行数，把光标挪到还看得见的最后一行。
+	 *
+	 * 窗口一变窄变矮，预览块就变矮，能显示的代码行数也跟着变 —— 光标还挂在原来那行，
+	 * 它可能已经掉进底部渐隐区（用户看不见光标），也可能停在一行早就被裁掉的位置。
+	 */
+	handleViewportResize(): void {
+		this.placeCodeCarets();
 	}
 
 	/**
@@ -799,6 +823,81 @@ export class OlympiaOnboardingCards implements IDisposable {
 			const descriptor = this.descriptorFor(index);
 			this.previewElements[index].replaceChildren(...descriptor.preview());
 		}
+		// 预览重建了，代码样例也就重建了 —— 光标得重新落到看得见的那一行。
+		this.placeCodeCarets();
+	}
+
+	/**
+	 * 把光标挪到「最后一条完全看得见的代码行」的末尾。
+	 *
+	 * 样例永远比可视高度长（字号是用户的，14px 时就已经装不下 11 行），底部还有一条渐隐。
+	 * 光标如果还挂在原始的最后一行，那行在渐隐区里 —— 用户根本看不见光标，
+	 * 「编辑器手感」这张卡想传达的东西就丢了。
+	 *
+	 * 判据：
+	 *  - 整体放得下 → 挂在最后一行（跟真编辑器一样，代码没截断）；
+	 *  - 放不下 → 挂在底部渐隐区**之外**（`OLYMPIA_ONBOARDING_CODE_CARET_ZONE`）的最后一行。
+	 */
+	private placeCodeCarets(): void {
+		const code = this.codeSampleElement;
+		const caret = this.codeSampleCaret;
+		const lines = this.codeSampleLines;
+		if (!code || !caret || lines.length === 0) {
+			return;
+		}
+		const target = this.lastVisibleCodeLine(code, lines);
+		caret.remove();
+		target.appendChild(caret);
+	}
+
+	/** 最后一条完全看得见的代码行。 */
+	private lastVisibleCodeLine(code: HTMLElement, lines: readonly HTMLElement[]): HTMLElement {
+		const last = lines[lines.length - 1];
+		const boxHeight = code.clientHeight;
+		// 还没接进文档（构造期）或者预览被隐藏（极矮窗口）时量不到高度 ——
+		// 这时候挂最后一行，等布局好了 `handleViewportResize` 会再挪一次。
+		if (boxHeight <= 0) {
+			return last;
+		}
+		if (code.scrollHeight <= boxHeight + 0.5) {
+			return last;
+		}
+		const lineHeight = this.codeLineHeight(code, lines);
+		if (lineHeight <= 0) {
+			return last;
+		}
+		const limit = boxHeight * OLYMPIA_ONBOARDING_CODE_CARET_ZONE;
+		let index = Math.floor(limit / lineHeight) - 1;
+		if (index < 0) {
+			index = 0;
+		}
+		if (index > lines.length - 1) {
+			index = lines.length - 1;
+		}
+		return lines[index];
+	}
+
+	/** 代码样例里一行的实际高度（px）。量不到就按字号和行高算。 */
+	private codeLineHeight(code: HTMLElement, lines: readonly HTMLElement[]): number {
+		const first = lines[0];
+		if (first) {
+			const measured = first.getBoundingClientRect().height;
+			if (measured > 0) {
+				return measured;
+			}
+		}
+		const fontSize = parseFloat(code.style.fontSize);
+		if (!isFinite(fontSize) || fontSize <= 0) {
+			return 0;
+		}
+		const raw = code.style.lineHeight.trim();
+		if (raw.endsWith('px')) {
+			const pixels = parseFloat(raw);
+			return isFinite(pixels) && pixels > 0 ? pixels : 0;
+		}
+		const ratio = parseFloat(raw);
+		// `.olympia-onboarding-code-line` 有 `min-height: 1.55em`，所以一行最少那么高。
+		return isFinite(ratio) && ratio > 0 ? fontSize * Math.max(ratio, 1.55) : fontSize * 1.55;
 	}
 
 	dispose(): void {
@@ -815,6 +914,11 @@ export class OlympiaOnboardingCards implements IDisposable {
 			this.valueRetryTimer = null;
 		}
 		this.valueRetryQueue.length = 0;
+		// 代码样例的引用也丢掉 —— 元素已经不在文档里了，
+		// 留着只会让「挪光标」往一个 detached 节点上挂。
+		this.codeSampleElement = undefined;
+		this.codeSampleLines = [];
+		this.codeSampleCaret = undefined;
 		this.element.remove();
 		// `flushRetryTimer` **故意不取消** —— 还没写下去的选择要继续写完，
 		// 不能因为引导已经消失就把用户的选择丢掉（见 scheduleFlushRetry 的说明）。
@@ -1729,6 +1833,7 @@ export class OlympiaOnboardingCards implements IDisposable {
 			[['plain', '}']]
 		];
 
+		const lineElements: HTMLElement[] = [];
 		for (const line of lines) {
 			const lineElement = document.createElement('div');
 			lineElement.className = 'olympia-onboarding-code-line';
@@ -1741,16 +1846,22 @@ export class OlympiaOnboardingCards implements IDisposable {
 				span.textContent = token[1];
 				lineElement.appendChild(span);
 			}
+			lineElements.push(lineElement);
 			code.appendChild(lineElement);
 		}
 
 		// 光标挂在最后一行末尾。
 		const lastLine = code.lastElementChild;
+		let caret: HTMLElement | undefined;
 		if (lastLine) {
-			const caret = document.createElement('span');
+			caret = document.createElement('span');
 			caret.className = 'olympia-onboarding-caret';
 			lastLine.appendChild(caret);
 		}
+		// **直接持有引用** —— 之后挪光标不用回头找元素（见 `codeSampleElement`）。
+		this.codeSampleElement = code;
+		this.codeSampleLines = lineElements;
+		this.codeSampleCaret = caret;
 		return code;
 	}
 

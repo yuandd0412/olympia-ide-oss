@@ -37,10 +37,29 @@
 /** 进入动画总时长（秒）。洞在这之前已经完全打开，极光 alpha 归零。 */
 export const OLYMPIA_ONBOARDING_ENTER_DURATION = 5.40;
 
-/** 卡片宽度 / 间距（px）。轨道步距 = 宽度 + 间距。 */
-export const OLYMPIA_ONBOARDING_CARD_WIDTH = 352;
+/**
+ * 卡片**外框**宽度 / 间距（px）。轨道步距 = 宽度 + 间距。
+ *
+ * 这里说的是外框（border-box），不是内容区：卡片有 24px 左右内边距和 1px 边框，
+ * 内容区只有 352px。外框 = 352 + 48 + 2 = 402。
+ *
+ * CSS 里 `.olympia-onboarding-card` 必须显式写 `box-sizing: border-box`，
+ * `.olympia-onboarding-track` 的宽度上限也必须是这个 402 —— 两边不一致的话，
+ * 轨道步距算出来的相邻卡片间隙就不是设计值（曾经是 352 对 402，差 50px，
+ * 相邻两张卡直接贴死）。
+ */
+export const OLYMPIA_ONBOARDING_CARD_WIDTH = 402;
 export const OLYMPIA_ONBOARDING_CARD_GAP = 34;
 export const OLYMPIA_ONBOARDING_CARD_STEP = OLYMPIA_ONBOARDING_CARD_WIDTH + OLYMPIA_ONBOARDING_CARD_GAP;
+
+/**
+ * 代码样例里光标能停的位置：盒子底部往上这么多以内算「看得见」。
+ *
+ * CSS 里 `.olympia-onboarding-code` 的底部渐隐从 90% 开始淡出 —— 光标必须留在
+ * 那片实心区里，否则它自己被淡化掉，用户根本看不见光标（「编辑器手感」这张卡就白做了）。
+ * 两边要一起改。
+ */
+export const OLYMPIA_ONBOARDING_CODE_CARET_ZONE = 0.9;
 
 /** 波前剥离的时间窗（秒）。 */
 export const OLYMPIA_ONBOARDING_REVEAL_START = 1.35;

@@ -303,6 +303,9 @@ export class OlympiaOnboarding implements IDisposable {
 			this.backdrop.resize(width, height);
 			this.resizeParticleCanvas(width, height);
 			this.updateSweepRects();
+			// 卡片层也要跟着量一次：窗口一变，预览块就变矮，能显示的代码行数变了，
+			// 光标得重新落到还看得见的最后一行。
+			this.cards.handleViewportResize();
 		}
 
 		if (this.enterRequested && this.enterStart === null) {
