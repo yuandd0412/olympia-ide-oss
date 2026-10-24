@@ -32,7 +32,6 @@ export const SOLVES_PATH_LABEL = `${OLYMPIA_FOLDER}/${SOLVES_FILE}`;
 /** 只留最近这么多条：再多的文件读起来慢，也没有人翻三百天以前。 */
 const MAX_RECORDS = 200;
 const RECORD_SETTING = 'train.recordSolves';
-const GOAL_SETTING = 'train.dailyGoal';
 const EMPTY_VALUE = '还没 AC 过题';
 
 /** 题面第一行的标题（`# P1001 A+B Problem`），记下来才知道这条记录长什么样。 */
@@ -127,18 +126,13 @@ export function solvesToday(records: readonly SolveRecord[], now = new Date()): 
 	return records.filter(r => dayKey(r.at) === today).length;
 }
 
-export function dailyGoal(): number {
-	const raw = vscode.workspace.getConfiguration('olympia').get<number>(GOAL_SETTING, 3);
-	return Number.isFinite(raw) && (raw as number) > 0 ? Math.floor(raw as number) : 3;
-}
-
 /** 面板那一行的值。 */
 export function solveSummary(records: readonly SolveRecord[]): string {
 	if (!records.length) {
 		return EMPTY_VALUE;
 	}
 	const streak = streakDays(records);
-	return `${records.length} 题 · 连续 ${streak} 天 · 今日 ${solvesToday(records)}/${dailyGoal()}`;
+	return `${records.length} 题 · 连续 ${streak} 天 · 今日 ${solvesToday(records)} 题`;
 }
 
 function formatWhen(at: string): string {
