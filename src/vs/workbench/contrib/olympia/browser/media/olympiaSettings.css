@@ -1,0 +1,194 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+/*
+ * Olympia 简化设置页样式。
+ *
+ * 变量一律用 --vscode-* 前缀：本 fork 的 stylelint 只认这个前缀，
+ * 用 --foreground / --editor-background 之类会被 lint 直接拒收。
+ */
+
+.olympiaSettings {
+	display: flex;
+	height: 100%;
+	overflow: hidden;
+	color: var(--vscode-foreground);
+	background-color: var(--vscode-editor-background);
+	/*
+	 * 字体和字号**故意不设**：workbench 根节点（.monaco-workbench）已经按平台
+	 * 设好了 font-family 和 font-size，本页是它的后代，直接继承即可。
+	 *
+	 * 而且 --vscode-font-family / --vscode-font-size 这两个变量在这个 fork 的
+	 * 变量名单里根本不存在（stylelint 会报 Unknown variable）—— 它们只在
+	 * TypeScript 内联样式里被用过，不在 CSS 变量表里。
+	 */
+}
+
+.olympiaSettings-nav {
+	flex: 0 0 180px;
+	overflow-y: auto;
+	padding: 16px 8px;
+	border-right: 1px solid var(--vscode-panel-border);
+	background-color: var(--vscode-sideBar-background);
+}
+
+.olympiaSettings-navItem {
+	display: block;
+	width: 100%;
+	margin: 0 0 2px;
+	padding: 6px 12px;
+	border: 0;
+	border-radius: 4px;
+	background: transparent;
+	color: var(--vscode-sideBar-foreground);
+	font-family: inherit;
+	font-size: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+
+.olympiaSettings-navItem:hover {
+	background-color: var(--vscode-list-hoverBackground);
+	color: var(--vscode-list-hoverForeground);
+}
+
+.olympiaSettings-navItem:focus-visible {
+	outline: 1px solid var(--vscode-focusBorder);
+	outline-offset: -1px;
+}
+
+.olympiaSettings-navItem-active {
+	background-color: var(--vscode-list-activeSelectionBackground);
+	color: var(--vscode-list-activeSelectionForeground);
+}
+
+.olympiaSettings-body {
+	flex: 1 1 auto;
+	overflow-y: auto;
+	padding: 24px 32px 96px;
+}
+
+.olympiaSettings-group {
+	max-width: 760px;
+	margin: 0 0 36px;
+}
+
+.olympiaSettings-groupTitle {
+	margin: 0 0 12px;
+	padding-bottom: 8px;
+	border-bottom: 1px solid var(--vscode-panel-border);
+	color: var(--vscode-foreground);
+	font-size: 1.1em;
+	font-weight: 600;
+}
+
+.olympiaSettings-row {
+	display: flex;
+	align-items: flex-start;
+	gap: 24px;
+	margin: 0 0 14px;
+	padding: 8px 10px;
+	border-radius: 4px;
+}
+
+.olympiaSettings-row:hover {
+	background-color: var(--vscode-list-hoverBackground);
+}
+
+.olympiaSettings-rowLabel {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.olympiaSettings-rowLabel label {
+	display: block;
+	color: var(--vscode-foreground);
+}
+
+.olympiaSettings-rowDesc {
+	margin-top: 3px;
+	color: var(--vscode-descriptionForeground);
+	font-size: 0.9em;
+	line-height: 1.5;
+}
+
+.olympiaSettings-rowControl {
+	flex: 0 0 320px;
+	display: flex;
+	justify-content: flex-end;
+	align-items: center;
+}
+
+.olympiaSettings-rowControl input[type="text"],
+.olympiaSettings-rowControl input[type="number"] {
+	width: 100%;
+	box-sizing: border-box;
+	padding: 4px 6px;
+	border: 1px solid var(--vscode-input-border, transparent);
+	border-radius: 2px;
+	background-color: var(--vscode-input-background);
+	color: var(--vscode-input-foreground);
+	font-family: inherit;
+	font-size: inherit;
+}
+
+.olympiaSettings-rowControl input:focus,
+.olympiaSettings-rowControl select:focus {
+	outline: 1px solid var(--vscode-focusBorder);
+	outline-offset: -1px;
+}
+
+.olympiaSettings-rowControl input[type="checkbox"] {
+	width: 18px;
+	height: 18px;
+	margin: 0;
+	cursor: pointer;
+}
+
+.olympiaSettings-rowControl select {
+	width: 100%;
+	box-sizing: border-box;
+	padding: 4px 6px;
+	border: 1px solid var(--vscode-dropdown-border, transparent);
+	border-radius: 2px;
+	background-color: var(--vscode-dropdown-background);
+	color: var(--vscode-dropdown-foreground);
+	font-family: inherit;
+	font-size: inherit;
+}
+
+.olympiaSettings-footer {
+	position: sticky;
+	bottom: 0;
+	max-width: 760px;
+	padding: 16px 10px;
+	border-top: 1px solid var(--vscode-panel-border);
+	background-color: var(--vscode-editor-background);
+}
+
+.olympiaSettings-advanced {
+	padding: 6px 14px;
+	border: 1px solid var(--vscode-button-border, transparent);
+	border-radius: 2px;
+	background-color: var(--vscode-button-secondaryBackground, transparent);
+	color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
+	font-family: inherit;
+	font-size: inherit;
+	cursor: pointer;
+}
+
+/*
+ * 上游主题色里没有 button.secondaryHoverForeground ——
+ * 只有 secondaryForeground 和 secondaryHoverBackground。这里沿用 secondaryForeground。
+ */
+.olympiaSettings-advanced:hover {
+	background-color: var(--vscode-button-secondaryHoverBackground);
+	color: var(--vscode-button-secondaryForeground);
+}
+
+.olympiaSettings-advanced:focus-visible {
+	outline: 1px solid var(--vscode-focusBorder);
+	outline-offset: 2px;
+}

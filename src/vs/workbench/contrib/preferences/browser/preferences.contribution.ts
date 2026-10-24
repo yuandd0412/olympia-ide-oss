@@ -51,6 +51,7 @@ import { PreferencesEditor } from './preferencesEditor.js';
 import { preferencesOpenSettingsIcon } from './preferencesIcons.js';
 import { IPreferencesRenderer, UserSettingsRenderer, WorkspaceSettingsRenderer } from './preferencesRenderers.js';
 import { SettingsEditor2, SettingsFocusContext } from './settingsEditor2.js';
+import { olympiaShouldInterceptSettings } from '../../olympia/browser/olympiaSettingsInterceptor.js';
 
 const SETTINGS_EDITOR_COMMAND_SEARCH = 'settings.action.search';
 
@@ -251,6 +252,22 @@ class PreferencesActionsContribution extends Disposable implements IWorkbenchCon
 			run(accessor: ServicesAccessor, args: string | IOpenSettingsActionOptions) {
 				// args takes a string for backcompat
 				const opts = typeof args === 'string' ? { query: args } : sanitizeOpenSettingsArgs(args);
+
+				// Olympia 简化设置页接管「无参打开设置」。
+				//
+				// 带 query / focusSearch / openToSide / revealSetting 的调用**仍然走原生页** ——
+				// 那些调用要的是「定位到某个具体设置项」，简化页没有搜索与 @id: 定位能力，
+				// 接管等于把用户丢在一屏无关内容上。
+				//
+				// 判据放在 contrib/olympia/browser/olympiaSettingsInterceptor.ts：那个文件是
+				// **零 import 的纯函数模块**，所以这里 import 它不会形成依赖环。
+				// 命令 id 用字面量而不是从 Olympia 模块 import —— 同样是怕成环；
+				// 代价是 id 在两处各写一次，`check-olympia-settings-page.mjs` 有断言强制两处一致。
+				if (olympiaShouldInterceptSettings(opts)) {
+					accessor.get(ICommandService).executeCommand('olympia.openSettings');
+					return undefined;
+				}
+
 				return accessor.get(IPreferencesService).openSettings({ ...opts });
 			}
 		}));
