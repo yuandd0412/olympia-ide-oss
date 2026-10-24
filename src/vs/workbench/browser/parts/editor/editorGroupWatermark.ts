@@ -19,6 +19,7 @@ import { IKeybindingService } from '../../../../platform/keybinding/common/keybi
 import { IStorageService, StorageScope, StorageTarget, WillSaveStateReason } from '../../../../platform/storage/common/storage.js';
 import { defaultKeybindingLabelStyles } from '../../../../platform/theme/browser/defaultStyles.js';
 import { IWorkspaceContextService, WorkbenchState } from '../../../../platform/workspace/common/workspace.js';
+import { getEditorEmptyStateRenderer, IEditorEmptyStateRenderer, onDidChangeEditorEmptyStateRenderer } from '../../../services/editor/browser/editorEmptyStateService.js';
 
 interface WatermarkEntry {
 	readonly id: string;
@@ -78,6 +79,8 @@ export class EditorGroupWatermark extends Disposable {
 
 	private readonly shortcuts: HTMLElement;
 	private readonly toolbarContainer: HTMLElement;
+	private readonly watermark: HTMLElement;
+	private readonly emptyStateSlot: HTMLElement;
 	private readonly transientDisposables = this._register(new DisposableStore());
 	private readonly keybindingLabels = this._register(new DisposableStore());
 
@@ -100,17 +103,25 @@ export class EditorGroupWatermark extends Disposable {
 
 		const elements = h('.editor-group-watermark-wrapper', [
 			h('.editor-group-watermark-toolbar-container@toolbarContainer'),
-			h('.editor-group-watermark', [
+			h('.editor-group-watermark@watermark', [
 				h('.watermark-container', [
 					h('.letterpress'),
 					h('.shortcuts@shortcuts'),
 				])
-			])
+			]),
+			// 空编辑区的**扩展点槽位**：注册了 `IEditorEmptyStateRenderer` 的时候，
+			// 自定义内容渲染到这里；没注册时它一直空着，上游占位页照常显示。
+			//
+			// 槽位的 class 名是内核自己的约定（`.editor-group-empty-state`），
+			// contrib 侧不需要知道它 —— 渲染器拿到的是**容器节点本身**。
+			h('.editor-group-empty-state@emptyStateSlot')
 		]);
 
 		append(container, elements.root);
 		this.shortcuts = elements.shortcuts;
 		this.toolbarContainer = elements.toolbarContainer;
+		this.watermark = elements.watermark;
+		this.emptyStateSlot = elements.emptyStateSlot;
 
 		this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, this.toolbarContainer, MenuId.EditorGroupWatermarkToolbar, {
 			hiddenItemStrategy: HiddenItemStrategy.NoHide,
@@ -119,6 +130,10 @@ export class EditorGroupWatermark extends Disposable {
 		}));
 
 		this.registerListeners();
+
+		// 渲染器可能是**后注册**的（产品自己的 contrib 要等 workbench 起来之后才注册），
+		// 所以要盯着这个事件：渲染器一到就重画，已经画好的组也会跟着切过去。
+		this._register(onDidChangeEditorEmptyStateRenderer(() => this.render()));
 
 		this.render();
 	}
@@ -161,10 +176,56 @@ export class EditorGroupWatermark extends Disposable {
 		clearNode(this.shortcuts);
 		this.transientDisposables.clear();
 
+		// ── 扩展点：空编辑区可以被外部渲染器接管 ──
+		//
+		// 上游这里渲染的是「VS Code 大 logo + 一堆快捷键提示」。产品定制（Olympia 首页）
+		// 通过 `IEditorEmptyStateRenderer` 把这一屏换掉。
+		//
+		// 没有注册渲染器时，下面的行为与上游**逐字相同**。
+		const renderer = getEditorEmptyStateRenderer();
+		if (this.enabled && renderer) {
+			this.renderCustomEmptyState(renderer);
+			return;
+		}
+
+		// 退回上游时把行内样式复位（行内样式的优先级高于上游 CSS，不复位就藏不住了），
+		// 同时清空扩展点槽位，免得上一轮的自定义内容留在那儿。
+		clearNode(this.emptyStateSlot);
+		this.watermark.style.display = '';
+		this.toolbarContainer.style.display = '';
+
 		if (!this.enabled) {
 			return;
 		}
 
+		this.renderUpstreamWatermark();
+	}
+
+	/**
+	 * 把空编辑区渲染成外部注册的内容。
+	 *
+	 * 上游那个 watermark 节点还留在 DOM 里（留着是为了没有渲染器时能原样退回去），
+	 * 但它必须藏起来：
+	 *  - 它的 `max-width: 272px` 会把内容压成一条窄柱；
+	 *  - letterpress 那个大 logo 会和自定义内容打架。
+	 *
+	 * 这里用**行内 style** 而不是 CSS：上游那条选择器带了
+	 * `.monaco-workbench .part.editor > .content .editor-group-container` 四层前缀，
+	 * 特异性远高于 contrib 里的样式，靠 CSS 覆盖是压不住的。
+	 */
+	private renderCustomEmptyState(renderer: IEditorEmptyStateRenderer): void {
+		this.watermark.style.display = 'none';
+		this.toolbarContainer.style.display = 'none';
+
+		renderer.render(this.emptyStateSlot);
+	}
+
+	/**
+	 * 上游原本的空编辑区占位页：VS Code 大 logo + 快捷键提示列表。
+	 *
+	 * 没有注册扩展点渲染器时走这条路；注册了就走 `renderCustomEmptyState()`。
+	 */
+	private renderUpstreamWatermark(): void {
 		const entries = this.filterEntries(this.workbenchState !== WorkbenchState.EMPTY ? workspaceEntries : emptyWindowEntries);
 		if (entries.length < EditorGroupWatermark.MINIMUM_ENTRIES) {
 			const additionalEntries = this.filterEntries(otherEntries);

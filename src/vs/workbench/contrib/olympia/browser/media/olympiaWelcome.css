@@ -4,22 +4,23 @@
  *--------------------------------------------------------------------------------------------*/
 
 /*
- * Olympia 开始页样式。
+ * Olympia 开始页（首页）容器样式。
  *
  * 红线（见 src/vs/workbench/contrib/modernUI/CSS_PERFORMANCE.md）：
  *  - 禁止 class substring 选择器（例如 [class*="xxx"]）
  *  - 禁止在 workbench / root 作用域使用 :has()
  *  - 动画只允许走 transform / opacity，不得动 width / height / top / left / margin / padding
  *
- * M1 只提供容器骨架；落地页布局与一镜到底动画的样式在原型评审通过后追加到这里。
+ * 这里只定义**容器**。真正的视觉在 `olympiaHome.css`（那份被三个落点共用）。
+ * 容器本身不做内边距 —— 留白由首页自己决定，否则两层内边距会叠在一起。
  */
 
 .olympiaWelcome {
 	box-sizing: border-box;
 	width: 100%;
 	height: 100%;
-	overflow: auto;
-	padding: 24px 28px;
+	overflow: hidden;
+	padding: 0;
 	color: var(--vscode-foreground);
 	background: var(--vscode-editor-background);
 	font-size: 13px;

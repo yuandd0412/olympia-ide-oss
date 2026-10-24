@@ -34,6 +34,7 @@ import { AccessibleViewRegistry } from '../../../../platform/accessibility/brows
 import { GettingStartedAccessibleView } from './gettingStartedAccessibleView.js';
 import { AgentSessionsWelcomePage } from '../../welcomeAgentSessions/browser/agentSessionsWelcome.js';
 import { IChatEntitlementService } from '../../../services/chat/common/chatEntitlementService.js';
+import { olympiaShouldInterceptWelcome } from '../../olympia/browser/olympiaHomeInterceptor.js';
 
 export * as icons from './gettingStartedIcons.js';
 
@@ -64,6 +65,20 @@ registerAction2(class extends Action2 {
 		const commandService = accessor.get(ICommandService);
 		const configurationService = accessor.get(IConfigurationService);
 		const chatEntitlementService = accessor.get(IChatEntitlementService);
+
+		// ── Olympia：「帮助 > 欢迎」接到我们自己的首页上 ──
+		//
+		// 判据在 contrib/olympia/browser/olympiaHomeInterceptor.ts（零 import 的纯函数）。
+		// 只有「完全无参」才接管 —— 带着 walkthrough id、或者表达了 toSide / inactive
+		// 意图的调用一律放行给上游，否则用户点「某一步的演练」会被我们改道。
+		//
+		// 命令 id 写**字面量**而不是 import：上游文件 import contrib 的常量会把两个
+		// 文件绑死，改一处忘另一处会变成静默的行为漂移。
+		// `check-olympia-home.mjs` 有一条断言强制两处字面量必须一致。
+		if (olympiaShouldInterceptWelcome({ walkthroughID, optionsOrToSide })) {
+			commandService.executeCommand('olympia.openHome');
+			return;
+		}
 
 		const toSide = typeof optionsOrToSide === 'object' ? optionsOrToSide.toSide : optionsOrToSide;
 		const inactive = typeof optionsOrToSide === 'object' ? optionsOrToSide.inactive : false;

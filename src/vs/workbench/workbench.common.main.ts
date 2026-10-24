@@ -406,6 +406,9 @@ import './contrib/welcomeOnboarding/browser/welcomeOnboarding.contribution.js';
 // Olympia 开始页（本产品自己的起始页，替代 VS Code 三段式欢迎页）
 import './contrib/olympia/browser/olympiaWelcome.contribution.js';
 
+// Olympia 首页（开始页内容 / 帮助>欢迎 / 空编辑区，三处共用一份视图）
+import './contrib/olympia/browser/olympiaHome.contribution.js';
+
 // Olympia 简化设置页（接管 workbench.action.openSettings：齿轮 / Ctrl+, / 菜单「设置」）
 import './contrib/olympia/browser/olympiaSettings.contribution.js';
 

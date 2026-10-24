@@ -1,0 +1,171 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+/*
+ * Olympia 首页样式。
+ *
+ * 红线（见 src/vs/workbench/contrib/modernUI/CSS_PERFORMANCE.md）：
+ *  - 禁止 class substring 选择器（例如 [class*="xxx"]）
+ *  - 禁止在 workbench / root 作用域使用 :has()
+ *  - 动画只允许走 transform / opacity
+ *
+ * 这份样式被三个落点共用：
+ *  1. 开始页（`olympia-welcome` scheme 的 EditorPane）；
+ *  2. 空编辑区（上游 watermark 槽位）；
+ *  3. 「帮助 > 欢迎」—— 打开的就是第 1 种。
+ *
+ * 颜色全部走 `--vscode-*` 主题变量，所以明暗主题和用户自定义主题都能跟上；
+ * 不写死任何具体色值。
+ */
+
+/* ---------------------------------------------------------------------------------------------
+ * 首页外框
+ * --------------------------------------------------------------------------------------------- */
+
+.olympia-home {
+	box-sizing: border-box;
+	width: 100%;
+	height: 100%;
+	overflow: auto;
+	padding: 44px 32px 28px;
+	color: var(--vscode-foreground);
+	background: var(--vscode-editor-background);
+	font-size: 13px;
+	line-height: 1.55;
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * 品牌区
+ * --------------------------------------------------------------------------------------------- */
+
+.olympia-home-header {
+	max-width: 880px;
+	margin: 0 auto 28px;
+}
+
+.olympia-home-brand {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 14px;
+}
+
+.olympia-home-brand-dot {
+	width: 9px;
+	height: 9px;
+	border-radius: 50%;
+	background: var(--vscode-textLink-foreground);
+}
+
+.olympia-home-brand-word {
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 2.5px;
+	color: var(--vscode-descriptionForeground);
+}
+
+.olympia-home-title {
+	margin: 0;
+	font-size: 26px;
+	font-weight: 600;
+	line-height: 1.3;
+}
+
+.olympia-home-subtitle {
+	margin: 8px 0 0;
+	font-size: 14px;
+	color: var(--vscode-descriptionForeground);
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * 快捷入口网格
+ * --------------------------------------------------------------------------------------------- */
+
+.olympia-home-grid {
+	max-width: 880px;
+	margin: 0 auto;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	gap: 12px;
+}
+
+.olympia-home-card {
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 4px;
+	padding: 14px 16px 16px;
+	border: 1px solid var(--vscode-widget-border);
+	border-radius: 6px;
+	background: var(--vscode-editorWidget-background);
+	color: var(--vscode-foreground);
+	font-family: inherit;
+	font-size: 13px;
+	text-align: left;
+	cursor: pointer;
+}
+
+.olympia-home-card:hover {
+	border-color: var(--vscode-focusBorder);
+	background: var(--vscode-list-hoverBackground);
+}
+
+.olympia-home-card:focus {
+	outline: 1px solid var(--vscode-focusBorder);
+	outline-offset: 1px;
+}
+
+.olympia-home-card-icon {
+	margin-bottom: 6px;
+	font-size: 20px;
+	line-height: 1;
+	color: var(--vscode-textLink-foreground);
+}
+
+.olympia-home-card-label {
+	font-weight: 600;
+	font-size: 13px;
+}
+
+.olympia-home-card-desc {
+	color: var(--vscode-descriptionForeground);
+	font-size: 12px;
+	line-height: 1.5;
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * 页脚
+ * --------------------------------------------------------------------------------------------- */
+
+.olympia-home-footer {
+	max-width: 880px;
+	margin: 22px auto 0;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-size: 12px;
+	color: var(--vscode-descriptionForeground);
+}
+
+.olympia-home-footer-link {
+	padding: 0;
+	border: none;
+	background: none;
+	color: var(--vscode-textLink-foreground);
+	font-family: inherit;
+	font-size: 12px;
+	cursor: pointer;
+}
+
+.olympia-home-footer-link:hover {
+	color: var(--vscode-textLink-activeForeground);
+	text-decoration: underline;
+}
+
+.olympia-home-footer-link:focus {
+	outline: 1px solid var(--vscode-focusBorder);
+	outline-offset: 2px;
+}

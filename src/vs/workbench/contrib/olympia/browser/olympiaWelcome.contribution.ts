@@ -41,6 +41,12 @@ export const OLYMPIA_START_PAGE_CONFIGURATION_KEY = 'olympia.startPage';
  */
 export const OLYMPIA_START_PAGE_INTRO_ANIMATION_CONFIGURATION_KEY = 'olympia.startPageIntroAnimation';
 
+/**
+ * 「编辑器区为空时显示 Olympia 首页」开关定义在 `olympiaHomeEmptyState.ts` ——
+ * 它管的是「空编辑区」这个落点，不是开始页，所以不放这里。
+ */
+import { OLYMPIA_HOME_EMPTY_STATE_CONFIGURATION_KEY } from './olympiaHomeEmptyState.js';
+
 const configurationRegistry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration);
 configurationRegistry.registerConfiguration({
 	id: 'olympia',
@@ -59,6 +65,12 @@ configurationRegistry.registerConfiguration({
 			type: 'boolean',
 			default: true,
 			description: localize('olympia.startPageIntroAnimation', "首次启动时播放 Olympia 开始引导：动态背景 + 卡片配置 + 无介绍的进入动画。关闭后直接进入开始页。")
+		},
+		[OLYMPIA_HOME_EMPTY_STATE_CONFIGURATION_KEY]: {
+			scope: ConfigurationScope.RESOURCE,
+			type: 'boolean',
+			default: true,
+			description: localize('olympia.home.emptyState', "编辑器区为空时显示 Olympia 首页。关闭后恢复 VS Code 默认的快捷键提示。")
 		},
 	}
 });
