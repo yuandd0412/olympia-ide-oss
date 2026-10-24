@@ -52,15 +52,6 @@ export const OLYMPIA_ONBOARDING_CARD_WIDTH = 402;
 export const OLYMPIA_ONBOARDING_CARD_GAP = 34;
 export const OLYMPIA_ONBOARDING_CARD_STEP = OLYMPIA_ONBOARDING_CARD_WIDTH + OLYMPIA_ONBOARDING_CARD_GAP;
 
-/**
- * 代码样例里光标能停的位置：盒子底部往上这么多以内算「看得见」。
- *
- * CSS 里 `.olympia-onboarding-code` 的底部渐隐从 90% 开始淡出 —— 光标必须留在
- * 那片实心区里，否则它自己被淡化掉，用户根本看不见光标（「编辑器手感」这张卡就白做了）。
- * 两边要一起改。
- */
-export const OLYMPIA_ONBOARDING_CODE_CARET_ZONE = 0.9;
-
 /** 波前剥离的时间窗（秒）。 */
 export const OLYMPIA_ONBOARDING_REVEAL_START = 1.35;
 export const OLYMPIA_ONBOARDING_REVEAL_END = 2.25;
@@ -70,15 +61,24 @@ export const OLYMPIA_ONBOARDING_REVEAL_END = 2.25;
  *
  * 暗角是**给极光用的电影感压角**，不是给工作台用的滤镜。所以它必须在
  * `REVEAL_END`（洞完全打开、工作台整屏可见）之前归零 —— 否则真实工作台会被
- * 压着一层最高 35% 的黑，最重要的「揭示工作台」那一拍整个发闷。
+ * 压着一层最高 24% 的黑，最重要的「揭示工作台」那一拍整个发闷。
  *
  * 归零之后再也不许升起来：那段时间工作台正在「通电」，任何压暗都是噪音。
+ *
+ * ## 为什么峰值是 0.24 而不是 0.35
+ *
+ * 压角是用来**收拢视线**的，不是用来**关灯**的。峰值 0.35 叠上 CSS 里 0.95 的
+ * 边缘不透明度，等于画面四角的实际压暗接近 33% —— 那读作「有人在推亮度推子」，
+ * 是最典型的廉价转场手法。0.24 配上冷蓝黑的边缘色温，读作景深而不是遮光。
+ *
+ * 这个数只出现在这一个地方：抓帧脚本的 `readTimeline()` 直接从这里读，
+ * 所以改它不会让「按观测值反解时间」那套镜像失配。
  */
 export const OLYMPIA_ONBOARDING_VIGNETTE_RISE_START = 0.95;
 export const OLYMPIA_ONBOARDING_VIGNETTE_RISE_END = 1.45;
 export const OLYMPIA_ONBOARDING_VIGNETTE_FALL_START = 1.45;
 export const OLYMPIA_ONBOARDING_VIGNETTE_FALL_END = 2.25;
-export const OLYMPIA_ONBOARDING_VIGNETTE_PEAK = 0.35;
+export const OLYMPIA_ONBOARDING_VIGNETTE_PEAK = 0.24;
 
 /** 卡片消散的时间窗（秒）。 */
 export const OLYMPIA_ONBOARDING_DISSOLVE_END = 0.60;
@@ -212,15 +212,42 @@ export interface OlympiaOnboardingParticle {
 	readonly size: number;
 	/** true = 飞向中心；false = 向外飘散。 */
 	readonly inward: boolean;
-	/** 摆动相位。 */
-	readonly wobble: number;
+	/**
+	 * 景深层：0.45（远）~1（近）。
+	 *
+	 * 尺寸、亮度、拖尾长度**共用**这一个数 —— 四个属性各给一份随机数的话，
+	 * 就会出现「又大又暗」「又小又亮」这种互相打架的组合，一眼看就不是真实的空间。
+	 */
+	readonly depth: number;
+	/**
+	 * 弧线旋向与强度：-1..1。
+	 *
+	 * 0 = 直线。粒子沿直线飞行是廉价感的最大单点 —— 现实里没有任何东西在真空中
+	 * 走绝对直线。这里给它一个**起末归零**的法向弓形偏移：起飞和落点都在直线上，
+	 * 中途鼓出去一点，像被中心的引力掰弯了。
+	 */
+	readonly swirl: number;
+	/** 汇聚目标在光缝上的横向偏移（px）。 */
+	readonly seamX: number;
+	/** 汇聚目标相对光缝的纵向偏移（px）。 */
+	readonly seamY: number;
+	/** true = 暖白金（主体），false = 冷白（配角）。 */
+	readonly warm: boolean;
 }
 
 /** 每张卡化出的粒子数。 */
 const OLYMPIA_ONBOARDING_PARTICLES_PER_CARD = 26;
 
+/**
+ * 汇聚目标所在的**光缝**在视口高度里的位置（比例）。
+ *
+ * CSS 里 `.olympia-onboarding-core` 的 `top` 与粒子汇聚目标必须用同一个数，
+ * 否则粒子会飞向一条看不见的线。宿主每帧按真实视口高度把它换算成像素。
+ */
+export const OLYMPIA_ONBOARDING_SEAM_Y = 0.44;
+
 /** 参与卡片配置的卡片数。 */
-export const OLYMPIA_ONBOARDING_CARD_COUNT = 4;
+export const OLYMPIA_ONBOARDING_CARD_COUNT = 3;
 
 function buildParticles(): readonly OlympiaOnboardingParticle[] {
 	const particles: OlympiaOnboardingParticle[] = [];
@@ -236,8 +263,13 @@ function buildParticles(): readonly OlympiaOnboardingParticle[] {
 				delay: OLYMPIA_ONBOARDING_PARTICLE_START + (index % 2 === 0 ? 0 : OLYMPIA_ONBOARDING_PARTICLE_LATE_OFFSET) + olympiaOnboardingHash2(k * 4.7) * 0.42,
 				duration: 0.62 + olympiaOnboardingHash2(k * 5.3) * 0.55,
 				size: 1.1 + olympiaOnboardingHash1(k * 6.1) * 2.1,
-				inward: olympiaOnboardingHash1(k) < 0.72,
-				wobble: olympiaOnboardingHash1(k * 7.3) * Math.PI * 2,
+				// 绝大多数粒子是「吸入」的：向外飘散的那一成只是画面噪音。
+				inward: olympiaOnboardingHash1(k) < 0.88,
+				depth: 0.45 + olympiaOnboardingHash1(k * 8.9) * 0.55,
+				swirl: olympiaOnboardingHash2(k * 9.7) * 2 - 1,
+				seamX: (olympiaOnboardingHash1(k * 11.3) * 2 - 1) * 240,
+				seamY: (olympiaOnboardingHash2(k * 12.9) * 2 - 1) * 3,
+				warm: olympiaOnboardingHash1(k * 14.1) < 0.88,
 			});
 		}
 	}
@@ -397,7 +429,9 @@ export function olympiaOnboardingFrame(enterTime: number, viewportWidth: number)
 	};
 }
 
-/** 一张卡片在某一帧的摆放。 */
+/**
+ * 一张卡片在某一帧的摆放。
+ */
 export interface OlympiaOnboardingCardLayout {
 	readonly translateX: number;
 	readonly translateY: number;
@@ -406,6 +440,22 @@ export interface OlympiaOnboardingCardLayout {
 	readonly zIndex: number;
 	readonly interactive: boolean;
 }
+
+/**
+ * 卡片消散的**错峰量**（秒）。
+ *
+ * 每张卡比轨道中心远一档，就**早**这么多熄 —— 画面于是向内塌缩：
+ * 两端的卡先化掉，中心的卡最后化掉。
+ */
+export const OLYMPIA_ONBOARDING_CARD_STAGGER = 0.09;
+
+/**
+ * 单张卡从「开始熄」到「完全化掉」的时长（秒）。
+ *
+ * 加上错峰之后，最内侧的一张卡在 `0.09 + 0.42 = 0.51s` 才彻底化掉 ——
+ * 仍然早于粒子起飞的 0.60s，不会出现「卡片还剩半张、星光已经从同一处冒出来」的重影。
+ */
+export const OLYMPIA_ONBOARDING_CARD_FADE = 0.42;
 
 /**
  * 计算第 `index` 张卡在轨道位置 `position`（浮点）上的摆放。
@@ -419,11 +469,29 @@ export function olympiaOnboardingCardLayout(index: number, position: number, dis
 	const scale = 1 - distance * 0.055;
 	// 二级衰减：|delta| > 1 的卡片快速淡出，避免被视口边缘截断成「半截字」。
 	const fade = olympiaOnboardingClamp(1 - Math.max(0, distance - 1) * 1.6, 0, 1);
-	const opacity = olympiaOnboardingClamp(1 - distance * 0.50, 0, 1) * fade * dissolve;
+
+	// 每张卡**各自**的消散进度。
+	//
+	// `dissolve` 是全局的存留系数（1 = 完整，0 = 全部化成星光），它本身没有先后。
+	// 四张卡同时淡出读作「幻灯片叠化」—— 一个平面运动，不像一次事件。
+	// 所以先把它换算回相对时间，再按「离轨道中心多远」错开：
+	// 两端的卡先熄，中心的卡最后熄，画面于是**向内塌缩**。
+	const elapsed = (1 - dissolve) * OLYMPIA_ONBOARDING_DISSOLVE_END;
+	const order = Math.abs(index - (OLYMPIA_ONBOARDING_CARD_COUNT - 1) / 2);
+	const local = olympiaOnboardingClamp(
+		(elapsed - ((OLYMPIA_ONBOARDING_CARD_COUNT - 1) / 2 - order) * OLYMPIA_ONBOARDING_CARD_STAGGER) / OLYMPIA_ONBOARDING_CARD_FADE,
+		0,
+		1
+	);
+	const own = 1 - local;
+
+	const opacity = olympiaOnboardingClamp(1 - distance * 0.50, 0, 1) * fade * own;
 	return {
 		translateX: delta * OLYMPIA_ONBOARDING_CARD_STEP,
-		translateY: Math.abs(delta) * 10,
-		scale,
+		// 塌缩时轻微上飘：失重感，比原地淡出高级。
+		translateY: Math.abs(delta) * 10 - 18 * local,
+		// 塌缩：化开的同时缩 7%，像被吸进去。
+		scale: scale * (1 - 0.07 * local),
 		opacity,
 		zIndex: 100 - Math.round(distance * 10),
 		interactive: distance < 0.5 && dissolve >= 1,

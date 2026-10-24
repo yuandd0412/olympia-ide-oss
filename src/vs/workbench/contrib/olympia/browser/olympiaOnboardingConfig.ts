@@ -38,7 +38,6 @@ export const OLYMPIA_CONFIG_COMPILER_OPTIMIZATION = 'olympia.compiler.optimizati
 
 /** 评测 / 训练（`olympia-onboarding` 扩展）。 */
 export const OLYMPIA_CONFIG_JUDGE_MEMORY_LIMIT = 'olympia.judge.memoryLimitMb';
-export const OLYMPIA_CONFIG_TRAIN_DAILY_GOAL = 'olympia.train.dailyGoal';
 export const OLYMPIA_CONFIG_TRAIN_RECORD_SOLVES = 'olympia.train.recordSolves';
 export const OLYMPIA_CONFIG_CHECK_ENABLED = 'olympia.check.enabled';
 
@@ -63,7 +62,6 @@ export const OLYMPIA_ONBOARDING_CONFIG_DEFAULTS: Readonly<Record<string, unknown
 	[OLYMPIA_CONFIG_COMPILER_PROFILE]: 'luogu',
 	[OLYMPIA_CONFIG_COMPILER_OPTIMIZATION]: 'none',
 	[OLYMPIA_CONFIG_JUDGE_MEMORY_LIMIT]: 0,
-	[OLYMPIA_CONFIG_TRAIN_DAILY_GOAL]: 3,
 	[OLYMPIA_CONFIG_TRAIN_RECORD_SOLVES]: true,
 	[OLYMPIA_CONFIG_CHECK_ENABLED]: true,
 	[OLYMPIA_CONFIG_PROBLEMS_DIR]: '.olympia/problems',

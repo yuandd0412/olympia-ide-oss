@@ -22,9 +22,12 @@ import {
 	OLYMPIA_ONBOARDING_ENTER_DURATION,
 	OLYMPIA_ONBOARDING_PARTICLES,
 	OLYMPIA_ONBOARDING_PARTICLE_WINDOW,
-	olympiaOnboardingEaseOutCubic,
+	OLYMPIA_ONBOARDING_SEAM_Y,
+	OLYMPIA_ONBOARDING_SWEEPS,
+	olympiaOnboardingClamp,
 	olympiaOnboardingFrame,
 	olympiaOnboardingSweepTravel,
+	OlympiaOnboardingRevealGeometry,
 	OlympiaOnboardingSweepState,
 	OlympiaOnboardingSweepTarget
 } from './olympiaOnboardingTimeline.js';
@@ -73,8 +76,16 @@ import {
 /** overlay 相对工作台的 z-index。盖住标题栏（2500），但让开窗口按钮（3000）、快速输入（2550）、对话框（2575）、通知（2545）。 */
 const OLYMPIA_ONBOARDING_Z_INDEX = 2530;
 
-/** 扫光带宽（px）。 */
-const OLYMPIA_ONBOARDING_SWEEP_BAND = 140;
+/**
+ * 扫光带宽（px）。
+ *
+ * 从 140 收到 128：带宽越窄，光带越像「一道刀锋」而不是「一块柔光板」。
+ * 柔光板扫过去的时候边界是糊的，糊边界读作「贴图在动」；窄带 + 硬核才有方向感。
+ *
+ * 改这个数是安全的：几何门（`analyze-sweep-bands.mjs`）的带宽和位移**全部从 DOM 矩形实测**，
+ * 不是从这里读常量 —— 所以脚本自动跟着变。
+ */
+const OLYMPIA_ONBOARDING_SWEEP_BAND = 128;
 
 /**
  * 每个部件对应的工作台 part。
@@ -90,6 +101,17 @@ const OLYMPIA_ONBOARDING_SWEEP_PARTS: readonly [OlympiaOnboardingSweepTarget, Pa
 	['sidebar', Parts.SIDEBAR_PART],
 	['statusbar', Parts.STATUSBAR_PART],
 ];
+
+/**
+ * 强调拍：整段扫光演出里**唯一**不一样的那一道 —— 最早开始的那道。
+ *
+ * 五道扫光同强度同颜色读作「一段流水」；有一道不一样，读者才读成「点亮了」。
+ *
+ * 它是**静态的设计决定**，所以在构造期一次性定好，不在每帧的渲染分支里判断 ——
+ * 那样做既没有意义，又会让「扫光方向必须来自 axis」这条约束变得难以判断。
+ */
+const OLYMPIA_ONBOARDING_ACCENT_SWEEP: OlympiaOnboardingSweepTarget =
+	OLYMPIA_ONBOARDING_SWEEPS.reduce((a, b) => (a.start <= b.start ? a : b)).id;
 
 export class OlympiaOnboarding implements IDisposable {
 
@@ -127,6 +149,7 @@ export class OlympiaOnboarding implements IDisposable {
 	private readonly particleContext: CanvasRenderingContext2D;
 	private readonly coreElement: HTMLElement;
 	private readonly flashElement: HTMLElement;
+	private readonly rimElement: HTMLElement;
 	private readonly vignetteElement: HTMLElement;
 	private readonly sweepElements = new Map<OlympiaOnboardingSweepTarget, HTMLElement>();
 
@@ -158,6 +181,8 @@ export class OlympiaOnboarding implements IDisposable {
 
 	private viewportWidth = 0;
 	private viewportHeight = 0;
+	/** 光缝在视口里的像素 y。粒子汇聚目标、光缝本体、点火条三者必须落在同一条线上。 */
+	private seamY = -1;
 	private particleOrigins: { x: number; y: number }[] = [];
 	private sweepRects = new Map<OlympiaOnboardingSweepTarget, DOMRect>();
 
@@ -197,6 +222,15 @@ export class OlympiaOnboarding implements IDisposable {
 		this.fxElement.appendChild(this.particleCanvas);
 		this.particleContext = this.particleCanvas.getContext('2d')!;
 
+		// 洞缘环：波前撕开极光时的那道亮边。
+		//
+		// 它**必须**是独立的 DOM 层，不能画回背景 canvas —— 背景 canvas 是
+		// 「不透明极光」，往它上面补像素会破坏 `check-backdrop-continuity` 的
+		// 洞 alpha 单调判据（C1）。独立 DOM 层不碰背景像素。
+		this.rimElement = document.createElement('div');
+		this.rimElement.className = 'olympia-onboarding-rim';
+		this.fxElement.appendChild(this.rimElement);
+
 		this.coreElement = document.createElement('div');
 		this.coreElement.className = 'olympia-onboarding-core';
 		this.fxElement.appendChild(this.coreElement);
@@ -204,6 +238,9 @@ export class OlympiaOnboarding implements IDisposable {
 		for (const [id] of OLYMPIA_ONBOARDING_SWEEP_PARTS) {
 			const sweep = document.createElement('div');
 			sweep.className = 'olympia-onboarding-sweep';
+			if (id === OLYMPIA_ONBOARDING_ACCENT_SWEEP) {
+				sweep.classList.add('accent');
+			}
 			this.fxElement.appendChild(sweep);
 			this.sweepElements.set(id, sweep);
 		}
@@ -303,9 +340,8 @@ export class OlympiaOnboarding implements IDisposable {
 			this.backdrop.resize(width, height);
 			this.resizeParticleCanvas(width, height);
 			this.updateSweepRects();
-			// 卡片层也要跟着量一次：窗口一变，预览块就变矮，能显示的代码行数变了，
-			// 光标得重新落到还看得见的最后一行。
-			this.cards.handleViewportResize();
+			// 光缝 / 点火条的位置跟着真实视口走 —— CSS 里写死的 top:44% 只是兜底。
+			this.layoutFx();
 		}
 
 		if (this.enterRequested && this.enterStart === null) {
@@ -321,6 +357,7 @@ export class OlympiaOnboarding implements IDisposable {
 		this.cards.render(timestamp, frame.cardDissolve);
 		this.renderParticles(frame.particleProgress);
 		this.renderCore(frame.coreScale, frame.coreOpacity);
+		this.renderRim(frame.reveal);
 		this.flashElement.style.opacity = frame.flashOpacity.toFixed(3);
 		this.vignetteElement.style.opacity = frame.vignetteOpacity.toFixed(3);
 		this.renderSweeps(frame.sweeps);
@@ -503,6 +540,27 @@ export class OlympiaOnboarding implements IDisposable {
 		}
 	}
 
+	/**
+	 * 画星光粒子。
+	 *
+	 * ## 这一段曾经是最廉价的地方
+	 *
+	 * 老实现是：粒子从卡片中心**沿直线**飞向画面中心，颜色一律冷白，
+	 * 一个圆点，飞到哪儿算哪儿。结果读作「一圈小圆点在飞」。
+	 *
+	 * 现在改成四件事：
+	 *
+	 * 1. **持续加速的吸入**（`local^1.7`）—— 起飞慢、收尾快，像被引力掰过去，
+	 *    而不是匀速平移。
+	 * 2. **法向弓形弧线** —— 起末落回直线上，中途鼓出去。现实里没有任何东西在真空中
+	 *    走绝对直线；直线是廉价感的最大单点。
+	 * 3. **有方向的光斑 + 两段拖尾** —— 光是有朝向的，不是无头苍蝇。
+	 * 4. **汇聚目标是光缝**，不是画面中心 —— 粒子被吸进一道**可见的**缝里，
+	 *    才有「能量被收进某处」的意思。
+	 *
+	 * 景深（`depth`）统一决定尺寸、亮度、拖尾长度 —— 四个属性各给一份随机数的话，
+	 * 就会出现「又大又暗」「又小又亮」这种互相打架的组合，一眼就不是真实的空间。
+	 */
 	private renderParticles(progress: number): void {
 		const ctx = this.particleContext;
 		ctx.clearRect(0, 0, this.viewportWidth, this.viewportHeight);
@@ -512,7 +570,10 @@ export class OlympiaOnboarding implements IDisposable {
 
 		const seconds = progress * OLYMPIA_ONBOARDING_PARTICLE_WINDOW;
 		const centerX = this.viewportWidth / 2;
-		const centerY = this.viewportHeight / 2;
+		const seamY = this.seamY >= 0 ? this.seamY : this.viewportHeight * OLYMPIA_ONBOARDING_SEAM_Y;
+
+		// 加色混合：粒子之间叠在一起会自然变亮，像真的光。
+		ctx.globalCompositeOperation = 'lighter';
 
 		for (const particle of OLYMPIA_ONBOARDING_PARTICLES) {
 			const local = (seconds - particle.delay) / particle.duration;
@@ -524,42 +585,81 @@ export class OlympiaOnboarding implements IDisposable {
 				continue;
 			}
 
-			const eased = olympiaOnboardingEaseOutCubic(local);
 			const startX = origin.x + Math.cos(particle.angle) * particle.radius;
 			const startY = origin.y + Math.sin(particle.angle) * particle.radius;
 
-			let x: number;
-			let y: number;
-			if (particle.inward) {
-				x = startX + (centerX - startX) * eased;
-				y = startY + (centerY - startY) * eased;
-			} else {
-				x = startX + Math.cos(particle.angle) * eased * 240;
-				y = startY + Math.sin(particle.angle) * eased * 240;
+			// 汇聚目标：光缝上的一段。粒子各自带一个横纵偏移，于是汇聚成的是
+			// 「一条缝」，而不是一个点 —— 点只会读成聚拢，缝才读成能量被收进某处。
+			// 少数向外飘的粒子（12%）不参与汇聚，它们是画面噪音的残留。
+			const targetX = particle.inward
+				? centerX + particle.seamX
+				: startX + Math.cos(particle.angle) * 260;
+			const targetY = particle.inward
+				? seamY + particle.seamY
+				: startY + Math.sin(particle.angle) * 260;
+
+			// 持续加速：慢起飞、快收尾。
+			const pull = Math.pow(local, 1.7);
+			const dx = targetX - startX;
+			const dy = targetY - startY;
+			let x = startX + dx * pull;
+			let y = startY + dy * pull;
+
+			// 法向弓形：沿路径法线鼓出去，起末归零。
+			const dist = Math.hypot(dx, dy) || 1;
+			const nx = -dy / dist;
+			const ny = dx / dist;
+			const bow = Math.sin(local * Math.PI) * particle.swirl * Math.min(96, dist * 0.24);
+			x += nx * bow;
+			y += ny * bow;
+
+			// 速度方向：拉长光斑 + 定位拖尾都要用它。
+			const accel = 1.7 * Math.pow(local, 0.7);
+			const bowRate = bow * Math.PI * Math.cos(local * Math.PI);
+			const vx = dx * accel + nx * bowRate;
+			const vy = dy * accel + ny * bowRate;
+			const speed = Math.hypot(vx, vy);
+			const ux = speed > 1e-4 ? vx / speed : 0;
+			const uy = speed > 1e-4 ? vy / speed : 0;
+			const heading = Math.atan2(uy, ux);
+
+			// 景深：尺寸 / 亮度 / 拖尾长度共用一个数。
+			const depth = particle.depth;
+			const size = particle.size * (0.5 + depth * 0.9);
+			// 前 18% 淡入（不是「一亮到底」），末段阻尼衰减（被光缝吸进去）。
+			const alpha = Math.min(1, local / 0.18) * Math.pow(1 - local, 1.2) * (0.34 + depth * 0.66);
+
+			// 暖白金是主体，冷白是配角。全部冷白 = 没有焦点。
+			const halo = particle.warm ? '255,206,140' : '138,178,255';
+			const core = particle.warm ? '255,247,231' : '216,233,255';
+
+			// 两段递减的短影：光有方向，所以有拖尾。
+			const trail = (7 + depth * 18) * (0.35 + local * 0.9);
+			for (let seg = 1; seg <= 2; seg++) {
+				const back = seg / 3;
+				ctx.globalAlpha = alpha * (seg === 1 ? 0.32 : 0.15);
+				ctx.fillStyle = `rgb(${halo})`;
+				ctx.beginPath();
+				ctx.ellipse(x - ux * trail * back, y - uy * trail * back, size * (1.05 - back * 0.3), size * 0.5, heading, 0, Math.PI * 2);
+				ctx.fill();
 			}
 
-			// 末段飘散：让轨迹不是一条死板的直线。
-			const wobble = (1 - local) * 9;
-			x += Math.cos(particle.wobble + local * 12.566) * wobble;
-			y += Math.sin(particle.wobble + local * 12.566) * wobble;
-
-			const alpha = Math.sin(local * Math.PI) * 0.95;
-			// 辉光用两层圆叠出来，**不用 shadowBlur** —— 全分辨率 shadowBlur 是帧率杀手
-			// （headless 软件渲染下实测能掉到 11fps）。
+			// 主体：沿速度方向拉长的光斑 + 里面那颗更亮的核心。
 			ctx.globalAlpha = alpha * 0.28;
-			ctx.fillStyle = 'rgb(142,186,255)';
+			ctx.fillStyle = `rgb(${halo})`;
 			ctx.beginPath();
-			ctx.arc(x, y, particle.size * 3.2, 0, Math.PI * 2);
+			ctx.ellipse(x, y, size * 2.9, size * 1.1, heading, 0, Math.PI * 2);
 			ctx.fill();
 
 			ctx.globalAlpha = alpha;
-			ctx.fillStyle = 'rgb(228,241,255)';
+			ctx.fillStyle = `rgb(${core})`;
 			ctx.beginPath();
-			ctx.arc(x, y, particle.size, 0, Math.PI * 2);
+			ctx.ellipse(x, y, size * 1.5, size * 0.6, heading, 0, Math.PI * 2);
 			ctx.fill();
 		}
 
 		ctx.globalAlpha = 1;
+		ctx.globalCompositeOperation = 'source-over';
 	}
 
 	//#endregion
@@ -648,6 +748,61 @@ export class OlympiaOnboarding implements IDisposable {
 	private renderCore(scale: number, opacity: number): void {
 		this.coreElement.style.transform = `scale(${scale.toFixed(4)})`;
 		this.coreElement.style.opacity = opacity.toFixed(3);
+	}
+
+	/**
+	 * 把光缝和点火条放到真实视口里的那条线上。
+	 *
+	 * 三者必须落在**同一像素**上：粒子汇聚目标、光缝本体、点火条。
+	 * 差几像素的话，粒子会飞向一条看不见的线 —— 观感上就是「粒子吸到一半断了」。
+	 *
+	 * CSS 里写死的 `top: 44%` 只是首帧兜底（视口还没量到时），量到之后一律以这里为准。
+	 */
+	private layoutFx(): void {
+		const seamY = Math.round((this.viewportHeight || 0) * OLYMPIA_ONBOARDING_SEAM_Y);
+		if (seamY === this.seamY) {
+			return;
+		}
+		this.seamY = seamY;
+		this.coreElement.style.top = `${seamY}px`;
+		this.flashElement.style.top = `${seamY}px`;
+	}
+
+	/**
+	 * 洞缘环：波前撕开极光时的那道亮边。
+	 *
+	 * ## 为什么必须是独立 DOM 层
+	 *
+	 * 洞是在背景 canvas 上用 `destination-out` 擦出来的 —— 那里 alpha 从 1 渐变到 0，
+	 * 边缘是一段**软边**。软边读作「橡皮擦蹭过去」，不读作「撕开」。
+	 *
+	 * 要让边缘读作「撕开」，需要一道**硬的、有方向的亮边**。但如果把这道亮边画回
+	 * 背景 canvas，就会往洞的 alpha 上补像素 —— 破坏 `check-backdrop-continuity` 的
+	 * 洞 alpha 单调判据（C1）。所以它只能是独立 DOM 层：不碰背景像素。
+	 *
+	 * 几何必须和洞完全一致：洞在画布里是 `scale(1, H/W)` 后的椭圆，
+	 * 所以环也是同样的椭圆（x 半径 = radius，y 半径 = radius × H/W）。
+	 */
+	private renderRim(reveal: OlympiaOnboardingRevealGeometry | undefined): void {
+		if (!reveal) {
+			this.rimElement.style.opacity = '0';
+			return;
+		}
+		const width = this.viewportWidth || 1;
+		const height = this.viewportHeight || 1;
+		const radius = reveal.radius;
+		const ry = radius * (height / width);
+
+		this.rimElement.style.left = `${((width - radius * 2) / 2).toFixed(1)}px`;
+		this.rimElement.style.top = `${((height - ry * 2) / 2).toFixed(1)}px`;
+		this.rimElement.style.width = `${(radius * 2).toFixed(1)}px`;
+		this.rimElement.style.height = `${(ry * 2).toFixed(1)}px`;
+
+		// 环只在波前扫过时最亮；progress 走到 1 时**精确**归零 ——
+		// 那时洞已经擦净，工作台必须一点遮挡都不剩。
+		const fadeIn = olympiaOnboardingClamp(reveal.progress / 0.28, 0, 1);
+		const fadeOut = olympiaOnboardingClamp((1 - reveal.progress) / 0.35, 0, 1);
+		this.rimElement.style.opacity = (fadeIn * fadeOut * 0.9).toFixed(3);
 	}
 
 	//#endregion

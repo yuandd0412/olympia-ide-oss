@@ -12,12 +12,15 @@
  * 默认样式 —— 那就是一次可见的跳变。所以这里的每条状态规则都写成「默认态在这里，例外只有
  * 一条」，而不是「每个阶段各写一条，谁没命中谁退回默认」。
  *
- * ## 颜色为什么用 color-mix 而不是写死
+ * ## 颜色：卡片是浅色纯色，面板之外的部分跟主题
  *
- * 引导是一块**贴在极光上的玻璃**：卡片底色要半透明才能看见背后的极光，同时文字必须和用户
- * 当前主题的编辑器配色保持一致（浅色主题下卡片是浅色玻璃，深色主题下是深色玻璃）。
- * `color-mix(in srgb, var(--vscode-editor-background) 76%, transparent)` 一行就能同时满足
- * 「半透明」和「跟主题」，而写死 rgba 会让浅色主题下变成浅底浅字。
+ * 卡片本身是一块**不透明的浅色面板**（见卡片层的注释）：极光在动，玻璃在折射它，
+ * 文字永远压着一层会动的底 —— 那是这套界面最初「廉价感」的最大来源。
+ * 所以卡片里的颜色写死（浅底 + 深字 + 单一强调蓝），**不跟主题**：
+ * 深色主题下浅底浅字会直接看不见。
+ *
+ * 卡片**之外**的界面（品牌字、跳过按钮、提示）仍然要跟极光共存，所以那一部分继续用
+ * `color-mix` 跟主题。
  *
  * 变量全部取自 `build/lib/stylelint/vscode-known-variables.json` 的白名单（`var()` 里出现
  * 名单外的名字会被 stylelint 直接判红），并且**一律带 fallback**：令牌万一没被注入，
@@ -53,7 +56,7 @@
 	position: absolute;
 	inset: 0;
 	z-index: 0;
-	background: linear-gradient(180deg, #080b16 0%, #0a0e1d 52%, #05070e 100%);
+	background: linear-gradient(180deg, #080b12 0%, #0a0e16 52%, #05070c 100%);
 	opacity: 1;
 	transition: opacity 240ms ease-out;
 }
@@ -196,9 +199,11 @@
  * 400×270，卡片比它大是常态）。居中靠 `translate(-50%, -50%)` —— 轨道本身没有固定
  * 尺寸，用负 margin 居中会在 `min()` 生效后算错。
  *
- * 这里的 402 / 472 是卡片的**外框**尺寸（border-box）：
- *   外框宽 = 内容宽 352 + 左右内边距 48 + 边框 2 = 402
- *   外框高 = 内容高 430 + 上下内边距 40 + 边框 2 = 472
+ * 这里的 402 / 432 是卡片的**外框**尺寸（border-box）：
+ *   外框宽 = 内容宽 + 左右内边距 + 边框
+ *   外框高 = 内容高 + 上下内边距 + 边框
+ * 高度是按**最高的那张卡**（四档字号）算出来的：矮一点的卡（两档评测机、两档目录）
+ * 底部会留白，页脚用 `margin-top: auto` 钉在卡片底部。
  * TS 里的 `OLYMPIA_ONBOARDING_CARD_WIDTH` 也是这个外框宽度，两边必须一致 ——
  * 不一致的话轨道步距算出来的卡片间隙就不是设计值（曾经是 352 vs 402，差 50px，
  * 相邻两张卡直接贴死）。
@@ -208,7 +213,7 @@
 	left: 50%;
 	top: 50%;
 	width: min(402px, calc(100vw - 16px));
-	height: min(472px, calc(100vh - 16px));
+	height: min(432px, calc(100vh - 16px));
 	transform: translate(-50%, -50%);
 }
 
@@ -216,407 +221,177 @@
 	cursor: grabbing;
 }
 
+/* 卡片本体。
+ *
+ * 形态照各大手机厂的开机引导：**一个标题，一句描述，下面一个竖排单选列表**。
+ *
+ * ## 为什么是浅色纯色，不是玻璃
+ *
+ * 卡片浮在一块动态极光上。早先这里是「半透明玻璃 + 顶部高光 + 两层重投影」——
+ * 极光本身在动，玻璃又在折射它，卡片里的文字就永远压着一层会动的底；
+ * 那是这套界面最初「廉价感」的最大来源。
+ * 现在是一块**不透明的浅色面板**：文字压的是纯色，眼睛不用跟背景较劲。
+ *
+ * ## 为什么颜色写死，不走 --vscode-* 令牌
+ *
+ * 这是一块**固定的浅色面板**，跟用户的主题无关 —— 令牌跟着主题走，
+ * 深色主题下浅底浅字会直接看不见。
+ * 强调色只有一个（`#2E7BF6`），不再用三五种颜色各说各话。
+ */
 .olympia-onboarding-card {
+	/* 必须绝对定位在轨道原点：每张卡的位置**只**由自己的 transform 承担
+	 * （translate3d(delta × 步距, …)）。少了这行定位，卡片就变成普通流内块级元素 ——
+	 * 三张卡会竖着叠在轨道里，横向轮播直接塌掉。
+	 * left/top 显式写 0：不写就靠「静态位置」，卡片数量一改位置就跟着变。 */
 	position: absolute;
 	left: 0;
 	top: 0;
-	/* 外框尺寸由轨道决定（`width/height: 100%`），这里必须显式声明 border-box ——
-	 * 默认的 content-box 会把内边距和边框算到外面去：内容 352×430 的卡实际渲染成
-	 * 402×472，比轨道大 50×42，视觉中心就偏了（圆点、品牌、跳过按钮都按视口居中，
-	 * 卡片却偏右 25px、偏下 21px，整张构图就散了）。
-	 * 改成 border-box 之后内容区仍然是 352×430，里面的排版一个像素都不变。 */
 	box-sizing: border-box;
 	width: 100%;
 	height: 100%;
 	display: flex;
 	flex-direction: column;
-	padding: 22px 24px 18px;
-	border: var(--vscode-strokeThickness, 1px) solid color-mix(in srgb, var(--vscode-editor-foreground) 14%, transparent);
-	border-radius: 20px;
-	background: linear-gradient(180deg,
-		color-mix(in srgb, var(--vscode-editor-background) 80%, transparent) 0%,
-		color-mix(in srgb, var(--vscode-editor-background) 92%, transparent) 100%);
-	box-shadow: 0 26px 70px rgba(0, 0, 0, 0.52), 0 2px 10px rgba(0, 0, 0, 0.34);
+	padding: 26px 26px 20px;
+	border: var(--vscode-strokeThickness, 1px) solid rgba(20, 22, 26, 0.10);
+	border-radius: 24px;
+	background: #F6F7F9;
+	color: #14161A;
+	box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
 	overflow: hidden;
 	transform-origin: 50% 50%;
 	will-change: transform, opacity;
-}
-
-/* 顶部一线高光，让玻璃有厚度。 */
-.olympia-onboarding-card::before {
-	content: '';
-	position: absolute;
-	top: 0;
-	left: 16%;
-	right: 16%;
-	height: 1px;
-	background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0));
+	font-family: system-ui, -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif;
 }
 
 .olympia-onboarding-card-header {
-	display: flex;
-	align-items: flex-start;
-	gap: 12px;
 	flex: 0 0 auto;
 }
 
-.olympia-onboarding-card-icon {
-	flex: 0 0 auto;
-	width: 32px;
-	height: 32px;
-	border-radius: 10px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	font-size: 16px;
-	color: var(--vscode-textLink-foreground);
-	background: color-mix(in srgb, var(--vscode-textLink-foreground) 14%, transparent);
-}
-
-.olympia-onboarding-card-header h2 {
+.olympia-onboarding-card-title {
 	margin: 0;
-	font-size: 16px;
+	font-size: 20px;
 	font-weight: var(--vscode-fontWeight-semiBold, 600);
-	line-height: 1.35;
-	color: var(--vscode-editor-foreground);
+	line-height: 1.3;
+	color: #14161A;
 }
 
-.olympia-onboarding-card-header p {
-	margin: 3px 0 0;
-	font-size: 11.5px;
-	line-height: 1.45;
-	color: var(--vscode-descriptionForeground);
+.olympia-onboarding-card-description {
+	margin: 8px 0 0;
+	font-size: 14px;
+	line-height: 1.6;
+	color: #5A6069;
 }
 
-.olympia-onboarding-card-body {
+/* 「未保存」标记：平时是空的（空块高度为 0，不占位）。 */
+.olympia-onboarding-card-unsaved {
 	flex: 0 0 auto;
-	margin-top: 14px;
+	margin: 0;
+	font-size: 12px;
+	line-height: 1.5;
+	color: #D64545;
 }
 
-.olympia-onboarding-row {
+.olympia-onboarding-card-unsaved:not(:empty) {
+	margin-top: 8px;
+}
+
+/* 选择列表：竖排单列，一行一个选项。 */
+.olympia-onboarding-choices {
+	display: flex;
+	flex-direction: column;
+	flex: 0 0 auto;
+	margin-top: 18px;
+}
+
+.olympia-onboarding-choice {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
 	gap: 12px;
-	padding: 6px 0;
-	border-bottom: var(--vscode-strokeThickness, 1px) solid color-mix(in srgb, var(--vscode-editor-foreground) 8%, transparent);
+	width: 100%;
+	min-height: 46px;
+	padding: 8px 12px;
+	border: none;
+	border-bottom: var(--vscode-strokeThickness, 1px) solid rgba(20, 22, 26, 0.07);
+	background: transparent;
+	color: #14161A;
+	font-family: inherit;
+	text-align: left;
+	cursor: pointer;
+	transition: background-color 140ms ease-out;
 }
 
-.olympia-onboarding-row:last-child {
+.olympia-onboarding-choice:last-child {
 	border-bottom: none;
 }
 
-.olympia-onboarding-row-label {
-	flex: 0 0 auto;
-	font-size: var(--vscode-fontSize-label1, 12px);
-	color: var(--vscode-descriptionForeground);
+.olympia-onboarding-choice:hover {
+	background: rgba(20, 22, 26, 0.04);
 }
 
-.olympia-onboarding-row-value {
-	flex: 0 1 auto;
-	min-width: 0;
-	font-size: var(--vscode-fontSize-label1, 12px);
-	font-weight: var(--vscode-fontWeight-semiBold, 600);
-	color: var(--vscode-editor-foreground);
-	text-align: right;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
+.olympia-onboarding-choice.selected {
+	background: rgba(46, 123, 246, 0.10);
 }
 
-.olympia-onboarding-row-unsaved .olympia-onboarding-row-label {
-	color: var(--vscode-errorForeground);
-}
-
-.olympia-onboarding-row-status {
-	font-style: normal;
-	color: var(--vscode-errorForeground);
-}
-
-/* 空的时候不占位 —— 状态位平时是空的，不该把行标签顶歪。 */
-.olympia-onboarding-row-status:not(:empty) {
-	margin-left: 6px;
-	font-size: var(--vscode-fontSize-label2, 11px);
-}
-
-.olympia-onboarding-options {
-	display: flex;
-	flex-wrap: wrap;
-	justify-content: flex-end;
-	gap: 6px;
-}
-
-.olympia-onboarding-option {
-	padding: 3px 9px;
-	border: var(--vscode-strokeThickness, 1px) solid color-mix(in srgb, var(--vscode-editor-foreground) 20%, transparent);
-	border-radius: var(--vscode-cornerRadius-circle, 999px);
-	font-size: var(--vscode-fontSize-label2, 11px);
-	line-height: 1.4;
-	color: var(--vscode-descriptionForeground);
-	cursor: pointer;
-	transition: background-color 140ms ease-out, border-color 140ms ease-out, color 140ms ease-out;
-}
-
-.olympia-onboarding-option:hover {
-	border-color: color-mix(in srgb, var(--vscode-textLink-foreground) 55%, transparent);
-	color: var(--vscode-editor-foreground);
-}
-
-.olympia-onboarding-option.selected {
-	background: color-mix(in srgb, var(--vscode-textLink-foreground) 20%, transparent);
-	border-color: color-mix(in srgb, var(--vscode-textLink-foreground) 62%, transparent);
-	color: var(--vscode-textLink-foreground);
-}
-
-.olympia-onboarding-option:focus-visible {
+.olympia-onboarding-choice:focus-visible {
 	outline: var(--vscode-strokeThickness, 1px) solid var(--vscode-focusBorder);
-	outline-offset: 1px;
+	outline-offset: -2px;
 }
 
-.olympia-onboarding-toggle {
+/* 单选标记：未选中是空心圆，选中是实心蓝 + 白心。 */
+.olympia-onboarding-choice-marker {
 	position: relative;
 	flex: 0 0 auto;
-	width: 34px;
-	height: 19px;
-	border-radius: var(--vscode-cornerRadius-circle, 999px);
-	background: color-mix(in srgb, var(--vscode-editor-foreground) 16%, transparent);
-	cursor: pointer;
-	transition: background-color 160ms ease-out;
+	width: 20px;
+	height: 20px;
+	border: 2px solid rgba(20, 22, 26, 0.28);
+	border-radius: 50%;
+	background: transparent;
 }
 
-.olympia-onboarding-toggle.on {
-	background: color-mix(in srgb, var(--vscode-textLink-foreground) 62%, transparent);
+.olympia-onboarding-choice.selected .olympia-onboarding-choice-marker {
+	border-color: #2E7BF6;
+	background: #2E7BF6;
 }
 
-.olympia-onboarding-toggle::after {
+.olympia-onboarding-choice.selected .olympia-onboarding-choice-marker::after {
 	content: '';
 	position: absolute;
-	top: 2px;
-	left: 2px;
-	width: 15px;
-	height: 15px;
+	left: 50%;
+	top: 50%;
+	width: 8px;
+	height: 8px;
+	margin-left: -4px;
+	margin-top: -4px;
 	border-radius: 50%;
-	background: var(--vscode-editor-foreground);
-	transition: transform 160ms ease-out;
+	background: #FFFFFF;
 }
 
-.olympia-onboarding-toggle.on::after {
-	transform: translateX(15px);
-}
-
-.olympia-onboarding-toggle:focus-visible {
-	outline: var(--vscode-strokeThickness, 1px) solid var(--vscode-focusBorder);
-	outline-offset: 2px;
-}
-
-/* ---------------------------------------------------------------------------------------------
- * 预览块：每个选项的后果预览
- *
- * 这是一块**固定高度**的面板（内容区 352×189），四张卡共用 —— 高度统一，翻页时
- * 标题和页脚才不会跳。
- *
- * 面板里的内容长度差别很大（代码样例 ~290px，目录树 ~60px），所以面板本身是
- * `flex-direction: column`，下面那块内容自己决定是「撑满」（代码样例）还是
- * 「在剩余空间里居中」（管道图 / 流程 / 目录）。
- *
- * 内容**不顶对齐**：顶对齐的话，内容短的那几张卡底部会空出小半个面板，
- * 看上去像没画完。居中之后空白分到上下两侧，读起来才像一块有意设计的面板。
- * 标题（caption）永远是第一个子元素，位置不动 —— 翻页时标题不跳。
- * --------------------------------------------------------------------------------------------- */
-
-.olympia-onboarding-card-preview {
+.olympia-onboarding-choice-text {
 	display: flex;
 	flex-direction: column;
-	flex: 1 1 auto;
-	min-height: 0;
-	margin-top: 12px;
-	padding: 12px 13px;
-	border: var(--vscode-strokeThickness, 1px) solid color-mix(in srgb, var(--vscode-editor-foreground) 10%, transparent);
-	border-radius: var(--vscode-cornerRadius-xLarge, 12px);
-	/* 上亮下暗：面板读起来有厚度，底部那截留白也不再是「空」。 */
-	background: linear-gradient(180deg,
-		color-mix(in srgb, var(--vscode-editor-background) 66%, transparent) 0%,
-		color-mix(in srgb, var(--vscode-editor-background) 40%, transparent) 100%);
-	overflow: hidden;
-}
-
-.olympia-onboarding-preview-caption {
-	margin-bottom: 8px;
-	font-size: var(--vscode-fontSize-label3, 10px);
-	letter-spacing: 0.06em;
-	color: var(--vscode-descriptionForeground);
-}
-
-/* 编译管道图。`flex: 1 1 auto` + `align-content: center`：
- * 内容短的时候它在面板的剩余空间里垂直居中，不再吊在顶上。 */
-.olympia-onboarding-pipe {
-	display: flex;
-	flex: 1 1 auto;
-	flex-wrap: wrap;
-	align-items: center;
-	align-content: center;
-	gap: 5px;
-}
-
-.olympia-onboarding-pipe-node {
-	padding: 2px 7px;
-	border-radius: var(--vscode-cornerRadius-medium, 6px);
-	border: var(--vscode-strokeThickness, 1px) solid color-mix(in srgb, var(--vscode-editor-foreground) 16%, transparent);
-	font-size: var(--vscode-fontSize-label2, 11px);
-	color: var(--vscode-editor-foreground);
-}
-
-.olympia-onboarding-pipe-node.key {
-	border-color: color-mix(in srgb, var(--vscode-textLink-foreground) 45%, transparent);
-	color: var(--vscode-textLink-foreground);
-}
-
-.olympia-onboarding-pipe-arrow {
-	font-size: var(--vscode-fontSize-label2, 11px);
-	color: var(--vscode-descriptionForeground);
-}
-
-.olympia-onboarding-command {
-	display: block;
-	padding: 6px 9px;
-	border-radius: var(--vscode-cornerRadius-large, 8px);
-	background: color-mix(in srgb, var(--vscode-editor-background) 70%, transparent);
-	font-size: var(--vscode-fontSize-label2, 11px);
-	line-height: 1.5;
-	color: var(--vscode-terminal-ansiGreen);
-	word-break: break-all;
-}
-
-.olympia-onboarding-flow {
-	display: flex;
-	flex: 1 1 auto;
-	flex-direction: column;
-	justify-content: center;
-	gap: 5px;
-}
-
-/* 步骤之间的连接线：把四步串成一条流程，而不是四个孤立的条目。 */
-.olympia-onboarding-flow-line {
-	display: block;
-	height: 1px;
-	margin: 1px 0 1px 3px;
-	background: color-mix(in srgb, var(--vscode-editor-foreground) 12%, transparent);
-}
-
-.olympia-onboarding-flow-step {
-	display: flex;
-	align-items: baseline;
-	gap: 7px;
-	min-width: 0;
-	font-size: var(--vscode-fontSize-label2, 11px);
-	color: var(--vscode-editor-foreground);
-}
-
-/* 每步前面的小圆点。 */
-.olympia-onboarding-flow-step i {
-	flex: 0 0 6px;
-	width: 6px;
-	height: 6px;
-	margin-top: 4px;
-	border-radius: 50%;
-	background: var(--vscode-textLink-foreground);
-	opacity: 0.85;
-}
-
-.olympia-onboarding-flow-step kbd {
-	flex: 0 0 auto;
-	padding: 1px 6px;
-	border: var(--vscode-strokeThickness, 1px) solid color-mix(in srgb, var(--vscode-editor-foreground) 22%, transparent);
-	border-bottom-width: 2px;
-	border-radius: 5px;
-	font-size: var(--vscode-fontSize-label3, 10px);
-	color: var(--vscode-textLink-foreground);
-}
-
-.olympia-onboarding-directory {
-	display: flex;
-	flex: 1 1 auto;
-	flex-direction: column;
-	justify-content: center;
 	gap: 2px;
-	font-size: var(--vscode-fontSize-label2, 11px);
-	line-height: 1.55;
-	color: var(--vscode-descriptionForeground);
+	min-width: 0;
 }
 
-.olympia-onboarding-directory-row.key {
-	color: var(--vscode-textLink-foreground);
+.olympia-onboarding-choice-label {
+	font-size: 15px;
+	font-weight: var(--vscode-fontWeight-semiBold, 600);
+	line-height: 1.35;
+	color: #14161A;
 }
 
-/* 代码样例。
- *
- * 字号用的是**用户自己的编辑器字号**（默认 14px），所以这块的高度是可变的：字号调大，
- * 11 行样例就装不下。硬切会像「代码断在一半」，所以：
- *
- *  - 盒子自己吃掉剩余高度（`flex: 1 1 auto` + `min-height: 0`），超出部分裁掉；
- *  - 底部渐隐（`mask-image`）把裁切处化成一条淡出的边 —— 这是「下面还有」，
- *    不是「被砍了」。
- *
- * 渐隐必须加在**代码盒子自己**上：加在裁切它的预览面板上，渐隐位置就和可见底边对不上。
- * 渐隐区留出前 84% 不透明 —— 光标就停在那条实心区里的最后一行，不会被淡化到看不见。
- */
-.olympia-onboarding-code {
-	flex: 1 1 auto;
-	min-height: 0;
-	overflow: hidden;
-	font-size: var(--vscode-fontSize-label1, 12px);
-	color: var(--vscode-editor-foreground);
-	white-space: pre;
-	mask-image: linear-gradient(180deg,
-		#000 0%,
-		#000 84%,
-		rgba(0, 0, 0, 0.5) 94%,
-		rgba(0, 0, 0, 0.08) 100%);
+.olympia-onboarding-choice-description {
+	font-size: 13px;
+	line-height: 1.4;
+	color: #5A6069;
 }
 
-.olympia-onboarding-code-line {
-	min-height: 1.55em;
-}
-
-.olympia-onboarding-token.comment {
-	color: var(--vscode-descriptionForeground);
-	font-style: italic;
-}
-
-.olympia-onboarding-token.keyword {
-	color: var(--vscode-terminal-ansiMagenta);
-}
-
-.olympia-onboarding-token.type {
-	color: var(--vscode-terminal-ansiCyan);
-}
-
-.olympia-onboarding-token.string {
-	color: var(--vscode-terminal-ansiGreen);
-}
-
-.olympia-onboarding-caret {
-	display: inline-block;
-	width: 7px;
-	height: 1.05em;
-	margin-left: 1px;
-	vertical-align: text-bottom;
-	background: var(--vscode-editorCursor-foreground);
-	animation: olympia-onboarding-caret 1.15s steps(1, end) infinite;
-}
-
-@keyframes olympia-onboarding-caret {
-	0%, 49% {
-		opacity: 1;
-	}
-
-	50%, 100% {
-		opacity: 0;
-	}
-}
 
 /* ---------------------------------------------------------------------------------------------
  * 卡片底部
+ *
+ * 页脚用 `margin-top: auto` 钉在卡片底部：内容少的卡（两档评测机 / 两档目录）
+ * 底部会空出一段，那段留白读起来像正常的对话框，而不是内容被挤掉了。
  * --------------------------------------------------------------------------------------------- */
 
 .olympia-onboarding-card-footer {
@@ -625,15 +400,16 @@
 	align-items: center;
 	justify-content: space-between;
 	gap: 10px;
-	margin-top: 12px;
+	margin-top: auto;
+	padding-top: 18px;
 }
 
 .olympia-onboarding-card-status {
 	display: flex;
 	align-items: center;
 	gap: 7px;
-	font-size: var(--vscode-fontSize-label2, 11px);
-	color: var(--vscode-descriptionForeground);
+	font-size: 13px;
+	color: #5A6069;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
@@ -645,36 +421,37 @@
 	width: 6px;
 	height: 6px;
 	border-radius: 50%;
-	background: var(--vscode-charts-green, #4ec9b0);
-	box-shadow: 0 0 9px var(--vscode-charts-green, #4ec9b0);
+	background: #2E9E6B;
 }
 
 .olympia-onboarding-cta {
 	flex: 0 0 auto;
-	height: 28px;
-	padding: 0 13px;
-	border: var(--vscode-strokeThickness, 1px) solid color-mix(in srgb, var(--vscode-editor-foreground) 22%, transparent);
-	border-radius: var(--vscode-cornerRadius-large, 8px);
+	height: 34px;
+	padding: 0 16px;
+	border: var(--vscode-strokeThickness, 1px) solid rgba(20, 22, 26, 0.16);
+	border-radius: 10px;
 	background: transparent;
-	color: var(--vscode-editor-foreground);
-	font-size: var(--vscode-fontSize-label1, 12px);
+	color: #14161A;
+	font-family: inherit;
+	font-size: 14px;
+	font-weight: var(--vscode-fontWeight-semiBold, 600);
 	line-height: 1;
 	cursor: pointer;
 	transition: background-color 140ms ease-out, border-color 140ms ease-out;
 }
 
 .olympia-onboarding-cta:hover {
-	background: color-mix(in srgb, var(--vscode-editor-foreground) 10%, transparent);
+	background: rgba(20, 22, 26, 0.04);
 }
 
 .olympia-onboarding-cta.primary {
 	border-color: transparent;
-	background: var(--vscode-button-background);
-	color: var(--vscode-button-foreground);
+	background: #2E7BF6;
+	color: #FFFFFF;
 }
 
 .olympia-onboarding-cta.primary:hover {
-	background: var(--vscode-button-hoverBackground);
+	background: #1E6DE0;
 }
 
 .olympia-onboarding-cta:focus-visible {
@@ -686,86 +463,171 @@
  * 矮窗口
  *
  * 产品允许的最小窗口是 400×270（见 vs/platform/window/common/window.ts 的
- * `WindowMinimumSize`），卡片外框 402×472 比它大 —— 所以卡片必须能在小窗口里收缩，
+ * `WindowMinimumSize`），卡片外框 402×432 比它高 —— 所以卡片必须能在小窗口里收缩，
  * 而不是被裁掉（曾经 400×270 下卡片上下各被裁 65px / 107px，标题和主按钮全没了）。
  *
- * 轨道已经用 `min()` 把尺寸夹在视口内，这里再补三档紧凑布局：
+ * 四档（486 → 420 → 385 → 320）逐级收紧：内边距、字号、选项行高。
  *
- *  - ≤420px 高：收一收内边距和行距。**行区不许被压缩** —— 行区是功能内容
- *    （能点的选项、开关），预览只是「看一眼后果」；宁可预览被压扁，也不能把行区裁掉。
- *  - ≤385px 高：预览块整块让位。再矮下去它的内区放不下完整的图示
- *    （管道图/目录树约 60px），切一半比没有更难看。
- *    让位之后**行区保持紧凑**（不拉开）：配置项是一组，用 space-between
- *    把行拉开之后，读起来像内容散架了 —— 实测 330px 高的窗口里行与行之间
- *    空出 47px，末行又贴着页脚，上下都不对。中间留白才像正常的对话框。
- *  - ≤320px 高：更紧的内边距。**主按钮被裁掉比预览没了严重得多** ——
- *    主按钮是「开始做题」，预览只是「看一眼后果」。
+ * ## 选择列表是功能内容，不许被整块丢掉
  *
- * 这几档里的 `display: none` 是**响应式布局**（按窗口高度决定要不要显示预览），
- * 不是阶段切换 —— 卡片层的阶段切换仍然只靠 opacity，绝不硬切。
+ * 旧版在这里有一条「预览块整块让位」的档（`display: none`）。现在没有预览块了 ——
+ * 卡片里**只有**标题、描述、选择列表、页脚四样东西，每一样都是功能内容。
+ * 所以最矮的两档收的是**间距和字号**，不是「把某一块藏起来」：
+ * 藏掉选择列表，用户就不知道自己还有一项没选。
+ *
+ * 这几档里的 `display: none` 只用在一处：≤385px 时选项的**副说明**（一行灰字）
+ * 让位给主标题 —— 主标题是「选哪个」，副说明只是「什么意思」。
+ * 卡片层的阶段切换仍然只靠 opacity，绝不硬切。
  * --------------------------------------------------------------------------------------------- */
 
-@media (max-height: 420px) {
+@media (max-height: 486px) {
 	.olympia-onboarding-card {
-		padding: 14px 20px 12px;
+		padding: 20px 22px 16px;
 	}
 
-	.olympia-onboarding-card-body {
-		/* 行区是**功能内容**（能点的选项、开关），预览只是「看一眼后果」。
-		 * 矮窗口下宁可预览被压扁，也不能把行区裁掉 ——
-		 * 实测 330px 高的窗口里 card-body 被压到 50px（内容 120px），
-		 * 「光标动画」那一行整行看不见，而 overflow:hidden 连滚动条都不给，
-		 * 用户根本不知道自己还有一项没配。
-		 * 所以行区固定不缩，压缩全部交给预览块（它是 flex: 1 1 auto + min-height: 0）。 */
+	.olympia-onboarding-card-description {
+		margin-top: 6px;
+	}
+
+	.olympia-onboarding-choices {
+		margin-top: 14px;
+		/* 选择列表是功能内容：自己不可伸不可缩，压缩只能靠间距和字号。 */
 		flex: 0 0 auto;
-		margin-top: 10px;
-		overflow: hidden;
 	}
 
-	.olympia-onboarding-row {
-		padding: 4px 0;
-	}
-
-	.olympia-onboarding-card-preview {
-		margin-top: 10px;
+	.olympia-onboarding-choice {
+		padding: 6px 12px;
 	}
 
 	.olympia-onboarding-card-footer {
-		margin-top: 10px;
+		padding-top: 12px;
+	}
+}
+
+@media (max-height: 420px) {
+	.olympia-onboarding-card {
+		padding: 16px 20px 12px;
+	}
+
+	.olympia-onboarding-card-title {
+		font-size: 19px;
+	}
+
+	.olympia-onboarding-card-description {
+		margin-top: 6px;
+		font-size: 13px;
+		line-height: 1.55;
+	}
+
+	.olympia-onboarding-choices {
+		margin-top: 12px;
+		/* 选择列表是功能内容：自己不可伸不可缩，压缩只能靠间距和字号。 */
+		flex: 0 0 auto;
+	}
+
+	.olympia-onboarding-choice {
+		min-height: 44px;
+		padding: 5px 12px;
+	}
+
+	.olympia-onboarding-choice-label {
+		font-size: 14px;
+	}
+
+	.olympia-onboarding-choice-description {
+		font-size: 12px;
+	}
+
+	.olympia-onboarding-card-footer {
+		padding-top: 10px;
+	}
+
+	.olympia-onboarding-cta {
+		height: 32px;
 	}
 }
 
 @media (max-height: 385px) {
-	.olympia-onboarding-card-preview {
-		/* 预览的内区（去掉 padding 和标题）不足 ~65px 时管道图 / 目录树会被切掉一半，
-		 * 切一半比整块没有更难看 —— 整块让位。 */
+	.olympia-onboarding-card {
+		padding: 12px 18px 10px;
+	}
+
+	.olympia-onboarding-card-title {
+		font-size: 18px;
+	}
+
+	.olympia-onboarding-card-description {
+		margin-top: 5px;
+		font-size: 12.5px;
+		line-height: 1.5;
+	}
+
+	.olympia-onboarding-choices {
+		margin-top: 10px;
+		/* 选择列表是功能内容：自己不可伸不可缩，压缩只能靠间距和字号。 */
+		flex: 0 0 auto;
+	}
+
+	.olympia-onboarding-choice {
+		min-height: 40px;
+		padding: 4px 10px;
+	}
+
+	.olympia-onboarding-choice-label {
+		font-size: 14px;
+	}
+
+	/* 副说明让位：主标题是「选哪个」，副说明只是「什么意思」。
+	 * 藏掉的是解释，不是功能 —— 选择列表本身一行都不许少。 */
+	.olympia-onboarding-choice-description {
 		display: none;
 	}
 
 	.olympia-onboarding-card-footer {
-		/* 贴着卡片底部：中间那段留白读起来像正常的对话框，而不是内容被挤掉了。
-		 * 行区保持紧凑 —— 上面那档已经把行区钉成不可压缩（flex: 0 0 auto），
-		 * 这里只是别再把它拉开。 */
-		margin-top: auto;
+		padding-top: 8px;
+	}
+
+	.olympia-onboarding-cta {
+		height: 30px;
 	}
 }
 
 @media (max-height: 320px) {
 	.olympia-onboarding-card {
-		padding: 12px 18px 10px;
+		padding: 10px 16px 8px;
 	}
 
-	.olympia-onboarding-card-body {
+	.olympia-onboarding-card-title {
+		font-size: 17px;
+	}
+
+	.olympia-onboarding-card-description {
+		margin-top: 4px;
+		font-size: 12px;
+		line-height: 1.45;
+	}
+
+	.olympia-onboarding-choices {
 		margin-top: 8px;
+		/* 选择列表是功能内容：自己不可伸不可缩，压缩只能靠间距和字号。 */
+		flex: 0 0 auto;
 	}
 
-	.olympia-onboarding-card-preview {
-		display: none;
+	.olympia-onboarding-choice {
+		min-height: 32px;
+		padding: 2px 10px;
+	}
+
+	.olympia-onboarding-choice-label {
+		font-size: 13.5px;
 	}
 
 	.olympia-onboarding-card-footer {
-		/* 贴着卡片底部：中间那段留白读起来像正常的对话框，而不是内容被挤掉了。 */
-		margin-top: auto;
+		padding-top: 6px;
+	}
+
+	.olympia-onboarding-cta {
+		height: 28px;
 	}
 }
 
@@ -902,45 +764,120 @@
  * 进入动画效果层
  * --------------------------------------------------------------------------------------------- */
 
+/* 光缝：能量最终被收进去的那道线。
+ *
+ * 之前这里是一个 240×240 的圆球。圆球是「一个发光的点」—— 读作一张贴图，
+ * 而且点在正中间，画面被劈成对称的两半，对称 = 呆板。
+ * 横向的细缝读作「一道被撕开的口子」，粒子汇聚进去才有落点。
+ *
+ * 暖金是画面里唯一的暖色主体：工作台是最亮处（焦点），
+ * 极光 / 洞缘 / 扫光是冷色（环境），粒子和光缝是暖色（能量）。
+ */
 .olympia-onboarding-core {
 	position: absolute;
 	left: 50%;
-	top: 50%;
-	width: 240px;
-	height: 240px;
-	margin-left: -120px;
-	margin-top: -120px;
-	border-radius: 50%;
-	background: radial-gradient(circle, rgba(214, 232, 255, 0.92) 0%, rgba(126, 168, 255, 0.40) 36%, rgba(92, 122, 255, 0) 70%);
+	top: 44%;
+	width: 260px;
+	height: 24px;
+	margin-left: -130px;
+	margin-top: -12px;
+	border-radius: 999px;
+	/* 径向渐变，不是横向渐变。
+	 *
+	 * 横向渐变（`linear-gradient(90deg, ...)`）只处理**左右**两端，上下是**硬边**：
+	 * 元素是个 4px 高的矩形，被 `scale(5.49)` 一放大就是 1427×22px 的实心米色横条 ——
+	 * 上下两条边清清楚楚地切在画面上，读作「一块色板」而不是「一道光」。
+	 *
+	 * 径向渐变把亮度收在椭圆中心、四周衰减到全透明，元素的矩形边界就**不存在**了：
+	 * 屏幕上只剩一条中间近乎纯白、上下迅速淡出的细亮线（亮度核心 ≈ 5px，光晕 ≈ 40px）。
+	 *
+	 * `box-shadow` 一并去掉：它会跟着 `scale` 一起放大（14px → ~77px），
+	 * 糊出一大片米色雾，把刚收好的光又摊开成色块。
+	 *
+	 * 渐变的最后一段是全透明，矩形剩下的部分本来就是透明的 —— 元素边界不可见。
+	 */
+	background: radial-gradient(ellipse 50% 50% at 50% 50%,
+		rgba(255, 253, 247, 1) 0%,
+		rgba(255, 246, 226, 0.62) 7%,
+		rgba(255, 222, 176, 0.20) 24%,
+		rgba(255, 196, 140, 0) 60%);
 	opacity: 0;
 	transform: scale(0);
 	will-change: transform, opacity;
 }
 
+/* 点火：局部的一条，不是全屏白闪。
+ *
+ * 全屏白闪是「关灯再开灯」—— 廉价转场里最常见也最伤的一种：
+ * 亮度是全局的，观众看见的是一片白，看不出发生了什么。
+ * 局部点火条只点亮画面里的一条线，注意力被**收束**而不是被冲散。
+ *
+ * 不用 mix-blend-mode：叠加混合会让这一层与背景的颜色相乘，
+ * 在不同底色上表现不一致（渐变底上会发脏），而且很吃合成性能。
+ */
 .olympia-onboarding-flash {
 	position: absolute;
-	inset: 0;
-	background: radial-gradient(circle at 50% 50%, rgba(232, 242, 255, 0.92) 0%, rgba(150, 185, 255, 0.42) 20%, rgba(90, 120, 255, 0) 56%);
+	left: 50%;
+	top: 44%;
+	width: 1400px;
+	height: 46px;
+	margin-left: -700px;
+	margin-top: -23px;
+	background: radial-gradient(ellipse 50% 100% at 50% 50%, rgba(255, 244, 220, 0.88) 0%, rgba(255, 212, 158, 0.34) 32%, rgba(255, 190, 128, 0) 72%);
 	opacity: 0;
 	will-change: opacity;
 }
 
+/* 暗角：冷蓝黑，不是纯黑。
+ *
+ * 纯黑读作「有人把灯关了」；冷蓝黑读作景深。
+ * 中心透区从 34% 放到 40% —— 压角是用来收拢视线的，不是用来盖住画面的。
+ */
 .olympia-onboarding-vignette {
 	position: absolute;
 	inset: 0;
-	background: radial-gradient(ellipse 76% 70% at 50% 50%, rgba(0, 0, 0, 0) 34%, rgba(0, 0, 0, 0.66) 76%, rgba(0, 0, 0, 0.95) 100%);
+	background: radial-gradient(ellipse 78% 72% at 50% 50%, rgba(0, 0, 0, 0) 40%, rgba(3, 6, 14, 0.62) 76%, rgba(2, 4, 10, 0.94) 100%);
 	opacity: 0;
 	will-change: opacity;
 }
 
-/* 通电扫光：位置由宿主按真实部件几何算出，这里只负责外观。 */
+/* 洞缘环：波前撕开极光时的那道亮边。
+ *
+ * 独立 DOM 层 —— 画回背景 canvas 会破坏洞 alpha 的单调性（连续性门的 C1）。
+ * 几何由宿主按洞的实际椭圆算好，这里只负责外观：
+ * 一圈细的冷白亮边 + 外发光 + 内侧一点点辉光，读作「被撕开的边缘」。
+ */
+.olympia-onboarding-rim {
+	position: absolute;
+	box-sizing: border-box;
+	border-radius: 50%;
+	border: 1.5px solid rgba(206, 232, 255, 0.85);
+	box-shadow: 0 0 22px rgba(150, 200, 255, 0.42), inset 0 0 26px rgba(180, 216, 255, 0.30);
+	opacity: 0;
+	will-change: opacity;
+}
+
+/* 通电扫光：位置由宿主按真实部件几何算出，这里只负责外观。
+ *
+ * 剖面是「热核」—— 中间一条硬核亮线，两侧快速衰减。
+ * 均匀的柔光板扫过去读作「贴图在动」；硬核才读作「电过去了」。
+ */
 .olympia-onboarding-sweep {
 	position: absolute;
 	opacity: 0;
 	will-change: transform, opacity;
-	background: linear-gradient(180deg, rgba(160, 200, 255, 0) 0%, rgba(196, 224, 255, 0.34) 48%, rgba(160, 200, 255, 0) 100%);
+	background: linear-gradient(180deg, rgba(160, 200, 255, 0) 0%, rgba(186, 214, 255, 0.20) 32%, rgba(236, 246, 255, 0.88) 50%, rgba(186, 214, 255, 0.20) 68%, rgba(160, 200, 255, 0) 100%);
 }
 
 .olympia-onboarding-sweep.horizontal {
-	background: linear-gradient(90deg, rgba(160, 200, 255, 0) 0%, rgba(196, 224, 255, 0.34) 48%, rgba(160, 200, 255, 0) 100%);
+	background: linear-gradient(90deg, rgba(160, 200, 255, 0) 0%, rgba(186, 214, 255, 0.20) 32%, rgba(236, 246, 255, 0.88) 50%, rgba(186, 214, 255, 0.20) 68%, rgba(160, 200, 255, 0) 100%);
+}
+
+/* 唯一强调拍：首道（标题栏）。冷青，和后面四道的冷蓝拉开一点差别。 */
+.olympia-onboarding-sweep.accent {
+	background: linear-gradient(180deg, rgba(120, 196, 255, 0) 0%, rgba(158, 220, 255, 0.26) 32%, rgba(236, 251, 255, 0.94) 50%, rgba(158, 220, 255, 0.26) 68%, rgba(120, 196, 255, 0) 100%);
+}
+
+.olympia-onboarding-sweep.accent.horizontal {
+	background: linear-gradient(90deg, rgba(120, 196, 255, 0) 0%, rgba(158, 220, 255, 0.26) 32%, rgba(236, 251, 255, 0.94) 50%, rgba(158, 220, 255, 0.26) 68%, rgba(120, 196, 255, 0) 100%);
 }

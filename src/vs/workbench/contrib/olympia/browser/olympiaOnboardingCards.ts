@@ -8,35 +8,17 @@ import { mainWindow } from '../../../../base/browser/window.js';
 import { IDisposable } from '../../../../base/common/lifecycle.js';
 import { localize } from '../../../../nls.js';
 import { ConfigurationTarget, IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
-import { IRecentFolder, IRecentWorkspace, IWorkspacesService } from '../../../../platform/workspaces/common/workspaces.js';
 import {
-	OLYMPIA_CONFIG_CHECK_ENABLED,
-	OLYMPIA_CONFIG_COMPILER_OPTIMIZATION,
 	OLYMPIA_CONFIG_COMPILER_PROFILE,
-	OLYMPIA_CONFIG_CPP_SNIPPETS,
 	OLYMPIA_CONFIG_EDITOR_FONT_SIZE,
-	OLYMPIA_CONFIG_EDITOR_FONT_FAMILY,
-	OLYMPIA_CONFIG_EDITOR_LINE_HEIGHT,
-	OLYMPIA_CONFIG_EDITOR_MINIMAP,
-	OLYMPIA_CONFIG_EDITOR_SMOOTH_CARET,
-	OLYMPIA_CONFIG_JUDGE_MEMORY_LIMIT,
 	OLYMPIA_CONFIG_PROBLEMS_DIR,
-	OLYMPIA_CONFIG_TEMPLATE_ON_PULL,
-	OLYMPIA_CONFIG_TRAIN_DAILY_GOAL,
-	OLYMPIA_CONFIG_TRAIN_RECORD_SOLVES,
 	OLYMPIA_ONBOARDING_CONFIG_DEFAULTS,
 	OLYMPIA_ONBOARDING_EDITOR_FALLBACKS
 } from './olympiaOnboardingConfig.js';
-import {
-	OLYMPIA_JUDGE_TARGETS,
-	olympiaActiveJudgeTarget,
-	olympiaJudgeTargetSummary,
-	olympiaRenderJudgeFlags
-} from './olympiaJudgeTargets.js';
+import { OLYMPIA_JUDGE_TARGETS } from './olympiaJudgeTargets.js';
 import {
 	OLYMPIA_ONBOARDING_CARD_COUNT,
 	OLYMPIA_ONBOARDING_CARD_STEP,
-	OLYMPIA_ONBOARDING_CODE_CARET_ZONE,
 	olympiaOnboardingCardLayout,
 	olympiaOnboardingClamp,
 	olympiaOnboardingEaseOutCubic
@@ -45,8 +27,19 @@ import {
 /**
  * 开始引导的**卡片配置**层。
  *
- * 形态照鸿蒙：一张卡浮在动态背景上，可以跟手左右滑；点选项直接改配置，改完立刻能看到
- * 「这个配置会带来什么后果」的预览。
+ * 形态照各大手机厂的开机引导：**一个标题，一句描述，下面一个选择**。
+ * 没有参数墙，没有预览面板，没有开关，没有命令行 —— 卡上只回答一个问题：
+ * 「这一项你选哪个？」
+ *
+ * ## 三张卡，三件事
+ *
+ * 1. 选择评测环境 —— 代码交给哪台评测机编译运行；
+ * 2. 调整代码字号 —— 长时间写代码时眼睛舒不舒服；
+ * 3. 选择练习目录 —— 题目和解题代码放在哪个文件夹。
+ *
+ * 其余配置（优化等级、行高、缩略图、光标动画、内存上限、记录通过、提交前自检、
+ * 拉题时建模板、代码片段等）**移出引导**，但设置里仍然可以改 ——
+ * 引导期的每一个决定都会变成一次「以后还要去设置里翻」的负担。
  *
  * ## 一条硬规矩：卡上不许出现编造的值
  *
@@ -57,8 +50,7 @@ import {
  * 所以这里显示的每一个值都来自：
  *  - 评测机表（`olympiaJudgeTargets.ts`，与扩展逐字一致）；
  *  - 扩展 `package.json` 的默认值（`olympiaOnboardingConfig.ts`，静态断言比对）；
- *  - 用户当前配置（`IConfigurationService`）；
- *  - 扩展真实注册的命令与快捷键。
+ *  - 用户当前配置（`IConfigurationService`）。
  */
 
 export interface IOlympiaOnboardingCardsDelegate {
@@ -70,134 +62,73 @@ export interface IOlympiaOnboardingCardsDelegate {
 	readonly onBeginEnter: () => void;
 }
 
-interface IOlympiaOnboardingOption {
-	/** 显示文本。 */
+/**
+ * 一个可选项。
+ *
+ * 「选中判定用的值」与「真正写进配置的值」分开：
+ *
+ *  - `value` 是**字符串**形态，用来和当前配置 `String()` 之后比较；
+ *  - `configValue` 是真正写进配置的值。**数字和布尔类型的配置必须显式给**：
+ *    `editor.fontSize` 的 schema 是 `number`，写字符串会被配置校验拒绝 ——
+ *    `updateValue` 直接抛错，选择就永远存不下来。
+ */
+interface IOlympiaOnboardingChoice {
+
+	/** 主标题：选什么。 */
 	readonly label: string;
-	/** 选中判定用的值（字符串形态，和当前配置 `String()` 之后比较）。 */
+
+	/** 副说明（可选）：这一项是什么意思。 */
+	readonly description?: string;
+
+	/** 选中判定用的值（字符串形态）。 */
 	readonly value: string;
-	/**
-	 * 真正写进配置的值。
-	 *
-	 * 不填就写 `value`（也就是字符串）。但**数字和布尔类型的配置必须显式给**：
-	 * `olympia.judge.memoryLimitMb` 的 schema 是 `number`，写字符串会被配置校验
-	 * 拒绝 —— `updateValue` 直接抛错，选择就永远存不下来。
-	 */
+
+	/** 真正写进配置的值；不填就写 `value`（字符串）。 */
 	readonly configValue?: unknown;
-	/** 悬浮说明（可选）。 */
-	readonly title?: string;
 }
 
-interface IOlympiaOnboardingRow {
-	readonly label: string;
-	readonly kind: 'value' | 'options' | 'toggle';
-	readonly value?: string;
-	readonly options?: readonly IOlympiaOnboardingOption[];
-	readonly checked?: boolean;
-	/**
-	 * 开关写进配置的值。
-	 *
-	 * 默认写布尔。但有些「开关」对应的配置项其实是**枚举字符串** ——
-	 * `editor.cursorSmoothCaretAnimation` 的 schema 是 `off | explicit | on`，
-	 * 写布尔会被配置校验拒绝，用户的选择就永远存不下来。
-	 */
-	readonly toggleValues?: { readonly on: unknown; readonly off: unknown };
-	readonly configurationKey?: string;
-	/** 异步取值的行（比如「最近工程」），取到之后填进去。 */
-	readonly asyncValue?: () => Promise<string>;
-}
-
+/**
+ * 一张卡的**描述**。
+ *
+ * 一张卡只对应**一个**配置项、一**个**选择列表 —— 这是「标题 + 描述 + 一个选择」
+ * 这条产品线的直接结果，也是这套卡片比旧版简单得多的原因。
+ */
 interface IOlympiaOnboardingCardDescriptor {
-	readonly id: 'compile' | 'editor' | 'contest' | 'practice';
-	readonly icon: string;
+	readonly id: 'compile' | 'editor' | 'practice';
+
+	/** 卡上的标题。 */
 	readonly title: string;
-	readonly subtitle: string;
-	readonly rows: readonly IOlympiaOnboardingRow[];
-	readonly preview: () => HTMLElement[];
+
+	/** 卡上的一句解释：这一项为什么值得现在决定。 */
+	readonly description: string;
+
+	/** 这一张卡写的是哪个配置键。 */
+	readonly configurationKey: string;
+
+	/** 下面的选择列表。 */
+	readonly choices: readonly IOlympiaOnboardingChoice[];
 }
 
 /**
- * 一行在 DOM 上的**绑定**：结构归结构，状态归状态。
+ * 一张卡在 DOM 上的**绑定**：结构归结构，状态归状态。
  *
- * 分成两层是为了「配置一变不硬切」：
- *
- *  - **结构** = 有哪些行、每行什么 kind、有哪些选项。结构变了才重建 DOM；
- *  - **状态** = 当前选中哪个、开关开没开、这一行的值是多少。状态变了只就地改。
- *
- * 早先这里是「配置一变就把 4 张卡的行区整片 `replaceChildren`」——
- * 用户手指正按着的那个按钮会被整个换掉，换掉的一瞬间就是硬切。
+ * 结构和状态分开不是为了「配置一变不硬切」—— 现在选择列表**只在构造期建一次**，
+ * 运行期一个元素都不换。这里分开只是为了读得清楚：
+ * 「有哪些选项」是结构，「选中了哪个」是状态。
  */
-interface IOlympiaOnboardingRowBinding {
-	/** 行容器。 */
-	readonly container: HTMLElement;
-	/** 行标签里的状态位（「未保存」就写在这儿；平时是空的）。 */
-	statusElement?: HTMLElement;
-	/** `kind === 'value'` 时的取值元素。 */
-	valueElement?: HTMLElement;
-	/** `kind === 'options'` 时的选项片。 */
-	chips?: { readonly element: HTMLElement; readonly value: string }[];
-	/** `kind === 'toggle'` 时的开关按钮。 */
-	toggle?: HTMLElement;
-	/** 没有 `configurationKey` 的开关用的本地回退状态。 */
-	fallbackChecked?: boolean;
-	/** 异步取值的令牌：只有最后一次请求的结果算数，过期的一律丢弃。 */
-	valueToken?: number;
-	/**
-	 * 异步取值是否已经**落地**。
-	 *
-	 * 落地之后就再也不动这一行：既不把文本打回占位，也不重复发请求。
-	 * 没有这个标记的话，每次状态刷新都会把「最近工程」重置成「读取中…」，
-	 * 并重新调一次 `getRecentlyOpened()` —— 用户点一下别的选项，
-	 * 眼前这行就闪回占位，同时后台多跑一次 IO。
-	 */
-	valueResolved?: boolean;
-	/**
-	 * 异步取值的请求是否**在途**（已发出、结果还没回来）。
-	 *
-	 * 没有这个标记的话，光有 `valueResolved` 挡不住重复请求：
-	 * 内置扩展注册 `olympia.*` 配置项时会连着触发一串
-	 * `onDidChangeConfiguration` → `refresh()`，而这些 refresh 往往发生在
-	 * 第一次请求**还没回来**的时候 —— 于是 `getRecentlyOpened()` 被连着发好几次。
-	 * 令牌机制只保证「最后一次的结果算数」，它挡不住请求本身被重复发出去。
-	 */
-	valuePending?: boolean;
-	/**
-	 * 异步取值是否已经**确认取不到**（重试用尽）。
-	 *
-	 * 跟 `valueResolved` 分开是有意的：
-	 * `valueResolved` 的意思是「**取到了值**」，而这里是「**试过了，确实取不到**」。
-	 * 两者混在一起的话，一次被吞掉的失败会被当成「取到了『还没有』」——
-	 * 那一行就此冻住，用户看到的却是假的。
-	 */
-	valueFailed?: boolean;
-	/**
-	 * 异步取值已经**试了几次**（失败计数）。
-	 *
-	 * 用来给重试封顶：取不到就如实说取不到，而不是让这一行永远停在「读取中…」。
-	 */
-	valueAttempts?: number;
-}
+interface IOlympiaOnboardingCardBinding {
 
-/**
- * 最近打开的是「文件夹」还是「工作区」。
- *
- * 两者结构不同（`IRecentFolder` 有 `folderUri`，`IRecentWorkspace` 有 `workspace`），
- * 但它们是联合类型，写 `'folderUri' in entry` 会在联合上收窄 —— 只是本仓的 lint 不允许
- * 裸用 `in`。写成**类型谓词函数**之后既合法，又保留了收窄能力。
- */
-function isRecentFolder(entry: IRecentFolder | IRecentWorkspace): entry is IRecentFolder {
-	return 'folderUri' in entry;
+	/** 卡片容器本身。 */
+	readonly element: HTMLElement;
+
+	/** 「未保存」标记（平时是空的）。 */
+	readonly unsavedElement: HTMLElement;
+
+	/** 每一个可选项（与 DOM 里的按钮一一对应）。 */
+	readonly choices: readonly { readonly element: HTMLElement; readonly value: string }[];
 }
 
 export class OlympiaOnboardingCards implements IDisposable {
-
-	/**
-	 * 读不到 `editor.fontFamily` 时的中性等宽栈。
-	 *
-	 * 刻意**不**写上游的平台默认值（Windows 是 Consolas、macOS 是 Menlo、Linux 是 Droid
-	 * Sans Mono）—— 那等于在 core 里抄一份会漂移的默认值。这里只是「一个能用的等宽字体」，
-	 * 读得到真实配置时永远用真实值。
-	 */
-	private static readonly MONO_FALLBACK = `ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, 'Liberation Mono', monospace`;
 
 	/** 补写重试的间隔（毫秒）。 */
 	private static readonly FLUSH_RETRY_INTERVAL = 400;
@@ -213,19 +144,6 @@ export class OlympiaOnboardingCards implements IDisposable {
 	 */
 	private static readonly FLUSH_RETRY_LIMIT = 60;
 
-	/**
-	 * 异步取值失败后的重试间隔（毫秒）。
-	 */
-	private static readonly VALUE_RETRY_INTERVAL = 800;
-
-	/**
-	 * 异步取值最多试几次（**含**第一次）。
-	 *
-	 * 3 次 × 800ms ≈ 2.4 秒。取不到就如实说取不到 ——
-	 * 让这一行永远停在「读取中…」是在骗用户。
-	 */
-	private static readonly VALUE_RETRY_LIMIT = 3;
-
 	readonly element: HTMLElement;
 
 	private readonly delegate: IOlympiaOnboardingCardsDelegate;
@@ -233,28 +151,10 @@ export class OlympiaOnboardingCards implements IDisposable {
 	private readonly trackElement: HTMLElement;
 	private readonly cardElements: HTMLElement[] = [];
 	private readonly dotElements: HTMLElement[] = [];
-	private readonly bodyElements: HTMLElement[] = [];
-	private readonly previewElements: HTMLElement[] = [];
-
-	/**
-	 * 当前预览里那段代码样例 —— **直接持有引用**。
-	 *
-	 * 早先这里是回头用选择器找的：
-	 * 一是仓库规矩不允许用选择器取元素（脆），二是预览区是整片重建的，
-	 * 重建完再回头找，还得保证找到的是**当前**那一份。
-	 */
-	private codeSampleElement: HTMLElement | undefined;
-	/** 代码样例的每一行（与 `codeSampleElement` 同批构造）。 */
-	private codeSampleLines: readonly HTMLElement[] = [];
-	/** 光标元素（搬家时要先摘下来，再挂到新行末尾）。 */
-	private codeSampleCaret: HTMLElement | undefined;
 	private readonly footerElements: HTMLElement[] = [];
 
-	/** 每张卡的行绑定（与 `bodyElements` 一一对应）。 */
-	private readonly rowBindings: IOlympiaOnboardingRowBinding[][] = [];
-
-	/** 每张卡当前行区的结构签名。签名没变就只更新状态，不重建 DOM。 */
-	private readonly rowSignatures: string[] = [];
+	/** 每张卡的绑定（与 `cardElements` 一一对应）。 */
+	private readonly cardBindings: IOlympiaOnboardingCardBinding[] = [];
 
 	/** 卡片轨道位置（浮点）。 */
 	private position = 0;
@@ -287,7 +187,7 @@ export class OlympiaOnboardingCards implements IDisposable {
 	/**
 	 * 扩展还没注册配置时，写不进去的值先攒着，等注册好了再补写。
 	 *
-	 * 这个 map 同时是「用户当前选择的真相」—— 卡片显示和预览都优先读它。
+	 * 这个 map 同时是「用户当前选择的真相」—— 卡片显示也优先读它。
 	 */
 	private readonly pendingWrites = new Map<string, unknown>();
 
@@ -343,11 +243,12 @@ export class OlympiaOnboardingCards implements IDisposable {
 	 * 而一个永不 settle 的写入会让预算永远用不完。
 	 */
 	private readonly pendingWriteRounds = new Map<string, number>();
+
 	/**
 	 * 没能保存上的配置项 → 原因。
 	 *
 	 * 键是配置键，值是给用户看的原因（「配置 X 尚未注册」之类）。
-	 * 空 = 没有没保存上的项；这一行会因此在卡片上显示「未保存」。
+	 * 空 = 没有没保存上的项；这张卡会因此显示「未保存」。
 	 */
 	private readonly unsavedKeys = new Map<string, string>();
 
@@ -357,30 +258,19 @@ export class OlympiaOnboardingCards implements IDisposable {
 	 * 从这一刻起，卡片区的 DOM **结构**不许再变。
 	 *
 	 * 进入动画里卡片正在化成粒子、工作台正在从洞里长出来 ——
-	 * 这时候把行区或预览区整个换掉（`replaceChildren`），
+	 * 这时候把选择列表整个换掉（`replaceChildren`），
 	 * 就是「全程没有断点」要防的那一帧硬切。
 	 *
-	 * 「状态」照旧可以就地改（chip 高亮、开关态、行的文本）——
+	 * 「状态」照旧可以就地改（选中态、「未保存」标记）——
 	 * 那些不动 DOM 结构，不会造成跳变。
 	 */
 	private entering = false;
-
-	/**
-	 * 异步取值失败后的**重试队列**与定时器。
-	 *
-	 * 队列而不是单个回调：以后再加异步行时，多个失败也能各自排上队。
-	 * 定时器**不进 `disposables`**（那是写入补写的规矩），而是在 `dispose()` 里清掉 ——
-	 * overlay 都没了，这一行也就没人看了，没必要再试。
-	 */
-	private readonly valueRetryQueue: (() => void)[] = [];
-	private valueRetryTimer: number | null = null;
 
 	private readonly disposables: IDisposable[] = [];
 
 	constructor(
 		delegate: IOlympiaOnboardingCardsDelegate,
-		@IConfigurationService private readonly configurationService: IConfigurationService,
-		@IWorkspacesService private readonly workspacesService: IWorkspacesService
+		@IConfigurationService private readonly configurationService: IConfigurationService
 	) {
 		this.delegate = delegate;
 
@@ -401,8 +291,7 @@ export class OlympiaOnboardingCards implements IDisposable {
 		for (let index = 0; index < OLYMPIA_ONBOARDING_CARD_COUNT; index++) {
 			const card = this.createCard(index);
 			this.cardElements.push(card.element);
-			this.bodyElements.push(card.body);
-			this.previewElements.push(card.preview);
+			this.cardBindings.push(card.binding);
 			this.footerElements.push(card.footer);
 			this.trackElement.appendChild(card.element);
 		}
@@ -415,7 +304,9 @@ export class OlympiaOnboardingCards implements IDisposable {
 		// 每次配置变化都重建它没有意义，只会把用户正按着的按钮换掉。
 		for (let index = 0; index < OLYMPIA_ONBOARDING_CARD_COUNT; index++) {
 			const descriptor = this.descriptorFor(index);
-			this.footerElements[index].replaceChildren(...this.buildFooter(descriptor, index));
+			for (const child of this.buildFooter(descriptor, index)) {
+				this.footerElements[index].appendChild(child);
+			}
 		}
 
 		this.registerInteractions();
@@ -434,7 +325,7 @@ export class OlympiaOnboardingCards implements IDisposable {
 	 * 这里给的是 `getBoundingClientRect()`，也就是**用户眼睛看到的位置**，
 	 * 不是未变换的布局位置；否则卡片一旦被拖到轨道中间，星光就会从旁边冒出来。
 	 *
-	 * 只在进入动画起跑时读一次（4 次布局读），不要每帧读。
+	 * 只在进入动画起跑时读一次（3 次布局读），不要每帧读。
 	 */
 	getCardRects(): readonly DOMRect[] {
 		return this.cardElements.map(element => element.getBoundingClientRect());
@@ -446,44 +337,21 @@ export class OlympiaOnboardingCards implements IDisposable {
 	}
 
 	/**
-	 * 视口尺寸变了：重新量一次代码样例的可见行数，把光标挪到还看得见的最后一行。
-	 *
-	 * 窗口一变窄变矮，预览块就变矮，能显示的代码行数也跟着变 —— 光标还挂在原来那行，
-	 * 它可能已经掉进底部渐隐区（用户看不见光标），也可能停在一行早就被裁掉的位置。
-	 */
-	handleViewportResize(): void {
-		// 进入动画期间**冻结** —— 和 `beginEnterAnimation` 说的是同一件事。
-		// 卡片正在化成粒子，这时候去量高度、挪光标，就是「全程没有断点」
-		// 要防的那一帧硬切（`placeCodeCarets` 会读 `clientHeight` 触发同步布局）。
-		if (this.entering) {
-			return;
-		}
-		this.placeCodeCarets();
-	}
-
-	/**
 	 * 进入动画起跑：从这一刻起，卡片区的 DOM **结构**冻结。
 	 *
 	 * 为什么要有这个开关：
 	 *
-	 *  - 预览区是**整片重建**的（`replaceChildren`），行区在结构变了的时候也是。
-	 *    进入动画正在把卡片化成粒子的时候换掉它们，就是「全程没有断点」
-	 *    要防的那一帧硬切 —— 画面会「啪」地跳一下。
-	 *  - 触发源是真实存在的：扩展注册 `olympia.*` 配置项会连着触发
-	 *    `onDidChangeConfiguration` → `refresh()` → 重建预览区；
+	 *  - 扩展注册 `olympia.*` 配置项会连着触发 `onDidChangeConfiguration` → `refresh()`；
 	 *    「放弃写入」的收场路径也会刷一次。
-	 *
-	 * 冻结之后卡片保持进入动画那一刻的样子：它马上就要散掉了，
-	 * 最后一帧长什么样其实无所谓，但**不能跳**。
+	 *    这些路径今天都只改**状态**，但它们是**未来**某个「整片重建」的唯一入口 ——
+	 *    入口一旦存在，就必须在进入动画期间关上。
+	 *  - 起跑那一帧 dissolve 还是 1，卡片是**看得见**的。用户正好按住它开始拖拽的话，
+	 *    拖拽是挂在 window 上的 pointermove，会跟着手指继续跑，把正在化掉的卡片拖偏。
+	 *    所以这里当场把指针事件掐掉，并把可能已经起手的拖拽复位。
 	 */
 	beginEnterAnimation(): void {
 		this.entering = true;
 		// 立刻断掉输入，不等下一帧。
-		//
-		// 时间线里的 `interactive` 只在 dissolve 完整（配置期）时为真，但起跑那一帧
-		// dissolve 还是 1 —— 那一帧卡片是**看得见**的。用户正好按住它开始拖拽的话，
-		// 拖拽是挂在 window 上的 pointermove，会跟着手指继续跑，把正在化掉的卡片拖偏。
-		// 所以这里当场把指针事件掐掉，并把可能已经起手的拖拽复位。
 		for (const element of this.cardElements) {
 			element.style.pointerEvents = 'none';
 		}
@@ -570,384 +438,64 @@ export class OlympiaOnboardingCards implements IDisposable {
 	/**
 	 * 配置变化后刷新卡片内容。
 	 *
-	 * 分两层：
-	 *  - **结构**（有哪些行、有哪些选项）变了 → 只重建那几行的 DOM；
-	 *  - **状态**（选中哪个、开关开没开、这一行的值）变了 → 就地改，DOM 元素不动。
-	 *
-	 * 早先这里是整片 `replaceChildren`，等于「配置一变就把 4 张卡的行区全换掉」——
-	 * 用户手指正按着的按钮会被换掉，换掉的那一瞬间就是硬切。
-	 * 页脚不在这里刷：它只跟卡片序号有关，建一次就够。
+	 * 只刷**状态**（选中哪个、这一项有没有保存上），不动结构：
+	 * 选择列表的 DOM 在构造期就建好了，运行期一个元素都不换。
 	 */
 	refresh(): void {
-		this.refreshRowStates();
-		this.refreshPreview();
+		this.updateCardStates();
 		void this.flushPendingWrites();
 	}
 
 	/**
-	 * 只重刷**行状态**（选中态 / 开关态 / 值），不重建 DOM、不重刷预览、不触发写入。
-	 *
-	 * 「放弃写入」之后必须走这条路：那时候 `pendingWrites` 里的值已经被摘掉，
-	 * 卡片的 chip 高亮还停在用户刚点的那个选项上 —— 界面在撒谎。
-	 */
-	private refreshRowStates(): void {
-		for (let index = 0; index < OLYMPIA_ONBOARDING_CARD_COUNT; index++) {
-			const descriptor = this.descriptorFor(index);
-			this.updateRows(index, descriptor.rows);
-		}
-	}
-
-	/**
-	 * 刷新一张卡的行区。
-	 *
-	 * 结构签名 = 行数 + 每行的 kind / label / 配置键 / 选项集合。
-	 * **不含**行里的值 —— 值变了属于「状态」，走就地更新，不该重建 DOM。
-	 */
-	private updateRows(index: number, rows: readonly IOlympiaOnboardingRow[]): void {
-		const signature = OlympiaOnboardingCards.rowsSignature(rows);
-		const bindings = this.rowBindings[index];
-		if (!bindings || bindings.length !== rows.length || this.rowSignatures[index] !== signature) {
-			this.rebuildRows(index, rows, signature);
-			return;
-		}
-		for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
-			this.updateRowState(rows[rowIndex], bindings[rowIndex]);
-		}
-	}
-
-	/** 结构变了：重建这张卡的行区，然后立刻把状态刷成当前真值。 */
-	private rebuildRows(index: number, rows: readonly IOlympiaOnboardingRow[], signature: string): void {
-		if (this.entering) {
-			// 进入动画期间：行区**冻结**，不换 DOM。
-			// 换成 `replaceChildren` 就是「全程没有断点」要防的那一帧硬切。
-			// 状态还照刷 —— 就地改不动结构，跳不出来。
-			const bindings = this.rowBindings[index];
-			if (bindings) {
-				const count = Math.min(bindings.length, rows.length);
-				for (let rowIndex = 0; rowIndex < count; rowIndex++) {
-					this.updateRowState(rows[rowIndex], bindings[rowIndex]);
-				}
-			}
-			return;
-		}
-		const built = this.buildRows(rows);
-		this.bodyElements[index].replaceChildren(...built.elements);
-		this.rowBindings[index] = built.bindings;
-		this.rowSignatures[index] = signature;
-		for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
-			this.updateRowState(rows[rowIndex], built.bindings[rowIndex]);
-		}
-	}
-
-	/**
-	 * 就地更新一行的状态。
+	 * 就地更新每张卡的状态。
 	 *
 	 * 这一层是「配置一变不硬切」的关键：DOM 元素不动，只改类名和文本。
 	 */
-	private updateRowState(row: IOlympiaOnboardingRow, binding: IOlympiaOnboardingRowBinding): void {
-		// 「没保存上」的标记要在 switch **之前**刷 ——
-		// 三个分支里都有提前 return 的写法（这一行没有对应元素就跳过），
-		// 放在 switch 后面的话，那些行就永远刷不到标记。
-		this.updateRowUnsavedState(row, binding);
-		switch (row.kind) {
-			case 'value': {
-				const value = binding.valueElement;
-				if (!value) {
-					return;
-				}
-				if (row.asyncValue) {
-					// 异步取值：**三道**闸门，缺一不可。
-					//
-					// ① `valueResolved` —— **取到了值**的行直接跳过：既不把文本打回占位，
-					//    也不重发请求。不跳过的话，用户点一下别的选项就会看到「最近工程」
-					//    闪回「读取中…」，后台还多跑一次 `getRecentlyOpened()`。
-					// ② `valueFailed` —— **确认取不到**的行也跳过：已经如实报过错了，
-					//    再试只是重复 IO。
-					// ③ `valuePending` —— 请求**在途**（或者**在等重试**）时跳过。扩展注册
-					//    `olympia.*` 配置项会连着触发一串 refresh，而它们多半发生在第一次
-					//    请求还没回来的时候；只靠 ① 的话，那段时间里请求会被重复发出去。
-					if (binding.valueResolved || binding.valueFailed) {
-						break;
-					}
-					if (binding.valuePending) {
-						break;
-					}
-					value.textContent = row.value ?? '';
-					const token = (binding.valueToken ?? 0) + 1;
-					binding.valueToken = token;
-					binding.valuePending = true;
-					row.asyncValue().then(text => {
-						// 先核对身份，再放掉「在途」——
-						// 放早了的话，更新的一次请求就失去了保护，
-						// 会被又一轮 refresh 顶掉。
-						if (binding.valueToken !== token || binding.valueElement !== value) {
-							return;
-						}
-						binding.valuePending = false;
-						binding.valueResolved = true;
-						value.textContent = text;
-					}, error => {
-						if (binding.valueToken !== token || binding.valueElement !== value) {
-							return;
-						}
-						// 取不到就**如实说取不到**，但也别急着下结论：
-						// 存储服务在启动早期偶尔会抽风，先按有界次数重试。
-						//
-						// 这里**不**置 `valueResolved` —— 那是「取到了值」的标记。
-						// 一旦置上，这一行就被冻住：一次被吞掉的失败会被当成
-						// 「取到了『还没有』」，用户看到的是假的。
-						const attempts = (binding.valueAttempts ?? 0) + 1;
-						binding.valueAttempts = attempts;
-						console.warn(`[Olympia] 取「最近工程」失败（第 ${attempts} 次）：${error}`);
-						if (attempts >= OlympiaOnboardingCards.VALUE_RETRY_LIMIT) {
-							// 到上限还是取不到 —— 如实说取不到，
-							// 别让这一行永远停在「读取中…」骗用户。
-							binding.valuePending = false;
-							binding.valueFailed = true;
-							value.textContent = localize('olympia.onboarding.practice.recent.failed', "读取失败");
-							return;
-						}
-						// 还留占位 —— 空白的一行看起来像「这一项坏了」。
-						value.textContent = row.value ?? '';
-						// 「在途」**不**在这里放掉 ——
-						// 放了的话，从失败到重试定时器真的 fire 之间这 800ms 里，
-						// 任何一次 refresh() 都会穿过上面三道闸门重发一次请求，
-						// 而它的失败又把 `valueAttempts` 加一：用户在 800ms 窗口里
-						// 点一下别的选项，就能把「3 次重试」的预算提前用光，
-						// 这一行从此永久停在「读取失败」—— 可存储服务其实早就好了。
-						// 所以这里保持 `valuePending = true`，直到下面排好的重试真的起跑。
-						this.scheduleValueRetry(() => {
-							// 行区早就被重建过的话，这个绑定指向的是 detached 元素，重试没有意义。
-							if (!value.isConnected) {
-								return;
-							}
-							if (binding.valueToken !== token) {
-								// 已经有更新的一次请求接管了这一行 —— 它自己会走它的那条重试链。
-								return;
-							}
-							// 这一轮重试真的起跑了 —— 现在才把「在途」放掉，
-							// 免得上面第 ③ 道闸门把自己挡住。
-							binding.valuePending = false;
-							this.updateRowState(row, binding);
-						});
-					});
-					break;
-				}
-				value.textContent = row.value ?? '';
-				break;
+	private updateCardStates(): void {
+		// 进入动画期间：卡片区**冻结**。
+		// 卡片正在化成粒子，这时候去改结构就是「全程没有断点」要防的那一帧硬切。
+		// 状态都改不得 —— 选中态一变也是一次可见的跳变。
+		if (this.entering) {
+			return;
+		}
+		for (let index = 0; index < OLYMPIA_ONBOARDING_CARD_COUNT; index++) {
+			const descriptor = this.descriptorFor(index);
+			const binding = this.cardBindings[index];
+			if (!binding) {
+				continue;
 			}
-			case 'options': {
-				const chips = binding.chips;
-				if (!chips || !row.configurationKey) {
-					return;
-				}
-				const current = this.readConfig(row.configurationKey);
-				for (const chip of chips) {
-					chip.element.classList.toggle('selected', String(current) === chip.value);
-				}
-				break;
+			const current = this.readConfig(descriptor.configurationKey);
+			for (const choice of binding.choices) {
+				const selected = String(current) === choice.value;
+				choice.element.classList.toggle('selected', selected);
+				choice.element.setAttribute('aria-checked', String(selected));
 			}
-			case 'toggle': {
-				const toggle = binding.toggle;
-				if (!toggle) {
-					return;
-				}
-				const checked = this.isRowChecked(row, binding.fallbackChecked === true);
-				toggle.setAttribute('aria-checked', String(checked));
-				toggle.classList.toggle('on', checked);
-				break;
-			}
+			this.updateCardUnsavedState(descriptor, binding);
 		}
 	}
 
 	/**
 	 * 把「这一项没能保存」如实说给用户。
 	 *
-	 * 读侧有行内通道（取不到值就显示「读取失败」），**写侧以前没有**：
-	 * 写入失败只往 console 里写一句，界面上看不出任何区别 ——
-	 * 用户点了「C++23」，配置写不进去，他看到的还是那个选中的芯片，
+	 * 写入失败只往 console 里写一句的话，界面上看不出任何区别 ——
+	 * 用户点了「C++23」，配置写不进去，他看到的还是那个选中的选项，
 	 * 于是以为配置生效了；等进了 IDE 才发现设置根本没变。
 	 *
-	 * 三个行类型（取值 / 选项 / 开关）没有共同的「值元素」，
-	 * 所以标记挂在**行标签**上：标签变红 + 紧跟一个「未保存」，
-	 * 原因写进 title（悬停能看全）。
+	 * 标记挂在**卡片**上（不在某个选项上）：一张卡只有一个配置项，
+	 * 「没保存上」说的是这一整张卡的事；而挂在选项上时，
+	 * 一旦选项列表被替换，提示会跟着消失。
 	 */
-	private updateRowUnsavedState(row: IOlympiaOnboardingRow, binding: IOlympiaOnboardingRowBinding): void {
-		const key = row.configurationKey;
-		const reason = key ? this.unsavedKeys.get(key) : undefined;
-		const status = binding.statusElement;
+	private updateCardUnsavedState(descriptor: IOlympiaOnboardingCardDescriptor, binding: IOlympiaOnboardingCardBinding): void {
+		const reason = this.unsavedKeys.get(descriptor.configurationKey);
 		if (reason) {
-			binding.container.classList.add('olympia-onboarding-row-unsaved');
-			binding.container.title = reason;
-			if (status) {
-				status.textContent = localize('olympia.onboarding.row.unsaved', "未保存");
-			}
+			binding.element.classList.add('olympia-onboarding-card-has-unsaved');
+			binding.unsavedElement.textContent = localize('olympia.onboarding.row.unsaved', "未保存");
+			binding.unsavedElement.title = reason;
 			return;
 		}
-		binding.container.classList.remove('olympia-onboarding-row-unsaved');
-		binding.container.title = '';
-		if (status) {
-			status.textContent = '';
-		}
-	}
-
-	/**
-	 * 开关当前是不是打开的。
-	 *
-	 * 真值取自 `readConfig()` —— 它优先读 `pendingWrites`（用户刚按下的选择），
-	 * 所以外部配置变化能同步过来，用户刚点的也不会被一次迟到的刷新覆盖。
-	 */
-	private isRowChecked(row: IOlympiaOnboardingRow, fallback: boolean): boolean {
-		if (!row.configurationKey) {
-			return fallback;
-		}
-		const current = this.readConfig(row.configurationKey);
-		if (row.toggleValues) {
-			return current === row.toggleValues.on;
-		}
-		return current === true;
-	}
-
-	/**
-	 * 异步取值失败后的**有界重试**。
-	 *
-	 * 「最近工程」取不到有两种可能：存储服务真的坏了，或者它只是**还没准备好** ——
-	 * 引导是在 `WorkbenchPhase.BlockStartup` 阶段建的，那时候存储可能还没就绪。
-	 * 前者不该让这一行永远停在「读取中…」，后者不该一次失败就宣判。
-	 *
-	 * 所以：失败先按 `VALUE_RETRY_LIMIT` 次重试，每次间隔 `VALUE_RETRY_INTERVAL`；
-	 * 到上限还没取到，就如实显示「读取失败」，不再重试。
-	 *
-	 * 用队列而不是单个回调：以后再加异步行时，多个失败也能各自排上队。
-	 * 定时器**不进 `disposables`**（那是写入补写的规矩），而是在 `dispose()` 里清掉 ——
-	 * overlay 都没了，这一行也就没人看了，没必要再试。
-	 */
-	private scheduleValueRetry(task: () => void): void {
-		this.valueRetryQueue.push(task);
-		if (this.valueRetryTimer !== null) {
-			return;
-		}
-		this.valueRetryTimer = mainWindow.setTimeout(() => {
-			this.valueRetryTimer = null;
-			const queue = this.valueRetryQueue.splice(0, this.valueRetryQueue.length);
-			for (const item of queue) {
-				item();
-			}
-		}, OlympiaOnboardingCards.VALUE_RETRY_INTERVAL);
-	}
-
-	/**
-	 * 行区的结构签名。
-	 *
-	 * 只包含**结构**信息：行的数量、kind、label、绑定的配置键、选项集合、开关取值。
-	 * 行里的值不参与 —— 值变是状态，不该触发重建。
-	 */
-	private static rowsSignature(rows: readonly IOlympiaOnboardingRow[]): string {
-		return rows.map(row => {
-			const options = (row.options ?? [])
-				.map(option => `${option.value}|${String(option.configValue ?? '')}`)
-				.join(',');
-			const toggleValues = row.toggleValues
-				? `${String(row.toggleValues.on)}/${String(row.toggleValues.off)}`
-				: '';
-			return `${row.kind}#${row.label}#${row.configurationKey ?? ''}#${options}#${toggleValues}`;
-		}).join(';');
-	}
-
-	/**
-	 * 只重建预览区。
-	 *
-	 * 预览区是「这次选择会带来什么后果」，必须跟着改；
-	 * 行区（开关 / 选项）自己有本地状态，整片重建会把用户刚按下的按钮换掉 ——
-	 * 所以两者分开刷：行区由点击就地更新，预览区才重建。
-	 */
-	private refreshPreview(): void {
-		if (this.entering) {
-			// 进入动画期间：预览区**冻结**。
-			// 预览区是整片 `replaceChildren` 重建的 —— 动画正在把卡片化成粒子
-			// 的时候换掉它，就是「全程没有断点」要防的那一帧硬切。
-			// 卡片马上就要散掉，最后一帧长什么样已经无所谓了，但**不能跳**。
-			return;
-		}
-		for (let index = 0; index < OLYMPIA_ONBOARDING_CARD_COUNT; index++) {
-			const descriptor = this.descriptorFor(index);
-			this.previewElements[index].replaceChildren(...descriptor.preview());
-		}
-		// 预览重建了，代码样例也就重建了 —— 光标得重新落到看得见的那一行。
-		this.placeCodeCarets();
-	}
-
-	/**
-	 * 把光标挪到「最后一条完全看得见的代码行」的末尾。
-	 *
-	 * 样例永远比可视高度长（字号是用户的，14px 时就已经装不下 11 行），底部还有一条渐隐。
-	 * 光标如果还挂在原始的最后一行，那行在渐隐区里 —— 用户根本看不见光标，
-	 * 「编辑器手感」这张卡想传达的东西就丢了。
-	 *
-	 * 判据：
-	 *  - 整体放得下 → 挂在最后一行（跟真编辑器一样，代码没截断）；
-	 *  - 放不下 → 挂在底部渐隐区**之外**（`OLYMPIA_ONBOARDING_CODE_CARET_ZONE`）的最后一行。
-	 */
-	private placeCodeCarets(): void {
-		const code = this.codeSampleElement;
-		const caret = this.codeSampleCaret;
-		const lines = this.codeSampleLines;
-		if (!code || !caret || lines.length === 0) {
-			return;
-		}
-		const target = this.lastVisibleCodeLine(code, lines);
-		caret.remove();
-		target.appendChild(caret);
-	}
-
-	/** 最后一条完全看得见的代码行。 */
-	private lastVisibleCodeLine(code: HTMLElement, lines: readonly HTMLElement[]): HTMLElement {
-		const last = lines[lines.length - 1];
-		const boxHeight = code.clientHeight;
-		// 还没接进文档（构造期）或者预览被隐藏（极矮窗口）时量不到高度 ——
-		// 这时候挂最后一行，等布局好了 `handleViewportResize` 会再挪一次。
-		if (boxHeight <= 0) {
-			return last;
-		}
-		if (code.scrollHeight <= boxHeight + 0.5) {
-			return last;
-		}
-		const lineHeight = this.codeLineHeight(code, lines);
-		if (lineHeight <= 0) {
-			return last;
-		}
-		const limit = boxHeight * OLYMPIA_ONBOARDING_CODE_CARET_ZONE;
-		let index = Math.floor(limit / lineHeight) - 1;
-		if (index < 0) {
-			index = 0;
-		}
-		if (index > lines.length - 1) {
-			index = lines.length - 1;
-		}
-		return lines[index];
-	}
-
-	/** 代码样例里一行的实际高度（px）。量不到就按字号和行高算。 */
-	private codeLineHeight(code: HTMLElement, lines: readonly HTMLElement[]): number {
-		const first = lines[0];
-		if (first) {
-			const measured = first.getBoundingClientRect().height;
-			if (measured > 0) {
-				return measured;
-			}
-		}
-		const fontSize = parseFloat(code.style.fontSize);
-		if (!isFinite(fontSize) || fontSize <= 0) {
-			return 0;
-		}
-		const raw = code.style.lineHeight.trim();
-		if (raw.endsWith('px')) {
-			const pixels = parseFloat(raw);
-			return isFinite(pixels) && pixels > 0 ? pixels : 0;
-		}
-		const ratio = parseFloat(raw);
-		// `.olympia-onboarding-code-line` 有 `min-height: 1.55em`，所以一行最少那么高。
-		return isFinite(ratio) && ratio > 0 ? fontSize * Math.max(ratio, 1.55) : fontSize * 1.55;
+		binding.element.classList.remove('olympia-onboarding-card-has-unsaved');
+		binding.unsavedElement.textContent = '';
+		binding.unsavedElement.title = '';
 	}
 
 	dispose(): void {
@@ -957,18 +505,6 @@ export class OlympiaOnboardingCards implements IDisposable {
 			disposable.dispose();
 		}
 		this.disposables.length = 0;
-		// 异步取值的重试**要取消** —— 跟写入补写不一样：overlay 都没了，
-		// 那一行也就没人看了，再试只是白跑 IO。
-		if (this.valueRetryTimer !== null) {
-			mainWindow.clearTimeout(this.valueRetryTimer);
-			this.valueRetryTimer = null;
-		}
-		this.valueRetryQueue.length = 0;
-		// 代码样例的引用也丢掉 —— 元素已经不在文档里了，
-		// 留着只会让「挪光标」往一个 detached 节点上挂。
-		this.codeSampleElement = undefined;
-		this.codeSampleLines = [];
-		this.codeSampleCaret = undefined;
 		this.unsavedKeys.clear();
 		this.element.remove();
 		// `flushRetryTimer` **故意不取消** —— 还没写下去的选择要继续写完，
@@ -997,26 +533,11 @@ export class OlympiaOnboardingCards implements IDisposable {
 	}
 
 	/**
-	 * 等宽字体。
-	 *
-	 * CSS 里不能写 `var(--vscode-editor-font-family)` —— 白名单里没有这个变量，
-	 * stylelint 会判红；写死一个栈又和用户改过的 `editor.fontFamily` 对不上。
-	 * 所以这里从配置服务读**真实值**（含上游按平台给的默认值），再以内联样式写到元素上。
-	 */
-	private monoFontFamily(): string {
-		const family = this.readConfig(OLYMPIA_CONFIG_EDITOR_FONT_FAMILY);
-		if (typeof family === 'string' && family.trim().length > 0) {
-			return family;
-		}
-		return OlympiaOnboardingCards.MONO_FALLBACK;
-	}
-
-	/**
 	 * 把用户的选择写进配置。
 	 *
 	 * `olympia.*` 这些键属于内置扩展，扩展没扫描完之前 `updateValue` 会抛
 	 * 「unknown configuration」。所以先把值记在 `pendingWrites` 里（它同时也是
-	 * 「用户当前选择的真相」，卡片和预览都读它），等扩展注册完再补写 ——
+	 * 「用户当前选择的真相」，卡片读它），等扩展注册完再补写 ——
 	 * 否则用户的选择永远存不下来。
 	 */
 	private async writeConfig(key: string, value: unknown): Promise<void> {
@@ -1130,8 +651,8 @@ export class OlympiaOnboardingCards implements IDisposable {
 	 * 返回 true 表示「已经放弃写入」，调用方不要再往下走。
 	 *
 	 * 摘掉之后 `readConfig()` 会回到配置真值 —— 但**界面不会自己变**：
-	 * chip 的高亮还停在用户刚点的那个选项上，不刷一次的话界面就在撒谎。
-	 * 这里刷行状态 + 预览，但**不**走 `refresh()`：它会再触发一轮写入，形成递归。
+	 * 选中态还停在用户刚点的那个选项上，不刷一次的话界面就在撒谎。
+	 * 这里刷卡片状态，但**不**走 `refresh()`：它会再触发一轮写入，形成递归。
 	 */
 	private abandonWriteIfExhausted(key: string, reason: string, error?: unknown, attemptedValue?: unknown): boolean {
 		const rounds = (this.pendingWriteRounds.get(key) ?? 0) + 1;
@@ -1149,7 +670,7 @@ export class OlympiaOnboardingCards implements IDisposable {
 		if (this.pendingWrites.get(key) === attemptedValue) {
 			this.pendingWrites.delete(key);
 			// **说给用户听** —— 只写 console 的话，界面跟没事一样，
-			// 用户以为自己的选择生效了（见 updateRowUnsavedState 的说明）。
+			// 用户以为自己的选择生效了（见 updateCardUnsavedState 的说明）。
 			// 放在这个 if 里面：用户后来又改过的话，新值还在写，
 			// 旧值的失败不该算到新值头上。
 			this.unsavedKeys.set(key, reason);
@@ -1166,8 +687,7 @@ export class OlympiaOnboardingCards implements IDisposable {
 		// 摘的时候**代号**也一起失效：旧写入回来时 `finally` 发现代号对不上，
 		// 就不会把新一轮写入的标记误摘掉（那会造成同一个键并发写）。
 		this.writingKeys.delete(key);
-		this.refreshRowStates();
-		this.refreshPreview();
+		this.updateCardStates();
 		return true;
 	}
 
@@ -1321,234 +841,82 @@ export class OlympiaOnboardingCards implements IDisposable {
 		switch (index) {
 			case 0: return this.compileCard();
 			case 1: return this.editorCard();
-			case 2: return this.contestCard();
 			default: return this.practiceCard();
 		}
 	}
 
+	/**
+	 * 第一张卡：选评测机。
+	 *
+	 * 选项的副说明是**评测机表里的真实值**（GCC 版本 + C++ 标准），
+	 * 不是设计稿里手写的数字 —— 表里没有的数字不许出现在卡上。
+	 */
 	private compileCard(): IOlympiaOnboardingCardDescriptor {
-		const target = olympiaActiveJudgeTarget(this.readConfig(OLYMPIA_CONFIG_COMPILER_PROFILE) as string | undefined);
-		const optimization = (this.readConfig(OLYMPIA_CONFIG_COMPILER_OPTIMIZATION) as string | undefined) ?? 'none';
-		const flags = olympiaRenderJudgeFlags(target).split(' ');
-		const optSwitch = optimization.trim().length === 0 || optimization === 'none' ? [] : [optimization.trim()];
-		const command = ['g++', ...flags, ...optSwitch, '-o', 'main.exe', 'main.cpp'].join(' ');
-
 		return {
 			id: 'compile',
-			icon: 'settings-gear',
-			title: localize('olympia.onboarding.compile.title', "编译配置"),
-			subtitle: 'olympia.compiler.*',
-			rows: [
-				{
-					label: localize('olympia.onboarding.compile.judge', "评测机"),
-					kind: 'options',
-					configurationKey: OLYMPIA_CONFIG_COMPILER_PROFILE,
-					options: OLYMPIA_JUDGE_TARGETS.map(candidate => ({
-						label: candidate.label,
-						value: candidate.id,
-						title: localize('olympia.onboarding.compile.judge.title', "{0} · GCC {1} · {2}", candidate.label, candidate.gcc, candidate.std.toUpperCase())
-					}))
-				},
-				{ label: localize('olympia.onboarding.compile.std', "C++ 标准"), kind: 'value', value: target.std.toUpperCase() },
-				{ label: localize('olympia.onboarding.compile.gcc', "评测机 GCC"), kind: 'value', value: target.gcc },
-				{
-					label: localize('olympia.onboarding.compile.optimization', "优化等级"),
-					kind: 'options',
-					configurationKey: OLYMPIA_CONFIG_COMPILER_OPTIMIZATION,
-					options: [
-						{ label: localize('olympia.onboarding.compile.optimization.none', "无"), value: 'none' },
-						{ label: '-O2', value: '-O2' },
-						{ label: '-O3', value: '-O3' }
-					]
-				}
-			],
-			preview: () => [
-				this.caption(localize('olympia.onboarding.compile.preview', "评测机同款编译命令")),
-				this.pipe([
-					{ text: 'main.cpp', key: true },
-					{ text: 'g++', key: false },
-					{ text: olympiaJudgeTargetSummary(target), key: false }
-				]),
-				this.command(command)
-			]
-		};
-	}
-
-	private editorCard(): IOlympiaOnboardingCardDescriptor {
-		const fontSize = Number(this.readConfig(OLYMPIA_CONFIG_EDITOR_FONT_SIZE) ?? 14);
-		const lineHeight = Number(this.readConfig(OLYMPIA_CONFIG_EDITOR_LINE_HEIGHT) ?? 0);
-		const minimap = this.readConfig(OLYMPIA_CONFIG_EDITOR_MINIMAP) !== false;
-		const caret = this.readConfig(OLYMPIA_CONFIG_EDITOR_SMOOTH_CARET);
-		// 上游枚举是 `off | explicit | on`（老值 `cursorSmoothing` 已经被改掉了）。
-		const smoothCaret = caret === 'on' || caret === 'explicit';
-
-		return {
-			id: 'editor',
-			icon: 'editor-layout',
-			title: localize('olympia.onboarding.editor.title', "编辑器手感"),
-			subtitle: 'editor.*',
-			rows: [
-				{
-					label: localize('olympia.onboarding.editor.fontSize', "字号"),
-					kind: 'options',
-					configurationKey: OLYMPIA_CONFIG_EDITOR_FONT_SIZE,
-					options: [12, 13, 14, 16].map(value => ({ label: String(value), value: String(value), configValue: value }))
-				},
-				{
-					label: localize('olympia.onboarding.editor.lineHeight', "行高"),
-					kind: 'options',
-					configurationKey: OLYMPIA_CONFIG_EDITOR_LINE_HEIGHT,
-					options: [
-						{ label: localize('olympia.onboarding.editor.lineHeight.auto', "跟随"), value: '0', configValue: 0 },
-						{ label: '1.3', value: '1.3', configValue: 1.3 },
-						{ label: '1.5', value: '1.5', configValue: 1.5 },
-						{ label: '1.7', value: '1.7', configValue: 1.7 }
-					]
-				},
-				{
-					label: localize('olympia.onboarding.editor.minimap', "缩略图"),
-					kind: 'toggle',
-					configurationKey: OLYMPIA_CONFIG_EDITOR_MINIMAP,
-					checked: minimap
-				},
-				{
-					label: localize('olympia.onboarding.editor.caret', "光标动画"),
-					kind: 'toggle',
-					configurationKey: OLYMPIA_CONFIG_EDITOR_SMOOTH_CARET,
-					checked: smoothCaret,
-					// 这个键的 schema 是 `off | explicit | on` —— 写布尔会被配置校验拒绝。
-					toggleValues: { on: 'on', off: 'off' }
-				}
-			],
-			preview: () => [
-				this.caption(localize('olympia.onboarding.editor.preview', "按当前主题渲染的样子")),
-				this.codeSample(fontSize, lineHeight)
-			]
-		};
-	}
-
-	private contestCard(): IOlympiaOnboardingCardDescriptor {
-		const recordSolves = this.readConfig(OLYMPIA_CONFIG_TRAIN_RECORD_SOLVES) !== false;
-		const checkEnabled = this.readConfig(OLYMPIA_CONFIG_CHECK_ENABLED) !== false;
-
-		return {
-			id: 'contest',
-			icon: 'star-full',
-			title: localize('olympia.onboarding.contest.title', "竞赛模式"),
-			subtitle: 'olympia.judge.* · olympia.train.*',
-			rows: [
-				{
-					label: localize('olympia.onboarding.contest.memory', "内存上限"),
-					kind: 'options',
-					configurationKey: OLYMPIA_CONFIG_JUDGE_MEMORY_LIMIT,
-					options: [
-						{ label: localize('olympia.onboarding.contest.memory.judge', "跟评测机"), value: '0', configValue: 0 },
-						{ label: '128 MB', value: '128', configValue: 128 },
-						{ label: '256 MB', value: '256', configValue: 256 },
-						{ label: '512 MB', value: '512', configValue: 512 }
-					]
-				},
-				{
-					label: localize('olympia.onboarding.contest.dailyGoal', "每日题量"),
-					kind: 'options',
-					configurationKey: OLYMPIA_CONFIG_TRAIN_DAILY_GOAL,
-					options: [1, 3, 5, 10].map(value => ({ label: String(value), value: String(value), configValue: value }))
-				},
-				{
-					label: localize('olympia.onboarding.contest.record', "记录通过"),
-					kind: 'toggle',
-					configurationKey: OLYMPIA_CONFIG_TRAIN_RECORD_SOLVES,
-					checked: recordSolves
-				},
-				{
-					label: localize('olympia.onboarding.contest.check', "提交前自检"),
-					kind: 'toggle',
-					configurationKey: OLYMPIA_CONFIG_CHECK_ENABLED,
-					checked: checkEnabled
-				}
-			],
-			preview: () => [
-				this.caption(localize('olympia.onboarding.contest.preview', "交卷前这四步")),
-				this.flow([
-					{ label: localize('olympia.onboarding.contest.step.check', "语法自检"), key: 'Ctrl+Alt+Enter' },
-					{ label: localize('olympia.onboarding.contest.step.compile', "评测机编译"), key: 'Ctrl+Shift+F9' },
-					{ label: localize('olympia.onboarding.contest.step.samples', "样例校验"), key: 'Ctrl+Alt+J' },
-					{ label: localize('olympia.onboarding.contest.step.stress', "压力测试"), key: 'Ctrl+Alt+S' }
-				])
-			]
-		};
-	}
-
-	private practiceCard(): IOlympiaOnboardingCardDescriptor {
-		const problemsDir = (this.readConfig(OLYMPIA_CONFIG_PROBLEMS_DIR) as string | undefined) ?? '.olympia/problems';
-		const templateOnPull = this.readConfig(OLYMPIA_CONFIG_TEMPLATE_ON_PULL) === true;
-		const snippets = this.readConfig(OLYMPIA_CONFIG_CPP_SNIPPETS) !== false;
-
-		return {
-			id: 'practice',
-			icon: 'beaker',
-			title: localize('olympia.onboarding.practice.title', "开始做题"),
-			subtitle: 'olympia.problem.*',
-			rows: [
-				{
-					label: localize('olympia.onboarding.practice.dir', "练习目录"),
-					kind: 'options',
-					configurationKey: OLYMPIA_CONFIG_PROBLEMS_DIR,
-					options: [
-						{ label: '.olympia/problems', value: '.olympia/problems' },
-						{ label: 'problems', value: 'problems' },
-						{ label: localize('olympia.onboarding.practice.dir.zh', "题目"), value: '题目' }
-					]
-				},
-				{
-					label: localize('olympia.onboarding.practice.template', "拉题时建模板"),
-					kind: 'toggle',
-					configurationKey: OLYMPIA_CONFIG_TEMPLATE_ON_PULL,
-					checked: templateOnPull
-				},
-				{
-					label: localize('olympia.onboarding.practice.snippets', "代码片段"),
-					kind: 'toggle',
-					configurationKey: OLYMPIA_CONFIG_CPP_SNIPPETS,
-					checked: snippets
-				},
-				{
-					label: localize('olympia.onboarding.practice.recent', "最近工程"),
-					kind: 'value',
-					// 异步取值期间先显示占位 —— 空白的一行看起来像「这一项坏了」。
-					value: localize('olympia.onboarding.practice.recent.loading', "读取中…"),
-					asyncValue: () => this.recentWorkspaceLabel()
-				}
-			],
-			preview: () => [
-				this.caption(localize('olympia.onboarding.practice.preview', "工程里会长成这样")),
-				this.directory(problemsDir)
-			]
+			title: localize('olympia.onboarding.compile.title', "选择评测环境"),
+			description: localize('olympia.onboarding.compile.description', "你写的代码会交给评测机编译和运行。选一个你平时比赛用的环境就够了。"),
+			configurationKey: OLYMPIA_CONFIG_COMPILER_PROFILE,
+			choices: OLYMPIA_JUDGE_TARGETS.map(candidate => ({
+				label: candidate.label,
+				description: localize('olympia.onboarding.compile.judge.description', "GCC {0} · {1}", candidate.gcc, candidate.std.toUpperCase()),
+				value: candidate.id
+			}))
 		};
 	}
 
 	/**
-	 * 最近打开的工程名。
+	 * 第二张卡：代码字号。
 	 *
-	 * `IRecentFolder` 给的是 `folderUri`，`IRecentWorkspace` 给的是 `workspace.id`
-	 * （一条 `IWorkspaceIdentifier`）。两者不是同一个字段，必须按 `in` 收窄 ——
-	 * 直接写 `first.workspaceUri` 编译不过，硬写 `as any` 则是把类型信息扔掉。
+	 * `editor.fontSize` 的 schema 是 `number`，所以每个选项都必须带
+	 * `configValue`（数字）—— 写字符串会被配置校验拒绝。
 	 */
-	private async recentWorkspaceLabel(): Promise<string> {
-		const empty = localize('olympia.onboarding.practice.recent.empty', "还没有");
-		// 这里**不**兜住异常 —— 兜住的话一次失败会被伪装成「还没有」，
-		// 而「取不到」和「确实没有」是两回事：前者该重试、该留痕，后者就该这么显示。
-		// 失败会一路 reject 到 `updateRowState()` 的失败分支，
-		// 那里负责留痕、有界重试，以及最后如实报「读取失败」。
-		const recent = await this.workspacesService.getRecentlyOpened();
-		const first = recent.workspaces[0];
-		if (!first) {
-			return empty;
-		}
-		if (isRecentFolder(first)) {
-			return first.folderUri.fsPath || empty;
-		}
-		return first.workspace.id || empty;
+	private editorCard(): IOlympiaOnboardingCardDescriptor {
+		const sizes: readonly { readonly size: number; readonly description: string }[] = [
+			{ size: 12, description: localize('olympia.onboarding.editor.fontSize.compact', "紧凑，一屏能看更多代码") },
+			{ size: 13, description: localize('olympia.onboarding.editor.fontSize.small', "偏小") },
+			{ size: 14, description: localize('olympia.onboarding.editor.fontSize.standard', "标准") },
+			{ size: 16, description: localize('olympia.onboarding.editor.fontSize.large', "大字号，看得更清楚") }
+		];
+		return {
+			id: 'editor',
+			title: localize('olympia.onboarding.editor.title', "调整代码字号"),
+			description: localize('olympia.onboarding.editor.description', "编辑器里代码显示多大，直接影响你长时间写代码时眼睛的舒适度。"),
+			configurationKey: OLYMPIA_CONFIG_EDITOR_FONT_SIZE,
+			choices: sizes.map(entry => ({
+				label: String(entry.size),
+				description: entry.description,
+				value: String(entry.size),
+				configValue: entry.size
+			}))
+		};
+	}
+
+	/**
+	 * 第三张卡：练习目录。
+	 *
+	 * 两个选项都是**真实会写进配置**的目录名；默认值
+	 * `.olympia/problems` 是扩展 `package.json` 里的默认值。
+	 */
+	private practiceCard(): IOlympiaOnboardingCardDescriptor {
+		return {
+			id: 'practice',
+			title: localize('olympia.onboarding.practice.title', "选择练习目录"),
+			description: localize('olympia.onboarding.practice.description', "你的题目和解题代码会放在这个文件夹里。放哪都行，找得到就好。"),
+			configurationKey: OLYMPIA_CONFIG_PROBLEMS_DIR,
+			choices: [
+				{
+					label: '.olympia/problems',
+					description: localize('olympia.onboarding.practice.dir.hidden', "默认 · 隐藏文件夹"),
+					value: '.olympia/problems'
+				},
+				{
+					label: 'problems',
+					description: localize('olympia.onboarding.practice.dir.plain', "普通文件夹"),
+					value: 'problems'
+				}
+			]
+		};
 	}
 
 	//#endregion
@@ -1572,7 +940,7 @@ export class OlympiaOnboardingCards implements IDisposable {
 		skip.className = 'olympia-onboarding-skip';
 		skip.type = 'button';
 		// 文案说的是「跳过**剩下**的引导」——
-		// 因为点行就已经把选择写进配置了，这个按钮只是不再往下走流程，
+		// 因为点选项就已经把选择写进配置了，这个按钮只是不再往下走流程，
 		// 已经选好的照旧生效。说「跳过引导」会让人以为自己的选择被丢了。
 		skip.textContent = localize('olympia.onboarding.skip', "跳过剩余引导");
 		skip.addEventListener('click', () => this.delegate.onBeginEnter());
@@ -1617,7 +985,7 @@ export class OlympiaOnboardingCards implements IDisposable {
 		return hint;
 	}
 
-	private createCard(index: number): { element: HTMLElement; body: HTMLElement; preview: HTMLElement; footer: HTMLElement } {
+	private createCard(index: number): { element: HTMLElement; binding: IOlympiaOnboardingCardBinding; footer: HTMLElement } {
 		const descriptor = this.descriptorFor(index);
 
 		const element = document.createElement('div');
@@ -1626,146 +994,96 @@ export class OlympiaOnboardingCards implements IDisposable {
 
 		const header = document.createElement('div');
 		header.className = 'olympia-onboarding-card-header';
-		const icon = document.createElement('span');
-		icon.className = `olympia-onboarding-card-icon codicon codicon-${descriptor.icon}`;
-		header.appendChild(icon);
-		const titles = document.createElement('div');
 		const title = document.createElement('h2');
+		title.className = 'olympia-onboarding-card-title';
 		title.textContent = descriptor.title;
-		titles.appendChild(title);
-		const subtitle = document.createElement('p');
-		subtitle.textContent = descriptor.subtitle;
-		titles.appendChild(subtitle);
-		header.appendChild(titles);
+		header.appendChild(title);
+		const description = document.createElement('p');
+		description.className = 'olympia-onboarding-card-description';
+		description.textContent = descriptor.description;
+		header.appendChild(description);
 		element.appendChild(header);
 
-		const body = document.createElement('div');
-		body.className = 'olympia-onboarding-card-body';
-		element.appendChild(body);
+		// 「未保存」标记挂在**卡片**上，不挂在某个选项上 ——
+		// 一张卡只有一个配置项，「没保存上」说的是这一整张卡的事。
+		const unsaved = document.createElement('p');
+		unsaved.className = 'olympia-onboarding-card-unsaved';
+		element.appendChild(unsaved);
 
-		const preview = document.createElement('div');
-		preview.className = 'olympia-onboarding-card-preview';
-		element.appendChild(preview);
+		const choices = this.buildChoices(descriptor);
+		element.appendChild(choices.container);
 
 		const footer = document.createElement('div');
 		footer.className = 'olympia-onboarding-card-footer';
 		element.appendChild(footer);
 
-		return { element, body, preview, footer };
+		return { element, binding: { element, unsavedElement: unsaved, choices: choices.items }, footer };
 	}
 
 	/**
-	 * 建出行区 DOM。
+	 * 建出选择列表。
 	 *
-	 * 返回 DOM 和**绑定**两份：DOM 用来挂，行绑定用来之后就地更新状态。
-	 * 选中态不在这儿算 —— 统一由 `updateRowState` 负责，避免两处各算一半。
+	 * 结构是**竖排单选**：一个 `radiogroup`，里面每个可选项是一个 `role="radio"`
+	 * 的按钮（20px 的圆点标记 + 主标题 + 副说明）。
+	 *
+	 * 这个列表**只在构造期建一次**，运行期不重建 —— 重建就意味着
+	 * 用户手指正按着的那个按钮会被整个换掉，换掉的一瞬间就是硬切。
 	 */
-	private buildRows(rows: readonly IOlympiaOnboardingRow[]): { elements: HTMLElement[]; bindings: IOlympiaOnboardingRowBinding[] } {
-		const elements: HTMLElement[] = [];
-		const bindings: IOlympiaOnboardingRowBinding[] = [];
-		for (const row of rows) {
-			const container = document.createElement('div');
-			container.className = 'olympia-onboarding-row';
+	private buildChoices(descriptor: IOlympiaOnboardingCardDescriptor): { container: HTMLElement; items: { element: HTMLElement; value: string }[] } {
+		const container = document.createElement('div');
+		container.className = 'olympia-onboarding-choices';
+		container.setAttribute('role', 'radiogroup');
+		container.setAttribute('aria-label', descriptor.title);
+		const items: { element: HTMLElement; value: string }[] = [];
+		for (const choice of descriptor.choices) {
+			const button = document.createElement('button');
+			button.className = 'olympia-onboarding-choice';
+			button.type = 'button';
+			button.setAttribute('role', 'radio');
+			button.setAttribute('aria-checked', 'false');
+			button.dataset.value = choice.value;
+
+			const marker = document.createElement('span');
+			marker.className = 'olympia-onboarding-choice-marker';
+			button.appendChild(marker);
+
+			const text = document.createElement('span');
+			text.className = 'olympia-onboarding-choice-text';
 			const label = document.createElement('span');
-			label.className = 'olympia-onboarding-row-label';
-			label.textContent = row.label;
-			// 行内状态位：**空的时候不占位**（空的 inline 元素宽度为 0），
-			// 需要说话的时候（比如「这一项没保存上」）才填字。
-			const status = document.createElement('i');
-			status.className = 'olympia-onboarding-row-status';
-			label.appendChild(status);
-			container.appendChild(label);
-
-			const binding: IOlympiaOnboardingRowBinding = { container, statusElement: status };
-
-			switch (row.kind) {
-				case 'value': {
-					const value = document.createElement('span');
-					value.className = 'olympia-onboarding-row-value';
-					value.textContent = row.value ?? '';
-					container.appendChild(value);
-					binding.valueElement = value;
-					break;
-				}
-				case 'options': {
-					const group = document.createElement('div');
-					group.className = 'olympia-onboarding-options';
-					const chips: { element: HTMLElement; value: string }[] = [];
-					for (const option of row.options ?? []) {
-						const chip = document.createElement('button');
-						chip.className = 'olympia-onboarding-option';
-						chip.type = 'button';
-						chip.textContent = option.label;
-						if (option.title) {
-							chip.title = option.title;
-						}
-						chip.addEventListener('click', event => {
-							event.stopPropagation();
-							// 立刻改选中态。配置写下去是异步的（`olympia.*` 还要等扩展注册），
-							// 等配置事件再改，用户会觉得「点了没反应」。
-							for (const sibling of chips) {
-								sibling.element.classList.remove('selected');
-							}
-							chip.classList.add('selected');
-							if (row.configurationKey) {
-								// 数字型配置（字号 / 内存上限 / 每日题量）写字符串会被 schema 拒绝。
-								const value = option.configValue !== undefined ? option.configValue : option.value;
-								// 先写：`writeConfig` 会同步把值记进 `pendingWrites`，
-								// 预览区读的就是它 —— 顺序反了预览会显示旧值。
-								void this.writeConfig(row.configurationKey, value);
-							}
-							// 刷新整张卡，不只是预览块。
-							// 值行可能是**别的**配置项派生的（比如「C++ 标准」跟着编译器 profile 走），
-							// 只刷预览块的话，预览已经是新值、卡片上的值行还是旧文本 ——
-							// 直到扩展注册完触发配置事件才跳变。刷新整卡走 `updateRowState`，
-							// 签名没变就不会重建 DOM，用户正按着的按钮不会被换掉。
-							this.refresh();
-						});
-						chips.push({ element: chip, value: option.value });
-						group.appendChild(chip);
-					}
-					container.appendChild(group);
-					binding.chips = chips;
-					break;
-				}
-				case 'toggle': {
-					const toggle = document.createElement('button');
-					toggle.className = 'olympia-onboarding-toggle';
-					toggle.type = 'button';
-					toggle.setAttribute('role', 'switch');
-					// 没有配置键的开关才用 `row.checked` 当初值；
-					// 有配置键的真值一律由 `isRowChecked` 从配置真值取。
-					binding.fallbackChecked = row.checked === true;
-					toggle.addEventListener('click', event => {
-						event.stopPropagation();
-						// 当前状态从 `readConfig()` 取真值 —— 这样连点两次写的是两个不同的值，
-						// 不会一直写初始值；有配置键时也不依赖闭包里的旧状态。
-						const next = !this.isRowChecked(row, binding.fallbackChecked === true);
-						binding.fallbackChecked = next;
-						toggle.setAttribute('aria-checked', String(next));
-						toggle.classList.toggle('on', next);
-						if (row.configurationKey) {
-							// 枚举型开关（比如光标动画）写的是字符串，不是布尔。
-							const values = row.toggleValues;
-							const value = values
-								? (next ? values.on : values.off)
-								: next;
-							// 先写：`writeConfig` 会同步把值记进 `pendingWrites`，
-							// 预览区读的就是它 —— 顺序反了预览会显示旧值。
-							void this.writeConfig(row.configurationKey, value);
-						}
-						// 同上：刷新整张卡，派生值行才不会停在旧文本上。
-						this.refresh();
-					});
-					container.appendChild(toggle);
-					binding.toggle = toggle;
-					break;
-				}
+			label.className = 'olympia-onboarding-choice-label';
+			label.textContent = choice.label;
+			text.appendChild(label);
+			if (choice.description) {
+				const hint = document.createElement('span');
+				hint.className = 'olympia-onboarding-choice-description';
+				hint.textContent = choice.description;
+				text.appendChild(hint);
 			}
-			elements.push(container);
-			bindings.push(binding);
+			button.appendChild(text);
+
+			button.addEventListener('click', event => {
+				event.stopPropagation();
+				// 立刻改选中态。配置写下去是异步的（`olympia.*` 还要等扩展注册），
+				// 等配置事件再改，用户会觉得「点了没反应」。
+				for (const sibling of items) {
+					sibling.element.classList.remove('selected');
+					sibling.element.setAttribute('aria-checked', 'false');
+				}
+				button.classList.add('selected');
+				button.setAttribute('aria-checked', 'true');
+				// 数字型配置（字号）写字符串会被 schema 拒绝 —— 必须写数字。
+				const value = choice.configValue !== undefined ? choice.configValue : choice.value;
+				// 先写：`writeConfig` 会同步把值记进 `pendingWrites`，
+				// 卡片读的就是它 —— 顺序反了会先刷出旧值。
+				void this.writeConfig(descriptor.configurationKey, value);
+				// 刷新整张卡：选中态与「未保存」标记一起刷。
+				this.refresh();
+			});
+
+			items.push({ element: button, value: choice.value });
+			container.appendChild(button);
 		}
-		return { elements, bindings };
+		return { container, items };
 	}
 
 	private buildFooter(descriptor: IOlympiaOnboardingCardDescriptor, index: number): HTMLElement[] {
@@ -1779,7 +1097,7 @@ export class OlympiaOnboardingCards implements IDisposable {
 		status.appendChild(dot);
 		status.appendChild(document.createTextNode(
 			isLast
-				? localize('olympia.onboarding.card.ready', "准备好了就开始")
+				? localize('olympia.onboarding.card.ready', "准备就绪")
 				: localize('olympia.onboarding.card.more', "还有 {0} 张", remaining)
 		));
 		footer.push(status);
@@ -1796,142 +1114,6 @@ export class OlympiaOnboardingCards implements IDisposable {
 		});
 		footer.push(button);
 		return footer;
-	}
-
-	private caption(text: string): HTMLElement {
-		const caption = document.createElement('div');
-		caption.className = 'olympia-onboarding-preview-caption';
-		caption.textContent = text;
-		return caption;
-	}
-
-	private pipe(nodes: readonly { text: string; key: boolean }[]): HTMLElement {
-		const pipe = document.createElement('div');
-		pipe.className = 'olympia-onboarding-pipe';
-		const fontFamily = this.monoFontFamily();
-		nodes.forEach((node, index) => {
-			if (index > 0) {
-				const arrow = document.createElement('span');
-				arrow.className = 'olympia-onboarding-pipe-arrow';
-				arrow.textContent = '→';
-				pipe.appendChild(arrow);
-			}
-			const chip = document.createElement('span');
-			chip.className = node.key ? 'olympia-onboarding-pipe-node key' : 'olympia-onboarding-pipe-node';
-			chip.textContent = node.text;
-			if (node.key) {
-				chip.style.fontFamily = fontFamily;
-			}
-			pipe.appendChild(chip);
-		});
-		return pipe;
-	}
-
-	private command(text: string): HTMLElement {
-		const command = document.createElement('div');
-		command.className = 'olympia-onboarding-command';
-		command.style.fontFamily = this.monoFontFamily();
-		command.textContent = text;
-		return command;
-	}
-
-	private flow(steps: readonly { label: string; key: string }[]): HTMLElement {
-		const flow = document.createElement('div');
-		flow.className = 'olympia-onboarding-flow';
-		const fontFamily = this.monoFontFamily();
-		steps.forEach((step, index) => {
-			if (index > 0) {
-				const line = document.createElement('span');
-				line.className = 'olympia-onboarding-flow-line';
-				flow.appendChild(line);
-			}
-			const column = document.createElement('div');
-			column.className = 'olympia-onboarding-flow-step';
-			const marker = document.createElement('i');
-			column.appendChild(marker);
-			const label = document.createElement('span');
-			label.textContent = step.label;
-			column.appendChild(label);
-			const key = document.createElement('kbd');
-			key.style.fontFamily = fontFamily;
-			key.textContent = step.key;
-			column.appendChild(key);
-			flow.appendChild(column);
-		});
-		return flow;
-	}
-
-	private directory(problemsDir: string): HTMLElement {
-		const list = document.createElement('div');
-		list.className = 'olympia-onboarding-directory';
-		list.style.fontFamily = this.monoFontFamily();
-		const rows: readonly (readonly [string, boolean])[] = [
-			[`${problemsDir}/`, true],
-			[localize('olympia.onboarding.practice.dir.statement', "<题号>.md  题面"), false],
-			['.olympia/template.cpp', false],
-			['.olympia/practice.json', false]
-		];
-		for (const [text, key] of rows) {
-			const row = document.createElement('div');
-			row.className = key ? 'olympia-onboarding-directory-row key' : 'olympia-onboarding-directory-row';
-			row.textContent = text;
-			list.appendChild(row);
-		}
-		return list;
-	}
-
-	private codeSample(fontSize: number, lineHeight: number): HTMLElement {
-		const code = document.createElement('div');
-		code.className = 'olympia-onboarding-code';
-		code.style.fontFamily = this.monoFontFamily();
-		code.style.fontSize = `${fontSize}px`;
-		code.style.lineHeight = lineHeight > 0 ? String(lineHeight) : '1.55';
-
-		// 一段真实、能编译的 C++（求 1..n 的和）。
-		const lines: readonly (readonly (readonly [string, string] | null)[])[] = [
-			[['comment', '#include <bits/stdc++.h>']],
-			[['keyword', 'using namespace std;']],
-			[null],
-			[['type', 'int'], ['plain', ' main() {']],
-			[['plain', '    '], ['type', 'int'], ['plain', ' n; cin >> n;']],
-			[['plain', '    '], ['type', 'long long'], ['plain', ' ans = 0;']],
-			[['plain', '    '], ['keyword', 'for'], ['plain', ' ('], ['type', 'int'], ['plain', ' i = 1; i <= n; ++i)']],
-			[['plain', '        ans += i;']],
-			[['plain', '    '], ['plain', 'cout << ans << '], ['string', `'\\n'`], ['plain', ';']],
-			[['plain', '    '], ['keyword', 'return'], ['plain', ' 0;']],
-			[['plain', '}']]
-		];
-
-		const lineElements: HTMLElement[] = [];
-		for (const line of lines) {
-			const lineElement = document.createElement('div');
-			lineElement.className = 'olympia-onboarding-code-line';
-			for (const token of line ?? []) {
-				if (!token) {
-					continue;
-				}
-				const span = document.createElement('span');
-				span.className = `olympia-onboarding-token ${token[0]}`;
-				span.textContent = token[1];
-				lineElement.appendChild(span);
-			}
-			lineElements.push(lineElement);
-			code.appendChild(lineElement);
-		}
-
-		// 光标挂在最后一行末尾。
-		const lastLine = code.lastElementChild;
-		let caret: HTMLElement | undefined;
-		if (lastLine) {
-			caret = document.createElement('span');
-			caret.className = 'olympia-onboarding-caret';
-			lastLine.appendChild(caret);
-		}
-		// **直接持有引用** —— 之后挪光标不用回头找元素（见 `codeSampleElement`）。
-		this.codeSampleElement = code;
-		this.codeSampleLines = lineElements;
-		this.codeSampleCaret = caret;
-		return code;
 	}
 
 	//#endregion

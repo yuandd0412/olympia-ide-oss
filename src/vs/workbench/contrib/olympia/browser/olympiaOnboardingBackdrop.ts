@@ -41,6 +41,8 @@ interface IOlympiaOnboardingRibbon {
 	readonly width: number;
 	/** RGB 分量。 */
 	readonly color: string;
+	/** 能量聚集段的 RGB 分量（比 color 更亮更冷）。 */
+	readonly hot: string;
 	/** 不透明度。 */
 	readonly alpha: number;
 }
@@ -64,10 +66,26 @@ interface IOlympiaOnboardingDust {
 	readonly alpha: number;
 }
 
+/**
+ * 三条极光缎带。
+ *
+ * ## 层次靠「宽度 + 色温」，不靠「压 alpha」
+ *
+ * 三条同宽同亮的带子读作一张贴图；三条一样亮、只靠 alpha 分层的带子读作一层雾。
+ * 真正拉开距离的是**宽窄**：一条又宽又柔的底带 + 一条中带 + 一条极细的亮丝，
+ * 眼睛立刻读出「远—中—近」。所以 alpha 保持不动（压它会连带压掉背景的流动量，
+ * 而背景门禁盯的就是那个量），层次全部交给宽度和色温。
+ *
+ * ## 为什么去紫
+ *
+ * 紫 + 蓝 + 青三条同强度的带子，是最典型的「随机取色」观感 —— 像调色盘，不像
+ * 一片有光源的天空。改成**蓝 → 蓝青 → 青**的单向渐变之后，整片天空只有一个色相
+ * 家族在走，读起来才像同一束光在不同高度散出来的。
+ */
 const RIBBONS: readonly IOlympiaOnboardingRibbon[] = [
-	{ y: 0.30, amp: 0.085, freq: 1.55, speed: 0.115, width: 78, color: '91,140,255', alpha: 0.20 },
-	{ y: 0.54, amp: 0.110, freq: 1.05, speed: -0.085, width: 96, color: '139,108,245', alpha: 0.17 },
-	{ y: 0.74, amp: 0.070, freq: 2.10, speed: 0.150, width: 62, color: '53,200,216', alpha: 0.15 },
+	{ y: 0.30, amp: 0.085, freq: 1.55, speed: 0.115, width: 104, color: '84,124,236', hot: '150,190,255', alpha: 0.20 },
+	{ y: 0.54, amp: 0.110, freq: 1.05, speed: -0.085, width: 72, color: '92,150,216', hot: '162,206,255', alpha: 0.17 },
+	{ y: 0.74, amp: 0.070, freq: 2.10, speed: 0.150, width: 44, color: '72,178,206', hot: '152,226,240', alpha: 0.15 }
 ];
 
 function hash1(index: number): number {
@@ -83,7 +101,7 @@ function hash2(index: number): number {
 const STARS: readonly IOlympiaOnboardingStar[] = Array.from({ length: 150 }, (_, i) => ({
 	x: hash1(i),
 	y: hash2(i * 1.3),
-	size: 0.5 + hash1(i * 2.2) * 1.5,
+	size: 0.4 + hash1(i * 2.2) * 1.6,
 	phase: hash2(i * 3.7) * Math.PI * 2,
 	speed: 0.25 + hash2(i * 4.1) * 0.7,
 	density: hash1(i * 5.3)
@@ -98,11 +116,19 @@ const DUST: readonly IOlympiaOnboardingDust[] = Array.from({ length: 90 }, (_, i
 	alpha: 0.10 + hash2(i * 7.7) * 0.30
 }));
 
-/** 夜空底色的三个色标。CSS 侧的启动兜底层用的是同一组值。 */
+/**
+ * 夜空底色的三个色标。CSS 侧的启动兜底层用的是同一组值。
+ *
+ * ## 为什么比之前更暗更中性
+ *
+ * 之前是 `#080b16 / #0a0e1d / #05070e` —— 蓝味很重，整片天空自带一层「滤镜」。
+ * 现在压到 `#080b12 / #0a0e16 / #05070c`：几乎只剩明度差，没有色相在抢戏。
+ * 天空的任务是**当背景**，不是当主角；主角是极光、洞缘和最后的工作台。
+ */
 export const OLYMPIA_ONBOARDING_SKY_COLORS = {
-	top: '#080b16',
-	middle: '#0a0e1d',
-	bottom: '#05070e'
+	top: '#080b12',
+	middle: '#0a0e16',
+	bottom: '#05070c'
 } as const;
 
 export class OlympiaOnboardingBackdrop implements IDisposable {
@@ -184,17 +210,22 @@ export class OlympiaOnboardingBackdrop implements IDisposable {
 		// 底部地面辉光。
 		ctx.globalCompositeOperation = 'lighter';
 		const ground = ctx.createRadialGradient(width * 0.5, height * 1.02, 0, width * 0.5, height * 1.02, height * 0.78);
-		ground.addColorStop(0, 'rgba(70,110,220,0.12)');
-		ground.addColorStop(1, 'rgba(70,110,220,0)');
+		ground.addColorStop(0, 'rgba(56,94,188,0.10)');
+		ground.addColorStop(1, 'rgba(56,94,188,0)');
 		ctx.fillStyle = ground;
 		ctx.fillRect(0, 0, width, height);
 
 		// 星。
 		for (const star of STARS) {
 			const twinkle = 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(time * star.speed + star.phase));
-			ctx.fillStyle = `rgba(206,222,255,${(star.density < 0.12 ? 0.55 : 0.18) * twinkle})`;
+			// 极少数是暖白的「亮星」，其余是冷白且很暗的底噪 ——
+			// 星星是背景，不是主角；主角是极光、洞缘和最后的工作台。
+			const bright = star.density < 0.08;
+			ctx.fillStyle = bright
+				? `rgba(255,244,224,${(0.60 * twinkle).toFixed(3)})`
+				: `rgba(198,214,246,${(0.14 * twinkle).toFixed(3)})`;
 			ctx.beginPath();
-			ctx.arc(star.x * width, star.y * height, star.size, 0, 6.2832);
+			ctx.arc(star.x * width, star.y * height, star.size * (bright ? 1.6 : 1), 0, 6.2832);
 			ctx.fill();
 		}
 
@@ -222,10 +253,17 @@ export class OlympiaOnboardingBackdrop implements IDisposable {
 		ctx.globalCompositeOperation = 'lighter';
 		ctx.drawImage(this.glowCanvas, 0, 0, width, height);
 		for (const ribbon of RIBBONS) {
-			ctx.strokeStyle = `rgba(${ribbon.color},${ribbon.alpha * 0.78})`;
-			ctx.lineWidth = 2.2;
+			// 底层：整条冷白细线，很淡。
+			ctx.strokeStyle = `rgba(${ribbon.color},${(ribbon.alpha * 0.60).toFixed(3)})`;
+			ctx.lineWidth = 2;
 			ctx.lineCap = 'round';
 			this.strokeRibbon(ctx, ribbon, time + pointerShiftX * 0.004, width, height, pointerShiftY * 0.5);
+			ctx.stroke();
+			// 中段：能量聚集的那一段更亮更实。缎带于是有「亮头暗尾」的走向，
+			// 而不是一条从头到尾一样亮的光带。
+			ctx.strokeStyle = `rgba(${ribbon.hot},${(ribbon.alpha * 1.15).toFixed(3)})`;
+			ctx.lineWidth = 2.6;
+			this.strokeRibbon(ctx, ribbon, time + pointerShiftX * 0.004, width, height, pointerShiftY * 0.5, 0.28, 0.72);
 			ctx.stroke();
 		}
 
@@ -233,7 +271,7 @@ export class OlympiaOnboardingBackdrop implements IDisposable {
 		for (const dust of DUST) {
 			const y = ((dust.y - time * dust.speed) % 1 + 1) % 1;
 			const x = dust.x * width + Math.sin(time * 0.28 + dust.phase) * 22;
-			ctx.fillStyle = `rgba(190,214,255,${dust.alpha * 0.5})`;
+			ctx.fillStyle = `rgba(204,214,236,${(dust.alpha * 0.38).toFixed(3)})`;
 			ctx.beginPath();
 			ctx.arc(x, y * height, dust.size, 0, 6.2832);
 			ctx.fill();
@@ -258,11 +296,17 @@ export class OlympiaOnboardingBackdrop implements IDisposable {
 		}
 	}
 
-	private strokeRibbon(ctx: CanvasRenderingContext2D, ribbon: IOlympiaOnboardingRibbon, time: number, width: number, height: number, offset: number): void {
+	/**
+	 * 画一条缎带。`uStart`/`uEnd` 是沿缎带长度方向的区间（0=左端，1=右端）——
+	 * 用来只画「能量聚集段」，而不是整条一条亮度。
+	 */
+	private strokeRibbon(ctx: CanvasRenderingContext2D, ribbon: IOlympiaOnboardingRibbon, time: number, width: number, height: number, offset: number, uStart = 0, uEnd = 1): void {
 		const steps = 84;
+		const from = Math.max(0, Math.min(1, uStart));
+		const to = Math.max(0, Math.min(1, uEnd));
 		ctx.beginPath();
 		for (let i = 0; i <= steps; i++) {
-			const u = i / steps;
+			const u = from + (to - from) * (i / steps);
 			const x = u * width;
 			const y = height * ribbon.y
 				+ Math.sin(u * ribbon.freq * Math.PI * 2 + time * ribbon.speed * Math.PI * 2) * height * ribbon.amp
