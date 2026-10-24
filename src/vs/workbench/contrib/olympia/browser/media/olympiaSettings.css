@@ -8,10 +8,30 @@
  *
  * 变量一律用 --vscode-* 前缀：本 fork 的 stylelint 只认这个前缀，
  * 用 --foreground / --editor-background 之类会被 lint 直接拒收。
+ *
+ * ## 布局为什么是 grid 而不是 flex
+ *
+ * 这一页在真实使用里只有 500px 出头宽（右侧聊天面板默认展开，编辑器区就被挤到这么窄），
+ * 而上游的 flex 写法在这种宽度下会崩：
+ *
+ * - `.olympiaSettings-rowControl { flex: 0 0 320px }` —— 固定 320px 且**不许缩**，
+ *   行宽不够时它不缩，`.olympiaSettings-rowLabel { flex: 1 1 auto; min-width: 0 }`
+ *   能缩到 **0 宽** → 中文标签被压成一列竖排字（实测 label clientWidth = 0）。
+ * - 行内容溢出 → `.olympiaSettings-body` 出横向滚动条（实测 scrollWidth 386 > clientWidth 334）。
+ * - `position: sticky` 的 footer 停不住：祖先 `.olympiaSettings` 带 `overflow: hidden`，
+ *   按规范它就成了 sticky 的 scrollport，而它自己不滚 → footer 停在半空（实测 y=591，底部 767）。
+ *
+ * 改成 grid 之后：
+ * - 列用 `minmax(0, 1fr)`，右列**允许收缩**（`1fr` 的默认 min 是 auto = 内容宽度，不会缩）。
+ * - 行用 `minmax(0, 1fr) auto`：上格给 body 滚，下格给 footer —— footer 变成真正的底栏，
+ *   不再依赖 sticky。
+ * - 导航跨两行（`grid-row: 1 / span 2`），保持整列满高、自己滚。
  */
 
 .olympiaSettings {
-	display: flex;
+	display: grid;
+	grid-template-columns: 180px minmax(0, 1fr);
+	grid-template-rows: minmax(0, 1fr) auto;
 	height: 100%;
 	overflow: hidden;
 	color: var(--vscode-foreground);
@@ -27,8 +47,12 @@
 }
 
 .olympiaSettings-nav {
-	flex: 0 0 180px;
+	grid-column: 1;
+	grid-row: 1 / span 2;
+	min-width: 0;
+	min-height: 0;
 	overflow-y: auto;
+	overflow-x: hidden;
 	padding: 16px 8px;
 	border-right: 1px solid var(--vscode-panel-border);
 	background-color: var(--vscode-sideBar-background);
@@ -65,13 +89,18 @@
 }
 
 .olympiaSettings-body {
-	flex: 1 1 auto;
+	grid-column: 2;
+	grid-row: 1;
+	min-width: 0;
+	min-height: 0;
 	overflow-y: auto;
-	padding: 24px 32px 96px;
+	overflow-x: hidden;
+	padding: 24px 32px;
 }
 
 .olympiaSettings-group {
 	max-width: 760px;
+	min-width: 0;
 	margin: 0 0 36px;
 }
 
@@ -84,10 +113,17 @@
 	font-weight: 600;
 }
 
+/*
+ * 行：窄宽度下允许换行。
+ *
+ * 窄到放不下「标签 + 控件」同一行时，控件整体掉到下一行，而不是把标签压成 0 宽。
+ */
 .olympiaSettings-row {
 	display: flex;
+	flex-wrap: wrap;
 	align-items: flex-start;
-	gap: 24px;
+	gap: 8px 24px;
+	min-width: 0;
 	margin: 0 0 14px;
 	padding: 8px 10px;
 	border-radius: 4px;
@@ -97,9 +133,16 @@
 	background-color: var(--vscode-list-hoverBackground);
 }
 
+/*
+ * 标签列。
+ *
+ * min-width 不能是 0 —— 这是本次真机验收抓到的那个 bug 的根因：
+ * 标签盒被压成 0 宽后，中文标签会一字一行竖排。
+ * 220px 是「最长的一个标签 + 描述」也放得下的宽度。
+ */
 .olympiaSettings-rowLabel {
-	flex: 1 1 auto;
-	min-width: 0;
+	flex: 1 1 220px;
+	min-width: 180px;
 }
 
 .olympiaSettings-rowLabel label {
@@ -114,8 +157,17 @@
 	line-height: 1.5;
 }
 
+/*
+ * 控件列。
+ *
+ * `flex: 0 1 320px` 的 1 是关键：允许收缩。
+ * 原来是 `0 0 320px`（0 = 不许缩），窄宽度下它把标签挤成 0 宽。
+ * max-width: 100% 保证控件盒本身不超过所在行。
+ */
 .olympiaSettings-rowControl {
-	flex: 0 0 320px;
+	flex: 0 1 320px;
+	min-width: 200px;
+	max-width: 100%;
 	display: flex;
 	justify-content: flex-end;
 	align-items: center;
@@ -124,6 +176,7 @@
 .olympiaSettings-rowControl input[type="text"],
 .olympiaSettings-rowControl input[type="number"] {
 	width: 100%;
+	min-width: 0;
 	box-sizing: border-box;
 	padding: 4px 6px;
 	border: 1px solid var(--vscode-input-border, transparent);
@@ -134,8 +187,7 @@
 	font-size: inherit;
 }
 
-.olympiaSettings-rowControl input:focus,
-.olympiaSettings-rowControl select:focus {
+.olympiaSettings-rowControl input:focus {
 	outline: 1px solid var(--vscode-focusBorder);
 	outline-offset: -1px;
 }
@@ -147,23 +199,46 @@
 	cursor: pointer;
 }
 
-.olympiaSettings-rowControl select {
+/*
+ * 下拉框。
+ *
+ * 这里**不**写原生 `select` 的样式 —— 本页已经不用原生 select 了。
+ * 用的是上游 `SelectBox`（VS Code 原生设置页同一个控件），
+ * 它渲染出来的元素 class 是 `.monaco-select-box`，
+ * 颜色/边框由控件自己按主题注入（dropdown.background / dropdown.border）。
+ *
+ * 我们只补**排版**指标，并且刻意跟原生设置页对齐
+ * （见上游 settingsEditor2.css:698-703：height 26px、padding 2px 6px、font inherit），
+ * 这样两个设置页的下拉框看起来是同一个东西。
+ */
+.olympiaSettings-dropdown {
+	flex: 1 1 auto;
+	min-width: 0;
 	width: 100%;
-	box-sizing: border-box;
-	padding: 4px 6px;
-	border: 1px solid var(--vscode-dropdown-border, transparent);
+}
+
+.olympiaSettings-rowControl .monaco-select-box {
+	width: 100%;
+	min-width: 0;
+	height: 26px;
+	padding: 2px 6px;
 	border-radius: 2px;
-	background-color: var(--vscode-dropdown-background);
-	color: var(--vscode-dropdown-foreground);
 	font-family: inherit;
 	font-size: inherit;
 }
 
+.olympiaSettings-rowControl .monaco-select-box:focus-visible {
+	outline: 1px solid var(--vscode-focusBorder);
+	outline-offset: -1px;
+}
+
+/*
+ * 底栏：grid 的第二行，不再是 body 里的 sticky 元素。
+ */
 .olympiaSettings-footer {
-	position: sticky;
-	bottom: 0;
-	max-width: 760px;
-	padding: 16px 10px;
+	grid-column: 2;
+	grid-row: 2;
+	padding: 12px 32px;
 	border-top: 1px solid var(--vscode-panel-border);
 	background-color: var(--vscode-editor-background);
 }

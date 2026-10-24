@@ -7,11 +7,15 @@ import './media/olympiaSettings.css';
 
 import { localize } from '../../../../nls.js';
 import { $, append, clearNode, Dimension, EventType, IDomPosition } from '../../../../base/browser/dom.js';
+import { ISelectOptionItem, SelectBox } from '../../../../base/browser/ui/selectBox/selectBox.js';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
+import { DisposableStore } from '../../../../base/common/lifecycle.js';
 import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
 import { IStorageService } from '../../../../platform/storage/common/storage.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { ICommandService } from '../../../../platform/commands/common/commands.js';
+import { IContextViewService } from '../../../../platform/contextview/browser/contextView.js';
+import { defaultSelectBoxStyles } from '../../../../platform/theme/browser/defaultStyles.js';
 import { IEditorOptions } from '../../../../platform/editor/common/editor.js';
 import { IEditorOpenContext } from '../../../common/editor.js';
 import { EditorInput } from '../../../common/editor/editorInput.js';
@@ -62,6 +66,15 @@ export class OlympiaSettingsPage extends EditorPane {
 	/** 导航按钮。用于「取消上一个高亮」。 */
 	private readonly navItems: HTMLButtonElement[] = [];
 
+	/**
+	 * 每一次重画都要重建的部件。
+	 *
+	 * 目前只有下拉框（SelectBox 是 Widget，自带监听器和 ContextView 弹层）。
+	 * 页面会因为配置变化整体重画 —— 不释放上一轮的话，监听器会一次次叠加，
+	 * 用户改一次配置就多一份回调，最后表现为「点一下下拉跳好几次」。
+	 */
+	private readonly renderDisposables: DisposableStore;
+
 	get editorInput(): OlympiaSettingsInput | undefined {
 		return this._input as OlympiaSettingsInput | undefined;
 	}
@@ -73,8 +86,10 @@ export class OlympiaSettingsPage extends EditorPane {
 		@IStorageService storageService: IStorageService,
 		@IConfigurationService private readonly configurationService: IConfigurationService,
 		@ICommandService private readonly commandService: ICommandService,
+		@IContextViewService private readonly contextViewService: IContextViewService,
 	) {
 		super(OlympiaSettingsPage.ID, group, telemetryService, themeService, storageService);
+		this.renderDisposables = this._register(new DisposableStore());
 	}
 
 	protected override createEditor(parent: HTMLElement): void {
@@ -135,6 +150,8 @@ export class OlympiaSettingsPage extends EditorPane {
 		if (!container) {
 			return;
 		}
+		// 先释放上一轮的下拉框，再清 DOM —— 顺序反了会留下没被 dispose 的 Widget。
+		this.renderDisposables.clear();
 		clearNode(container);
 
 		const nav = $('.olympiaSettings-nav');
@@ -172,9 +189,17 @@ export class OlympiaSettingsPage extends EditorPane {
 			append(nav, navItem);
 		}
 
-		append(body, this.renderFooter());
+		/*
+		 * 三块的顺序：导航 → 内容 → 底栏。
+		 *
+		 * 底栏**必须挂在 container 上**，不能塞进 body：
+		 * body 是可滚动的（overflow-y: auto），塞进去就成了内容的一部分，
+		 * 滚到底才看得到 —— 而底栏的语义是「一直贴在底部」。
+		 * CSS 里 .olympiaSettings 是 grid（两列两行），footer 占第二行，天然贴底。
+		 */
 		append(container, nav);
 		append(container, body);
+		append(container, this.renderFooter());
 	}
 
 	private renderControl(control: IOlympiaSettingControl): HTMLElement {
@@ -263,66 +288,113 @@ export class OlympiaSettingsPage extends EditorPane {
 		return input;
 	}
 
+	/**
+	 * 枚举下拉。
+	 *
+	 * **不用原生 `<select>`**。
+	 *
+	 * 原生 `<select>` 在暗色主题下展开就是**系统弹窗**：白底白字 / 白底黑字，
+	 * 跟工作台完全是两套皮，而且弹层不受工作台主题控制 —— 这正是用户点名的红线。
+	 * 这里改用上游 `SelectBox`（`vs/base/browser/ui/selectBox`），
+	 * 它是 **VS Code 原生设置页用的同一个控件**：展开的是自绘列表，
+	 * 颜色取 `dropdown.background` / `dropdown.border` / `list.*`，
+	 * 和整个工作台（含原生设置页）完全一致。
+	 */
 	private renderEnum(control: IOlympiaSettingControl, controlId: string): HTMLElement {
-		const select = $<HTMLSelectElement>('select');
-		select.id = controlId;
 		const values = control.enumValues ?? [];
-		for (const v of values) {
-			const option = $<HTMLOptionElement>('option', {}, v.label);
-			option.value = v.value;
-			append(select, option);
-		}
 		const current = this.readValue(control);
+
+		// 选项表：下拉框只回「索引」，真正的值必须自己按索引取回来。
+		const options: { value: string; label: string }[] = values.map(v => ({ value: v.value, label: v.label }));
+
+		// 当前值不在枚举里（用户手改过 settings.json，或对应扩展被移除）：
+		// 补一个同名选项，**原样显示**，而不是把它改写成第一个枚举值 ——
+		// 那是在用户没操作的情况下改掉他的配置。
 		if (typeof current === 'string' && current !== '' && !values.some(v => v.value === current)) {
-			// 当前值不在枚举里（用户手改过 settings.json，或扩展被移除）。
-			// 保留它并原样显示，而不是**改写成第一个枚举值** —— 那是在用户没操作的情况下
-			// 改掉他的配置。
-			const option = $<HTMLOptionElement>('option', {}, current);
-			option.value = current;
-			append(select, option);
+			options.push({ value: current, label: current });
 		}
-		if (typeof current === 'string') {
-			select.value = current;
-		}
-		select.addEventListener(EventType.CHANGE, () => {
-			if (!values.some(v => v.value === select.value)) {
-				return;
-			}
-			this.writeValue(control, select.value);
-		});
-		return select;
+
+		return this.renderDropdown(options, this.indexOfValue(options, current), control, controlId);
 	}
 
+	/**
+	 * 主题下拉。
+	 *
+	 * 和枚举下拉一样走 `SelectBox`，理由同上。
+	 * 主题的**值必须是 settingsId** —— `workbench.colorTheme` 的枚举值就是 settingsId
+	 * （见 themeConfiguration.ts 里 colorThemeSettingEnum 的构造）。
+	 * 用 theme.id 写进去，配置值对不上任何主题，回读时找不到当前主题。
+	 */
 	private renderTheme(control: IOlympiaSettingControl, controlId: string): HTMLElement {
-		const select = $<HTMLSelectElement>('select');
-		select.id = controlId;
-
-		const followSystem = $<HTMLOptionElement>('option', {}, localize('olympiaSettings.theme.system', "跟随系统"));
-		followSystem.value = '';
-		append(select, followSystem);
+		const options: { value: string; label: string }[] = [
+			{ value: '', label: localize('olympiaSettings.theme.system', "跟随系统") }
+		];
 
 		for (const theme of this.colorThemes) {
-			const option = $<HTMLOptionElement>('option', {}, theme.label);
-			// 值必须是 settingsId —— `workbench.colorTheme` 的枚举值就是 settingsId
-			// （见 themeConfiguration.ts 里 colorThemeSettingEnum 的构造）。
-			// 用 theme.id 写进去，配置值对不上任何主题，回读时找不到当前主题。
-			option.value = theme.settingsId;
-			append(select, option);
+			options.push({ value: theme.settingsId, label: theme.label });
 		}
+
 		const current = this.readValue(control);
-		if (typeof current === 'string') {
-			select.value = current;
-			// 主题被卸载时 select.value 会变成 ''，那会让页面显示「跟随系统」，
-			// 但实际配置还指着那个不存在的主题 —— 显示与真实状态不一致。
-			if (select.value !== current) {
-				const option = $<HTMLOptionElement>('option', {}, current);
-				option.value = current;
-				append(select, option);
-				select.value = current;
-			}
+		let selectedIndex = this.indexOfValue(options, current);
+		if (selectedIndex < 0 && typeof current === 'string' && current !== '') {
+			// 主题被卸载时，列表里没有它 → 补一项。
+			// 不补的话下拉框会显示「跟随系统」，但配置还指着那个不存在的主题 ——
+			// 显示与真实状态不一致，用户会以为自己改过主题。
+			options.push({ value: current, label: current });
+			selectedIndex = options.length - 1;
 		}
-		select.addEventListener(EventType.CHANGE, () => this.writeValue(control, select.value));
-		return select;
+
+		return this.renderDropdown(options, selectedIndex < 0 ? 0 : selectedIndex, control, controlId);
+	}
+
+	/** 在选项表里找当前值的位置；找不到返回 -1。 */
+	private indexOfValue(options: { value: string; label: string }[], current: unknown): number {
+		if (typeof current !== 'string') {
+			return -1;
+		}
+		return options.findIndex(o => o.value === current);
+	}
+
+	/**
+	 * 画一个下拉框。
+	 *
+	 * 用上游 `SelectBox`，并且**强制** `useCustomDrawn: true`：
+	 * 上游默认在 macOS 上会用原生 `<select>`（系统弹窗），只有显式要求才走自绘列表。
+	 * 展开的列表由 ContextView 挂在工作台根上，不受滚动容器裁剪，
+	 * 颜色/圆角/焦点态全部跟原生设置页一致。
+	 */
+	private renderDropdown(options: { value: string; label: string }[], selectedIndex: number, control: IOlympiaSettingControl, controlId: string): HTMLElement {
+		const wrapper = $('.olympiaSettings-dropdown');
+
+		const selectBox = new SelectBox(
+			options.map(o => ({ text: o.label } satisfies ISelectOptionItem)),
+			selectedIndex,
+			this.contextViewService,
+			defaultSelectBoxStyles,
+			{
+				useCustomDrawn: true,
+				ariaLabel: control.label
+			}
+		);
+		this.renderDisposables.add(selectBox);
+		selectBox.render(wrapper);
+
+		// 标签的 htmlFor 要指向真实控件。SelectBox 渲染出来的 <select> 自己没有 id，
+		// 这里从 wrapper 的第一个子元素上取（不用 querySelector：上游 eslint 明令禁止）。
+		const select = wrapper.firstElementChild as HTMLElement | null;
+		if (select) {
+			select.id = controlId;
+		}
+
+		this.renderDisposables.add(selectBox.onDidSelect(e => {
+			const picked = options[e.index];
+			if (!picked) {
+				return;
+			}
+			this.writeValue(control, picked.value);
+		}));
+
+		return wrapper;
 	}
 
 	/**
