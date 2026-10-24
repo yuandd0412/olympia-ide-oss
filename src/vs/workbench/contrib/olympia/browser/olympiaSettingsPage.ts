@@ -8,7 +8,9 @@ import './media/olympiaSettings.css';
 import { localize } from '../../../../nls.js';
 import { $, append, clearNode, Dimension, EventType, IDomPosition } from '../../../../base/browser/dom.js';
 import { ISelectOptionItem, SelectBox } from '../../../../base/browser/ui/selectBox/selectBox.js';
+import { Toggle, unthemedToggleStyles } from '../../../../base/browser/ui/toggle/toggle.js';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
+import { Codicon } from '../../../../base/common/codicons.js';
 import { DisposableStore } from '../../../../base/common/lifecycle.js';
 import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
 import { IStorageService } from '../../../../platform/storage/common/storage.js';
@@ -243,16 +245,49 @@ export class OlympiaSettingsPage extends EditorPane {
 		return row;
 	}
 
+	/**
+	 * 布尔开关。
+	 *
+	 * **不用原生 `<input type="checkbox">`** —— 两个原因：
+	 *
+	 * 1. 上游的 `$()` helper（src/vs/base/browser/dom.ts:1445 的 SELECTOR_REGEX）
+	 *    只解析 tag / id / class 三段，`input[type=checkbox]` 里的属性段会被**静默丢弃**：
+	 *    不报错，但元素上根本没有 type 属性 → 渲染出来是一个**没有类型的文本框**。
+	 *    真机上 16 个布尔项全部变成文本框，就是这么来的。
+	 * 2. 原生 checkbox 的外观不受工作台主题控制（白底浅色方块），
+	 *    和整页自绘控件不是一套皮。
+	 *
+	 * 改用上游 `Toggle`（原生设置页用的同一个控件）：
+	 * 自绘勾号、支持点击 / 空格 / 回车切换、颜色随主题走。
+	 * 外观按原生设置页的 `.setting-value-checkbox` 对齐（见 media/olympiaSettings.css）。
+	 */
 	private renderBoolean(control: IOlympiaSettingControl, controlId: string): HTMLElement {
-		const input = $<HTMLInputElement>('input[type=checkbox]');
-		input.id = controlId;
-		input.checked = this.readValue(control) === true;
-		input.addEventListener(EventType.CHANGE, () => this.writeValue(control, input.checked));
-		return input;
+		const toggle = new Toggle({
+			icon: Codicon.check,
+			actionClassName: 'olympiaSettings-checkbox',
+			isChecked: this.readValue(control) === true,
+			title: control.label,
+			...unthemedToggleStyles
+		});
+		toggle.domNode.id = controlId;
+		toggle.domNode.setAttribute('aria-label', control.label);
+
+		// Toggle 自己处理点击 / 空格 / 回车，这里只订阅变化。
+		this.renderDisposables.add(toggle);
+		this.renderDisposables.add(toggle.onChange(() => {
+			this.writeValue(control, toggle.checked);
+		}));
+
+		return toggle.domNode;
 	}
 
 	private renderString(control: IOlympiaSettingControl, controlId: string): HTMLElement {
-		const input = $<HTMLInputElement>('input[type=text]');
+		// `$('input[type=text]')` 里的属性段会被上游 `$()` **静默丢弃** →
+		// 元素上没有 type 属性 → 退回浏览器默认外观（白底浅字）。
+		// 类型在这里显式设死，样式按自有 class 选。
+		const input = $<HTMLInputElement>('input');
+		input.type = 'text';
+		input.classList.add('olympiaSettings-input');
 		input.id = controlId;
 		const current = this.readValue(control);
 		input.value = typeof current === 'string' ? current : '';
@@ -267,7 +302,11 @@ export class OlympiaSettingsPage extends EditorPane {
 	}
 
 	private renderNumber(control: IOlympiaSettingControl, controlId: string): HTMLElement {
-		const input = $<HTMLInputElement>('input[type=number]');
+		// 同样是先设死 type —— 否则 min/max 约束根本不会生效。
+		// 与原生设置页一致（preferences/browser/settingsTree.ts:2007 用的是 type: 'number'）。
+		const input = $<HTMLInputElement>('input');
+		input.type = 'number';
+		input.classList.add('olympiaSettings-input');
 		input.id = controlId;
 		if (typeof control.min === 'number') {
 			input.min = String(control.min);
@@ -418,7 +457,10 @@ export class OlympiaSettingsPage extends EditorPane {
 	}
 
 	private renderArray(control: IOlympiaSettingControl, controlId: string): HTMLElement {
-		const input = $<HTMLInputElement>('input[type=text]');
+		// 数组项按逗号分隔输入，用普通文本框（类型同样显式设死）。
+		const input = $<HTMLInputElement>('input');
+		input.type = 'text';
+		input.classList.add('olympiaSettings-input');
 		input.id = controlId;
 		const current = this.readValue(control);
 		input.value = Array.isArray(current) ? current.join(', ') : '';

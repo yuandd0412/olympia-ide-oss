@@ -26,12 +26,29 @@
  * - 行用 `minmax(0, 1fr) auto`：上格给 body 滚，下格给 footer —— footer 变成真正的底栏，
  *   不再依赖 sticky。
  * - 导航跨两行（`grid-row: 1 / span 2`），保持整列满高、自己滚。
+ *
+ * ## 窄容器为什么改成三行 + 容器查询
+ *
+ * 真实使用里这一页经常只剩 200 多像素宽（右侧聊天栏默认展开，编辑器组被挤成一条窄缝）。
+ * 原来的 `grid-template-columns: 180px minmax(0, 1fr)` 里第一列**写死 180px 不肯收缩**，
+ * 于是第二列只剩 34px（实测 `gridTemplateColumns: "180px 34px"`）——
+ * 标签全部跑到可视区外、控件越界 208px、footer 被压成竖排的一窄条。
+ *
+ * 修法沿用上游的容器查询约定（先例：surveys/browser/media/surveyEditorPane.css）：
+ * - 面板根元素声明 `container-type: inline-size`，自己成为查询容器；
+ * - `@container` 块**只改后代**，不改容器自身；
+ * - 容器宽度 ≤ 520px 时，导航从「左侧一列」变成「顶部换行铺开的一条」，
+ *   内容与底栏各占整行 —— 9 个分组全部可见，不出现横向滚动条。
+ *
+ * 宽容器下三行 grid 的第 1 行会**精确塌成 0px**：导航带 `overflow-y: auto`，
+ * 对 grid 的 min-content 贡献为 0，而它跨 1~3 行，所以视觉上仍然是「左列 + 右侧两行」。
  */
 
 .olympiaSettings {
 	display: grid;
 	grid-template-columns: 180px minmax(0, 1fr);
-	grid-template-rows: minmax(0, 1fr) auto;
+	grid-template-rows: auto minmax(0, 1fr) auto;
+	container-type: inline-size;
 	height: 100%;
 	overflow: hidden;
 	color: var(--vscode-foreground);
@@ -48,7 +65,7 @@
 
 .olympiaSettings-nav {
 	grid-column: 1;
-	grid-row: 1 / span 2;
+	grid-row: 1 / span 3;
 	min-width: 0;
 	min-height: 0;
 	overflow-y: auto;
@@ -90,7 +107,7 @@
 
 .olympiaSettings-body {
 	grid-column: 2;
-	grid-row: 1;
+	grid-row: 2;
 	min-width: 0;
 	min-height: 0;
 	overflow-y: auto;
@@ -173,8 +190,21 @@
 	align-items: center;
 }
 
-.olympiaSettings-rowControl input[type="text"],
-.olympiaSettings-rowControl input[type="number"] {
+/*
+ * 输入框。
+ *
+ * **不能按 `input[type="text"]` 选**。
+ *
+ * 上游的 `$()` helper（src/vs/base/browser/dom.ts:1445 的 SELECTOR_REGEX）
+ * 只解析 tag / id / class 三段，`[type="text"]` 这种属性选择器会被**静默丢弃** ——
+ * 写出来不报错，但元素上根本没有 type 属性，于是这条规则匹配不上任何东西，
+ * 输入框退回浏览器默认外观：纯白背景 + 浅灰字（实测 rgb(255,255,255) / rgb(204,204,204)），
+ * 也就是用户点名的「白底白字」。
+ *
+ * 所以：控件类型在 TS 里用 `input.type = '...'` 设死，样式一律按自有 class 选，
+ * 不依赖 type 属性选择器。
+ */
+.olympiaSettings-rowControl .olympiaSettings-input {
 	width: 100%;
 	min-width: 0;
 	box-sizing: border-box;
@@ -187,16 +217,35 @@
 	font-size: inherit;
 }
 
-.olympiaSettings-rowControl input:focus {
+.olympiaSettings-rowControl .olympiaSettings-input:focus {
 	outline: 1px solid var(--vscode-focusBorder);
 	outline-offset: -1px;
 }
 
-.olympiaSettings-rowControl input[type="checkbox"] {
-	width: 18px;
+/*
+ * 布尔开关。
+ *
+ * 用的是上游 `Toggle` 渲染出来的 `.monaco-custom-toggle`，
+ * 外观按原生设置页的 `.setting-value-checkbox` 对齐
+ * （先例：preferences/browser/media/settingsEditor2.css:662-674）。
+ *
+ * 选择器比 toggle.css 里的 `.monaco-custom-toggle` 基础规则更具体，
+ * 保证 18×18 / 透明边框 / 3px 圆角能压过 20×20 的基础外观。
+ */
+.olympiaSettings-rowControl .olympiaSettings-checkbox {
 	height: 18px;
-	margin: 0;
+	width: 18px;
+	border: 1px solid transparent;
+	border-radius: 3px;
+	margin-right: 9px;
+	margin-left: 0px;
+	padding: 0px;
 	cursor: pointer;
+}
+
+/* 未勾选时不要露出那个 check 字形 —— 与原生设置页一致。 */
+.olympiaSettings-rowControl .olympiaSettings-checkbox.codicon:not(.checked)::before {
+	opacity: 0;
 }
 
 /*
@@ -233,11 +282,11 @@
 }
 
 /*
- * 底栏：grid 的第二行，不再是 body 里的 sticky 元素。
+ * 底栏：grid 的第三行，不再是 body 里的 sticky 元素。
  */
 .olympiaSettings-footer {
 	grid-column: 2;
-	grid-row: 2;
+	grid-row: 3;
 	padding: 12px 32px;
 	border-top: 1px solid var(--vscode-panel-border);
 	background-color: var(--vscode-editor-background);
@@ -266,4 +315,62 @@
 .olympiaSettings-advanced:focus-visible {
 	outline: 1px solid var(--vscode-focusBorder);
 	outline-offset: 2px;
+}
+
+/*
+ * 窄容器（≤ 520px）：导航变成顶部一条换行铺开的横条。
+ *
+ * 这里用**换行**而不是横向滚动条：横向滚动条里 9 个分组有 6 个落在可视区外，
+ * 鼠标不主动横向拖就发现不了 —— 换行后 9 个全部可见（214px 下占 100px 高）。
+ *
+ * 容器是 `.olympiaSettings` 自己（见上面的 `container-type: inline-size`）。
+ * 按上游约定，`@container` 块**只改后代**，不改容器自身。
+ */
+@container (max-width: 520px) {
+	.olympiaSettings-nav {
+		grid-column: 1 / -1;
+		grid-row: 1;
+		display: flex;
+		flex-direction: row;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 4px;
+		overflow-x: hidden;
+		overflow-y: hidden;
+		padding: 8px;
+		border-right: 0;
+		border-bottom: 1px solid var(--vscode-panel-border);
+	}
+
+	.olympiaSettings-navItem {
+		flex: 0 0 auto;
+		width: auto;
+		margin: 0;
+		padding: 4px 8px;
+		font-size: 0.9em;
+		white-space: nowrap;
+	}
+
+	.olympiaSettings-body {
+		grid-column: 1 / -1;
+		grid-row: 2;
+		padding: 16px;
+	}
+
+	.olympiaSettings-footer {
+		grid-column: 1 / -1;
+		grid-row: 3;
+		padding: 10px 16px;
+	}
+
+	/* 窄宽度下标签必须能缩到 0，否则中文标签被压成一列竖排字。 */
+	.olympiaSettings-rowLabel {
+		min-width: 0;
+	}
+
+	/* 控件占满整行，放到标签下面。 */
+	.olympiaSettings-rowControl {
+		min-width: 0;
+		flex: 1 1 100%;
+	}
 }
