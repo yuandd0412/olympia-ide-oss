@@ -282,6 +282,56 @@
 }
 
 /*
+ * 字体控件（`editor.fontFamily`）。
+ *
+ * 上下两段：上面是本机真实字体的自绘下拉，下面是字体栈输入框。
+ * 上下叠放而不是左右并排 —— 右侧控件列本来就窄（默认 320px），
+ * 左右并排会把两个控件都压成半宽。
+ */
+.olympiaSettings-fontControl {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: 6px;
+	flex: 1 1 auto;
+	width: 100%;
+	min-width: 0;
+}
+
+.olympiaSettings-fontStack {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+}
+
+.olympiaSettings-fontStackLabel {
+	flex: 0 0 auto;
+	white-space: nowrap;
+	color: var(--vscode-descriptionForeground);
+	font-size: 12px;
+}
+
+/*
+ * 字体栈那一行的输入框要能伸展。
+ *
+ * `.olympiaSettings-rowControl .olympiaSettings-input` 是 `width: 100%`，
+ * 放进 flex 行里那是「相对容器宽度」—— 直接用会把标签挤出可视区。
+ * 这里用多一级的选择器覆盖它，不依赖书写顺序。
+ */
+.olympiaSettings-rowControl .olympiaSettings-fontStack .olympiaSettings-input {
+	flex: 1 1 auto;
+	width: auto;
+	min-width: 0;
+}
+
+.olympiaSettings-fontHint {
+	color: var(--vscode-descriptionForeground);
+	font-size: 12px;
+	line-height: 1.4;
+}
+
+/*
  * 底栏：grid 的第三行，不再是 body 里的 sticky 元素。
  */
 .olympiaSettings-footer {

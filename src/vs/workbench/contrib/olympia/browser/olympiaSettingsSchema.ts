@@ -14,8 +14,9 @@ import { localize } from '../../../../nls.js';
  * - `enum`    → 固定选项下拉
  * - `array`   → 字符串数组，用逗号分隔的文本框编辑
  * - `theme`   → 主题下拉，选项在运行时从主题服务取（不是固定枚举）
+ * - `font`    → 字体下拉，选项在运行时从**本机真实安装的字体**取（不是硬编码清单）
  */
-export type OlympiaSettingControlType = 'boolean' | 'string' | 'number' | 'enum' | 'array' | 'theme';
+export type OlympiaSettingControlType = 'boolean' | 'string' | 'number' | 'enum' | 'array' | 'theme' | 'font';
 
 export interface IOlympiaSettingControl {
 	/** 真实的 configuration key。必须能在内置扩展 package.json 或上游配置里找到定义。 */
@@ -77,9 +78,9 @@ export const OLYMPIA_SETTINGS_GROUPS: readonly IOlympiaSettingGroup[] = [
 			},
 			{
 				key: 'editor.fontFamily',
-				type: 'string',
+				type: 'font',
 				label: localize('olympiaSettings.editor.fontFamily', "编辑器字体"),
-				placeholder: localize('olympiaSettings.editor.fontFamily.placeholder', "留空则用系统默认")
+				description: localize('olympiaSettings.editor.fontFamily.desc', "下拉里是本机真实装了的字体。也可以在下面直接写字体栈（例如 Consolas, monospace）；留空或选「系统默认」都表示恢复默认。")
 			},
 			{
 				key: 'editor.fontSize',

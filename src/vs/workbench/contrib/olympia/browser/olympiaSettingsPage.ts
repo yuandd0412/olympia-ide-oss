@@ -9,6 +9,7 @@ import { localize } from '../../../../nls.js';
 import { $, append, clearNode, Dimension, EventType, IDomPosition } from '../../../../base/browser/dom.js';
 import { ISelectOptionItem, SelectBox } from '../../../../base/browser/ui/selectBox/selectBox.js';
 import { Toggle, unthemedToggleStyles } from '../../../../base/browser/ui/toggle/toggle.js';
+import { disposableTimeout } from '../../../../base/common/async.js';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { Codicon } from '../../../../base/common/codicons.js';
 import { DisposableStore } from '../../../../base/common/lifecycle.js';
@@ -47,12 +48,46 @@ import { OlympiaSettingsInput } from './olympiaSettingsInput.js';
  * 这是刻意保留的：简化页只覆盖高频项，剩下几千个上游配置项仍然要能到达。
  * 把原生页彻底封死，等于「功能存在但找不到」，那比不做替换更糟。
  */
+/**
+ * 字体控件的运行时状态。
+ *
+ * 字体清单是异步到的，到齐之后要**原地**换掉下拉框的选项 ——
+ * 重画整页会把用户正在输入的其它输入框（编译路径、附加编译参数……）清空。
+ */
+interface IFontControlEntry {
+	/** 自绘下拉框本体。 */
+	readonly selectBox: SelectBox;
+	/** 状态提示（正在读取 / 已读到几个 / 没读到）。 */
+	readonly hint: HTMLElement;
+	/** 这个控件绑定的配置项。刷新时要重新算选项表，得知道 key。 */
+	readonly control: IOlympiaSettingControl;
+	/** 当前的选项表。刷新时整体替换，所以不是 readonly。 */
+	options: { value: string; label: string }[];
+}
+
 export class OlympiaSettingsPage extends EditorPane {
 
 	public static readonly ID = 'olympiaSettingsPage';
 
 	/** 高级设置按钮执行的命令 id。原生设置页永远保留。 */
 	static readonly OPEN_NATIVE_SETTINGS_COMMAND_ID = 'workbench.action.openSettings2';
+
+	/**
+	 * 列出本机系统字体的扩展命令 id。
+	 *
+	 * 必须与扩展 `olympia-onboarding` 里的 `CMD.listSystemFonts` **一字不差**。
+	 * 两边各写一份字面量早晚会漂，所以 `check-olympia-settings-page.mjs` 的 G32
+	 * 专门钉这一致性 —— 改了一边忘了另一边，那条断言立刻红。
+	 */
+	static readonly LIST_SYSTEM_FONTS_COMMAND_ID = 'olympia.listSystemFonts';
+
+	/**
+	 * 取系统字体清单的超时（毫秒）。
+	 *
+	 * 超时**不等于放弃**：只是先把界面上的「正在读取」落成「没读到」，
+	 * 真的取回来了照样会用上。扩展宿主冷启动可能很久，不能让这一项一直空着。
+	 */
+	static readonly SYSTEM_FONTS_TIMEOUT_MS = 8000;
 
 	private container: HTMLElement | undefined;
 
@@ -61,6 +96,18 @@ export class OlympiaSettingsPage extends EditorPane {
 
 	/** 主题清单只取一次。取到之后靠 render() 重画补上。 */
 	private colorThemesRequested = false;
+
+	/** 本机真实安装的字体清单。取不到时是空数组。 */
+	private systemFonts: readonly string[] = [];
+
+	/** 字体清单只取一次。 */
+	private systemFontsRequested = false;
+
+	/** 字体清单的取回状态。用来在界面上区分「还在取」和「取不到」。 */
+	private systemFontsState: 'loading' | 'ready' | 'failed' = 'loading';
+
+	/** 字体控件的下拉框与提示。字体清单到了之后原地刷新，不重画整页。 */
+	private readonly fontControls = new Map<string, IFontControlEntry>();
 
 	/** 每个分组对应的区块元素。导航点击时直接拿它滚过去，不用回头查选择器。 */
 	private readonly sectionElements = new Map<string, HTMLElement>();
@@ -104,6 +151,9 @@ export class OlympiaSettingsPage extends EditorPane {
 
 		// 主题清单是异步的：先画一版（主题下拉暂时只有「跟随系统」），取到之后再重画一次。
 		this.loadColorThemes();
+		// 字体清单也是异步的，但**不能靠重画补上** —— 重画会把用户正在输入的输入框清空。
+		// 所以取到之后只原地换下拉框的选项（见 refreshFontDropdowns）。
+		this.loadSystemFonts();
 		this.render();
 
 		// 配置变了就把页面重画一次 —— 主题、下拉、开关都要跟着变。
@@ -163,6 +213,9 @@ export class OlympiaSettingsPage extends EditorPane {
 		// 上游 eslint 的 no-restricted-syntax 明令禁止在 workbench 代码里用选择器。
 		this.sectionElements.clear();
 		this.navItems.length = 0;
+		// 上一轮的下拉框已经被 renderDisposables.clear() 释放了，这里同步把引用丢掉 ——
+		// 留着的话 refreshFontDropdowns 会去刷新一个已经 dispose 掉的控件。
+		this.fontControls.clear();
 
 		for (const group of OLYMPIA_SETTINGS_GROUPS) {
 			const section = $('.olympiaSettings-group');
@@ -231,6 +284,9 @@ export class OlympiaSettingsPage extends EditorPane {
 				break;
 			case 'theme':
 				append(controlBox, this.renderTheme(control, controlId));
+				break;
+			case 'font':
+				append(controlBox, this.renderFont(control, controlId));
 				break;
 			case 'array':
 				append(controlBox, this.renderArray(control, controlId));
@@ -395,14 +451,17 @@ export class OlympiaSettingsPage extends EditorPane {
 	}
 
 	/**
-	 * 画一个下拉框。
+	 * 建一个自绘下拉框。
 	 *
 	 * 用上游 `SelectBox`，并且**强制** `useCustomDrawn: true`：
 	 * 上游默认在 macOS 上会用原生 `<select>`（系统弹窗），只有显式要求才走自绘列表。
 	 * 展开的列表由 ContextView 挂在工作台根上，不受滚动容器裁剪，
 	 * 颜色/圆角/焦点态全部跟原生设置页一致。
+	 *
+	 * 枚举、主题、字体三种下拉共用这一个实现 —— 「不弹系统菜单」这条红线和
+	 * 「颜色走主题变量」这两件事只在这里定一次，其它地方不会各写一份。
 	 */
-	private renderDropdown(options: { value: string; label: string }[], selectedIndex: number, control: IOlympiaSettingControl, controlId: string): HTMLElement {
+	private createSelectBox(options: { value: string; label: string }[], selectedIndex: number, control: IOlympiaSettingControl, controlId: string): { wrapper: HTMLElement; selectBox: SelectBox } {
 		const wrapper = $('.olympiaSettings-dropdown');
 
 		const selectBox = new SelectBox(
@@ -425,6 +484,17 @@ export class OlympiaSettingsPage extends EditorPane {
 			select.id = controlId;
 		}
 
+		return { wrapper, selectBox };
+	}
+
+	/**
+	 * 画一个下拉框（枚举 / 主题用）。
+	 *
+	 * 选项表在画的时候就是定稿的，所以直接闭包捕获即可。
+	 */
+	private renderDropdown(options: { value: string; label: string }[], selectedIndex: number, control: IOlympiaSettingControl, controlId: string): HTMLElement {
+		const { wrapper, selectBox } = this.createSelectBox(options, selectedIndex, control, controlId);
+
 		this.renderDisposables.add(selectBox.onDidSelect(e => {
 			const picked = options[e.index];
 			if (!picked) {
@@ -434,6 +504,150 @@ export class OlympiaSettingsPage extends EditorPane {
 		}));
 
 		return wrapper;
+	}
+
+	/**
+	 * 字体控件。
+	 *
+	 * 上半部分是**本机真实装了的字体**的自绘下拉，下半部分是一个字体栈输入框。
+	 *
+	 * ## 为什么两个控件都写同一个键
+	 *
+	 * `editor.fontFamily` 的值是 CSS font-family，既可以是一个字体名，
+	 * 也可以是一串字体栈（`Consolas, monospace`）。
+	 * 只留下拉会把「字体栈」这个能力删掉；只留输入框又等于没做这个需求。
+	 * 所以两个都在，谁后动谁生效。
+	 *
+	 * ## 为什么不用原生 `<select>`
+	 *
+	 * 和枚举/主题下拉同理由：原生 `<select>` 展开是系统弹窗，
+	 * 白底白字 / 白底黑字，跟工作台完全是两套皮（用户点名的红线）。
+	 */
+	private renderFont(control: IOlympiaSettingControl, controlId: string): HTMLElement {
+		const wrapper = $('.olympiaSettings-fontControl');
+
+		const options = this.buildFontOptions(control);
+		const current = this.readValue(control);
+		const selectedIndex = this.indexOfValue(options, current);
+
+		const { wrapper: dropdown, selectBox } = this.createSelectBox(options, selectedIndex < 0 ? 0 : selectedIndex, control, controlId);
+
+		const hint = $('.olympiaSettings-fontHint');
+		hint.textContent = this.fontStatusText();
+
+		const entry: IFontControlEntry = { selectBox, hint, control, options };
+		this.fontControls.set(control.key, entry);
+
+		this.renderDisposables.add(selectBox.onDidSelect(e => {
+			// 选项表可能在字体清单到达后被整体换过 —— 取**当下**那一份，
+			// 不要用画这一轮时闭包捕获的旧表（那样会写进错的那个字体）。
+			const picked = this.fontControls.get(control.key)?.options[e.index];
+			if (!picked) {
+				return;
+			}
+			// 空串 = 「系统默认」= 移除用户设置（而不是写一个空字符串）。
+			this.writeValue(control, picked.value === '' ? undefined : picked.value);
+		}));
+
+		append(wrapper, dropdown);
+		append(wrapper, this.renderFontStackInput(control, controlId));
+		append(wrapper, hint);
+		return wrapper;
+	}
+
+	/**
+	 * 字体下拉的选项表。
+	 *
+	 * 第一项永远是「系统默认」—— 选它 = **移除用户设置**，回到上游默认值
+	 * （上游默认值本身是一串字体栈，见 fontInfo.ts 的 EDITOR_FONT_DEFAULTS）。
+	 * 这里**不能**写空字符串：`editor.fontFamily` 为空会让编辑器的 font-family 变成非法值。
+	 *
+	 * 用户自己设的字体栈不在本机字体清单里（或者干脆是一串栈）时，
+	 * **原样补一项**（和枚举下拉同一个做法）—— 不改写用户的值。
+	 */
+	private buildFontOptions(control: IOlympiaSettingControl): { value: string; label: string }[] {
+		const options: { value: string; label: string }[] = [
+			{ value: '', label: localize('olympiaSettings.font.system', "系统默认") }
+		];
+
+		for (const font of this.systemFonts) {
+			options.push({ value: font, label: font });
+		}
+
+		if (this.hasUserOverride(control)) {
+			const current = this.readValue(control);
+			if (typeof current === 'string' && current !== '' && !options.some(o => o.value === current)) {
+				options.push({ value: current, label: current });
+			}
+		}
+
+		return options;
+	}
+
+	/**
+	 * 这个键当前有没有用户侧的值。
+	 *
+	 * 用 `inspect` 而不是「拿有效值和默认值比」：没设过的时候**有效值就等于默认值**，
+	 * 两边一样没法区分「用户显式设成了默认值」和「用户根本没设过」。
+	 * 前者应该继续显示用户选的那一项，后者才该显示「系统默认」。
+	 */
+	private hasUserOverride(control: IOlympiaSettingControl): boolean {
+		const info = this.configurationService.inspect<string>(control.key);
+		if (!info) {
+			return false;
+		}
+		return info.userValue !== undefined
+			|| info.workspaceValue !== undefined
+			|| info.workspaceFolderValue !== undefined
+			|| info.memoryValue !== undefined;
+	}
+
+	/**
+	 * 字体栈输入框。
+	 *
+	 * 自由输入入口：`editor.fontFamily` 接受的是一串逗号分隔的字体栈，
+	 * 只留下拉会把这项能力删掉，所以这里始终保留。
+	 *
+	 * 留空 = **移除用户设置**（回到上游默认），不是写一个空字符串 ——
+	 * 空字符串会让编辑器的 font-family 变成非法值。
+	 */
+	private renderFontStackInput(control: IOlympiaSettingControl, controlId: string): HTMLElement {
+		const row = $('.olympiaSettings-fontStack');
+
+		const label = $<HTMLLabelElement>('label.olympiaSettings-fontStackLabel', {}, localize('olympiaSettings.font.stack', "字体栈"));
+		label.htmlFor = `${controlId}-stack`;
+		append(row, label);
+
+		const input = $<HTMLInputElement>('input');
+		input.type = 'text';
+		input.classList.add('olympiaSettings-input');
+		input.id = `${controlId}-stack`;
+		input.placeholder = localize('olympiaSettings.font.stack.placeholder', "例如 Consolas, monospace");
+		const current = this.readValue(control);
+		input.value = typeof current === 'string' ? current : '';
+		// 用 CHANGE 而不是 INPUT：每敲一个键就写一次配置会把配置文件写爆，
+		// 而且会触发全局 onDidChangeConfiguration —— 自己写进去的值把自己读回来，
+		// 正在输入的输入框会被重画清空。
+		input.addEventListener(EventType.CHANGE, () => {
+			const raw = input.value.trim();
+			this.writeValue(control, raw === '' ? undefined : raw);
+		});
+		append(row, input);
+
+		return row;
+	}
+
+	/** 字体清单的状态提示。 */
+	private fontStatusText(): string {
+		switch (this.systemFontsState) {
+			case 'loading':
+				return localize('olympiaSettings.font.loading', "正在读取本机字体…");
+			case 'failed':
+				return localize('olympiaSettings.font.failed', "没读到本机字体清单（扩展未就绪），可以直接在下面写字体栈。");
+			case 'ready':
+			default:
+				return localize('olympiaSettings.font.ready', "已读取到 {0} 个本机字体。", this.systemFonts.length);
+		}
 	}
 
 	/**
@@ -454,6 +668,69 @@ export class OlympiaSettingsPage extends EditorPane {
 			// 取不到主题就只留「跟随系统」，不能让整页崩掉。
 			this.colorThemes = [];
 		});
+	}
+
+	/**
+	 * 取一次本机字体清单。
+	 *
+	 * 清单由扩展宿主去问操作系统要（VS Code 内核**没有**字体枚举服务），
+	 * 所以这里走扩展命令。命令 id 与扩展侧的 `CMD.listSystemFonts` 必须一字不差。
+	 *
+	 * 任何失败（扩展没装、扩展宿主没起来、超时）都只降级成「没有清单」，
+	 * 绝不抛 —— 设置页不该因为一个可选清单整个打不开。
+	 */
+	private loadSystemFonts(): void {
+		if (this.systemFontsRequested) {
+			return;
+		}
+		this.systemFontsRequested = true;
+
+		// 超时兜底：扩展宿主冷启动可能很久，不能让这一项一直空着。
+		// 超时只是先把状态落成「没读到」，请求本身不放弃 —— 真取回来了照样会用上。
+		const timer = this._register(disposableTimeout(() => {
+			if (this.systemFontsState === 'loading') {
+				this.systemFontsState = 'failed';
+				this.refreshFontDropdowns();
+			}
+		}, OlympiaSettingsPage.SYSTEM_FONTS_TIMEOUT_MS));
+
+		this.commandService.executeCommand<string[]>(OlympiaSettingsPage.LIST_SYSTEM_FONTS_COMMAND_ID).then(fonts => {
+			timer.dispose();
+			this.applySystemFonts(Array.isArray(fonts) ? fonts : []);
+		}, () => {
+			timer.dispose();
+			this.applySystemFonts([]);
+		});
+	}
+
+	/** 落一份新的字体清单，并刷新界面。 */
+	private applySystemFonts(fonts: readonly string[]): void {
+		this.systemFonts = fonts;
+		this.systemFontsState = fonts.length > 0 ? 'ready' : 'failed';
+		this.refreshFontDropdowns();
+	}
+
+	/**
+	 * 字体清单到了以后，**原地**刷新下拉框。
+	 *
+	 * 刻意**不重画整页**：这一页还有编译路径、附加编译参数等文本框，
+	 * 重画会把用户正在输入的内容清掉 —— 那比字体晚到几秒糟糕得多。
+	 *
+	 * `SelectBox.setOptions` 只换选项表；自绘列表是**展开时**才按当前选项表重建的
+	 * （selectBoxCustom.ts 的 showSelectDropDown → setOptionsList），所以不重画也对。
+	 */
+	private refreshFontDropdowns(): void {
+		for (const entry of this.fontControls.values()) {
+			const options = this.buildFontOptions(entry.control);
+			entry.options = options;
+			const current = this.readValue(entry.control);
+			const selectedIndex = this.indexOfValue(options, current);
+			entry.selectBox.setOptions(
+				options.map(o => ({ text: o.label } satisfies ISelectOptionItem)),
+				selectedIndex < 0 ? 0 : selectedIndex
+			);
+			entry.hint.textContent = this.fontStatusText();
+		}
 	}
 
 	private renderArray(control: IOlympiaSettingControl, controlId: string): HTMLElement {

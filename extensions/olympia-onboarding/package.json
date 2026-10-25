@@ -112,6 +112,11 @@
 				"title": "全部设置（编译 / 评测 / 对拍 / 题面）",
 				"category": "Olympia",
 				"icon": "$(gear)"
+			},
+			{
+				"command": "olympia.listSystemFonts",
+				"title": "列出系统字体",
+				"category": "Olympia"
 			}
 		],
 		"viewsContainers": {
@@ -166,6 +171,10 @@
 			"commandPalette": [
 				{
 					"command": "olympia.tools.refresh",
+					"when": "false"
+				},
+				{
+					"command": "olympia.listSystemFonts",
 					"when": "false"
 				}
 			]

@@ -33,6 +33,7 @@ import { registerSampleJudge } from './judgeSamples';
 import { registerSolveLog } from './solveLog';
 import { registerSettingsPanel } from './settingsPanel';
 import { openLicenceNotices } from './licences';
+import { listSystemFonts } from './systemFonts';
 import { CMD } from './commands';
 
 import { DOCS, DOWNLOAD_PAGE, WEBSITE } from './site';
@@ -419,7 +420,10 @@ export function activate(context: vscode.ExtensionContext): void {
 		vscode.commands.registerCommand(CMD.compileJudgeAccurate, () => compileJudgeAccurate()),
 		vscode.commands.registerCommand(CMD.compileAndRun, () => compileAndRun()),
 		vscode.commands.registerCommand(CMD.openWebsite, () => vscode.env.openExternal(vscode.Uri.parse(WEBSITE))),
-		vscode.commands.registerCommand(CMD.openLicences, () => openLicenceNotices())
+		vscode.commands.registerCommand(CMD.openLicences, () => openLicenceNotices()),
+		// 工作台（渲染进程）枚举不了系统字体，只能由扩展宿主代劳。
+		// 拿不到就返回空数组，页面据此降级成「只有系统默认 + 手写字体栈」。
+		vscode.commands.registerCommand(CMD.listSystemFonts, () => listSystemFonts())
 	);
 	// 面板本身也要跟着扩展销毁，不然重载窗口会攒出一排同名面板
 	context.subscriptions.push({ dispose: () => environment?.dispose() });

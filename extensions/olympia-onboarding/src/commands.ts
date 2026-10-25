@@ -48,6 +48,8 @@ export const CMD = {
 	aiSettings: 'olympia.ai.settings',
 	/** Olympia 自己的设置页：把三个扩展清单里的设置项收进一屏。 */
 	settings: 'olympia.settings',
+	/** 列出本机真实安装的字体：工作台设置页的字体下拉靠它填选项（工作台枚举不了系统字体）。 */
+	listSystemFonts: 'olympia.listSystemFonts',
 	showProblems: 'workbench.actions.view.problems'
 } as const;
 
