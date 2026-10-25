@@ -7,6 +7,7 @@ import './media/olympiaSettings.css';
 
 import { localize } from '../../../../nls.js';
 import { $, append, clearNode, Dimension, EventType, IDomPosition } from '../../../../base/browser/dom.js';
+import { mainWindow } from '../../../../base/browser/window.js';
 import { ISelectOptionItem, SelectBox } from '../../../../base/browser/ui/selectBox/selectBox.js';
 import { Toggle, unthemedToggleStyles } from '../../../../base/browser/ui/toggle/toggle.js';
 import { disposableTimeout } from '../../../../base/common/async.js';
@@ -57,6 +58,11 @@ import { OlympiaSettingsInput } from './olympiaSettingsInput.js';
 interface IFontControlEntry {
 	/** 自绘下拉框本体。 */
 	readonly selectBox: SelectBox;
+	/**
+	 * 自绘下拉里那个 `<select>`（a11y 后端）。判「现在开没开」用：
+	 * `aria-expanded` 由上游 showSelectDropDown / hideSelectDropDown 维护。
+	 */
+	readonly select: HTMLElement;
 	/** 状态提示（正在读取 / 已读到几个 / 没读到）。 */
 	readonly hint: HTMLElement;
 	/** 这个控件绑定的配置项。刷新时要重新算选项表，得知道 key。 */
@@ -461,7 +467,7 @@ export class OlympiaSettingsPage extends EditorPane {
 	 * 枚举、主题、字体三种下拉共用这一个实现 —— 「不弹系统菜单」这条红线和
 	 * 「颜色走主题变量」这两件事只在这里定一次，其它地方不会各写一份。
 	 */
-	private createSelectBox(options: { value: string; label: string }[], selectedIndex: number, control: IOlympiaSettingControl, controlId: string): { wrapper: HTMLElement; selectBox: SelectBox } {
+	private createSelectBox(options: { value: string; label: string }[], selectedIndex: number, control: IOlympiaSettingControl, controlId: string): { wrapper: HTMLElement; selectBox: SelectBox; select: HTMLElement } {
 		const wrapper = $('.olympiaSettings-dropdown');
 
 		const selectBox = new SelectBox(
@@ -484,7 +490,7 @@ export class OlympiaSettingsPage extends EditorPane {
 			select.id = controlId;
 		}
 
-		return { wrapper, selectBox };
+		return { wrapper, selectBox, select: select ?? wrapper };
 	}
 
 	/**
@@ -530,12 +536,12 @@ export class OlympiaSettingsPage extends EditorPane {
 		const current = this.readValue(control);
 		const selectedIndex = this.indexOfValue(options, current);
 
-		const { wrapper: dropdown, selectBox } = this.createSelectBox(options, selectedIndex < 0 ? 0 : selectedIndex, control, controlId);
+		const { wrapper: dropdown, selectBox, select } = this.createSelectBox(options, selectedIndex < 0 ? 0 : selectedIndex, control, controlId);
 
 		const hint = $('.olympiaSettings-fontHint');
 		hint.textContent = this.fontStatusText();
 
-		const entry: IFontControlEntry = { selectBox, hint, control, options };
+		const entry: IFontControlEntry = { selectBox, select, hint, control, options };
 		this.fontControls.set(control.key, entry);
 
 		this.renderDisposables.add(selectBox.onDidSelect(e => {
@@ -723,13 +729,33 @@ export class OlympiaSettingsPage extends EditorPane {
 		for (const entry of this.fontControls.values()) {
 			const options = this.buildFontOptions(entry.control);
 			entry.options = options;
-			const current = this.readValue(entry.control);
-			const selectedIndex = this.indexOfValue(options, current);
-			entry.selectBox.setOptions(
-				options.map(o => ({ text: o.label } satisfies ISelectOptionItem)),
-				selectedIndex < 0 ? 0 : selectedIndex
-			);
-			entry.hint.textContent = this.fontStatusText();
+			const swap = () => {
+				const current = this.readValue(entry.control);
+				const selectedIndex = this.indexOfValue(entry.options, current);
+				entry.selectBox.setOptions(
+					entry.options.map(o => ({ text: o.label } satisfies ISelectOptionItem)),
+					selectedIndex < 0 ? 0 : selectedIndex
+				);
+				entry.hint.textContent = this.fontStatusText();
+			};
+			// 下拉**正开着**的时候不能就地换选项表：已展开的旧行表带的是旧索引，
+			// 上游换表后点击仍按旧索引回填（e.index / e.selected 都会指向新表里错误的一项），
+			// 用户点旧行会写进错的字体。aria-expanded 由上游 show/hide 维护 ——
+			// 开着就等它关掉再换（500ms 轮询、12 秒上限，超时照换兜底）。
+			if (entry.select.getAttribute('aria-expanded') === 'true') {
+				let attempts = 0;
+				const timer = mainWindow.setInterval(() => {
+					attempts++;
+					if (attempts > 24 || entry.select.getAttribute('aria-expanded') !== 'true') {
+						mainWindow.clearInterval(timer);
+						swap();
+					}
+				}, 500);
+				// 页面重画时 fontControls 整体重建，轮询必须跟着死，否则会给已分离的 DOM 换表。
+				this.renderDisposables.add({ dispose: () => mainWindow.clearInterval(timer) });
+				continue;
+			}
+			swap();
 		}
 	}
 

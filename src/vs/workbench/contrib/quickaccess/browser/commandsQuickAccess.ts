@@ -37,12 +37,15 @@ import { IEditorService } from '../../../services/editor/common/editorService.js
 import { IExtensionService } from '../../../services/extensions/common/extensions.js';
 import { createKeybindingCommandQuery } from '../../../services/preferences/browser/keybindingsEditorModel.js';
 import { IPreferencesService } from '../../../services/preferences/common/preferences.js';
-import { CHAT_OPEN_ACTION_ID } from '../../chat/browser/actions/chatActions.js';
+import { CHAT_OPEN_ACTION_ID, GENERATE_AGENT_COMMAND_ID, GENERATE_AGENT_INSTRUCTIONS_COMMAND_ID, getOpenChatActionIdForMode } from '../../chat/browser/actions/chatActions.js';
 import { ASK_QUICK_QUESTION_ACTION_ID } from '../../chat/browser/actions/chatQuickInputActions.js';
+import { ToggleAgentModeActionId } from '../../chat/browser/actions/chatExecuteActions.js';
+import { NEW_AGENT_COMMAND_ID } from '../../chat/browser/promptSyntax/newPromptFileActions.js';
 import { ForceUpdateAgentPluginsCommandId, RefreshAgentPluginMarketplacesCommandId, UpdateAgentPluginsCommandId } from '../../chat/browser/chat.js';
 import { CONFIGURE_DICTATION_INSTRUCTIONS_ACTION_ID, CONFIGURE_VOICE_INSTRUCTIONS_ACTION_ID } from '../../chat/browser/actions/configureVoiceInstructionsAction.js';
 import { IChatAgentService } from '../../chat/common/participants/chatAgents.js';
 import { ChatAgentLocation } from '../../chat/common/constants.js';
+import { ChatMode } from '../../chat/common/chatModes.js';
 
 /**
  * 「开发人员」整组不进命令面板。
@@ -62,8 +65,15 @@ import { ChatAgentLocation } from '../../chat/common/constants.js';
  * 只能得到一个空列表。上游把它的类目在五个工作区命令里各写一遍 `localize2('accounts', …)`，
  * 所以这里没法读现成常量——先把那张表补上 `Categories.Account`，五处一起改读它，
  * 过滤再按同一个值收，避免出现第三份「账户」字符串。
+ *
+ * 「聊天智能体会话」是第四组：智能体会话边栏（agent sessions）那一整套是 Copilot 智能体
+ * 主机的配套 UI，本产品 BYOK-only 不带。真机实测按「智能体」过滤面板会露出它的六条
+ * （显示/切换边栏、标记已读、删本地会话……）。类目值取字面量而不是导入它的常量：声明处
+ * 只有一个（agentSessionsActions.ts 的 AGENT_SESSIONS_CATEGORY），从 quickaccess 引它会把
+ * 整个智能体会话模块拖进早期加载路径；检查台（scripts/oneoff/test-palette-trim.mjs）会把
+ * 这个字面量与声明处逐字对拍，上游改了叫法就翻红。
  */
-const HIDDEN_COMMAND_CATEGORIES: readonly string[] = [Categories.Developer.value, 'MCP', Categories.Account.value];
+const HIDDEN_COMMAND_CATEGORIES: readonly string[] = [Categories.Developer.value, 'MCP', Categories.Account.value, '聊天智能体会话'];
 /**
  * 这组里放行两条：「重新加载窗口」是手册里会让学生按的那一个（窗口不对劲时先重载，
  * 不用重开整个程序，也不丢已打开的文件）；「打开日志文件夹」是出问题让我们来查时唯一
@@ -114,6 +124,20 @@ function hiddenCommandIds(): readonly string[] {
 		// 按同一判据（有没有人会点它）一起摘掉，而不是给用不到的文案补词典。
 		CONFIGURE_DICTATION_INSTRUCTIONS_ACTION_ID,
 		CONFIGURE_VOICE_INSTRUCTIONS_ACTION_ID,
+		// 智能体那一组（2026-10-25 用户点名删除智能体功能面；真机按「智能体」过滤
+		// 面板共 12 条：这 6 条属于「聊天」类目、另 6 条整个类目在上面按组收掉）。
+		// 口径与上面几组一致：只摘面板入口/键绑定，命令本体留着（内部 executeCommand
+		// 仍在用），配了自定义智能体文件的高阶用户不受影响。id 尽量走 chat 侧导出的
+		// 常量；「打开对话（智能体）」的 id 是按模式名拼出来的（getOpenChatActionIdForMode），
+		// 所以这里同样在调用时求值。
+		ToggleAgentModeActionId,
+		getOpenChatActionIdForMode(ChatMode.Agent),
+		GENERATE_AGENT_INSTRUCTIONS_COMMAND_ID,
+		GENERATE_AGENT_COMMAND_ID,
+		NEW_AGENT_COMMAND_ID,
+		// 「配置自定义智能体...」的 id 上游没导出（chatModeActions.ts 模块内常量），
+		// 只能落字面量 —— test-palette-trim.mjs 与注册处逐字对拍。
+		'workbench.action.chat.configure.customagents',
 	];
 }
 

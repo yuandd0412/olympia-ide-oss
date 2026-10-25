@@ -28,7 +28,7 @@ import { IChatAgentService } from '../../../common/participants/chatAgents.js';
 import { ChatMode, IChatMode, IChatModes } from '../../../common/chatModes.js';
 import { getCompactCodicon } from '../../chatIcons.js';
 import { isOrganizationPromptFile } from '../../../common/promptSyntax/utils/promptsServiceUtils.js';
-import { ChatAgentLocation, ChatConfiguration, ChatModeKind } from '../../../common/constants.js';
+import { AGENTS_WINDOW_DISABLED, ChatAgentLocation, ChatConfiguration, ChatModeKind } from '../../../common/constants.js';
 import { PromptsStorage } from '../../../common/promptSyntax/service/promptsService.js';
 import { Target } from '../../../common/promptSyntax/promptTypes.js';
 import { getOpenChatActionIdForMode } from '../../actions/chatActions.js';
@@ -189,7 +189,9 @@ export class ModePickerActionItem extends ChatInputPickerActionViewItem {
 			const customModes = groupBy(
 				filteredCustomModes,
 				mode => isModeConsideredBuiltIn(mode, this._productService) ? 'builtin' : 'custom');
-			// Always include the default "Agent" option first
+			// Always include the default "Agent" option first.
+			// Olympia（BYOK）：智能体模式不进选择器（与 AGENTS_WINDOW_DISABLED 关掉智能体窗口同一判据），
+			// 这里不再垫默认「智能体」项 —— 该路径只有存在自定义智能体目标时才会走到。
 			const checked = currentMode.id === ChatMode.Agent.id;
 			const defaultAction = { ...makeAction(ChatMode.Agent, ChatMode.Agent), checked };
 			defaultAction.category = builtInCategory;
@@ -200,14 +202,19 @@ export class ModePickerActionItem extends ChatInputPickerActionViewItem {
 			}) ?? [];
 			// Add filtered custom modes
 			const customActions = customModes.custom?.map(mode => makeActionFromCustomMode(mode, currentMode)) ?? [];
-			return [defaultAction, ...builtInActions, ...customActions];
+			return AGENTS_WINDOW_DISABLED
+				? [...builtInActions, ...customActions]
+				: [defaultAction, ...builtInActions, ...customActions];
 		};
 
 		const actionProvider: IActionWidgetDropdownActionProvider = {
 			getActions: () => {
 				const modes = delegate.currentChatModes.get();
 				const currentMode = delegate.currentMode.get();
-				const agentMode = modes.builtin.find(mode => mode.id === ChatMode.Agent.id);
+				// Olympia（BYOK）：内置「智能体」模式不进选择器 —— 本产品不带走智能体门面
+				// （与 AGENTS_WINDOW_DISABLED 关掉智能体窗口同一判据）。已在智能体模式里的
+				// 旧会话不受影响：这里只影响选择器列不列它，不改模式服务本身。
+				const agentMode = AGENTS_WINDOW_DISABLED ? undefined : modes.builtin.find(mode => mode.id === ChatMode.Agent.id);
 
 				const otherBuiltinModes = modes.builtin.filter(mode => {
 					return mode.id !== ChatMode.Agent.id && shouldShowBuiltInMode(mode, assignments.get(), agentModeDisabledViaPolicy);

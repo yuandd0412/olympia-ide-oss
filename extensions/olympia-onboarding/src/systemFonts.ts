@@ -41,7 +41,7 @@ import { runCapture } from './toolchain';
  */
 const ENUM_TIMEOUT_MS = 10000;
 
-/** 枚举结果缓存：扩展宿主活多久就只枚举一次（字体不会中途变）。 */
+/** 枚举结果缓存：成功一次就定下来（字体不会中途变）；失败不缓存，下次调用重试。 */
 let cachedFonts: string[] | undefined;
 
 /** 正在跑的枚举。并发调用共用同一次，不会起两个 PowerShell。 */
@@ -64,7 +64,9 @@ export async function listSystemFonts(): Promise<string[]> {
 				return fonts;
 			},
 			() => {
-				cachedFonts = [];
+				// 失败不落缓存：瞬时故障（策略拦截 / 子进程被杀）不该变成
+				// 「本次会话里永远没有字体」—— 下一次调用（下次打开设置页）重试枚举，
+				// 代价只是一次 PowerShell 冷启动。
 				pending = undefined;
 				return [] as string[];
 			}
@@ -178,7 +180,9 @@ function powershellPath(): string | undefined {
 // -------------------------------------------------------------------------
 
 async function enumerateByFontconfig(): Promise<string[]> {
-	const run = await runCapture('fc-list', ['--format=%{family}'], process.env, ENUM_TIMEOUT_MS);
+	// --format 必须自带尾部换行：fc-list 不会自动补 \n，缺了它所有 family 连成一整行，
+	// 按逗号拆开会拼出「Liberation SansDejaVu Sans」这类假字体名。
+	const run = await runCapture('fc-list', ['--format=%{family}\\n'], process.env, ENUM_TIMEOUT_MS);
 	if (run.code !== 0) {
 		return [];
 	}

@@ -605,14 +605,10 @@ export function registerChatActions() {
 	});
 	registerAction2(class extends ModeOpenChatGlobalAction {
 		constructor() {
-			super(ChatMode.Agent, {
-				when: ContextKeyExpr.has(`config.${ChatConfiguration.AgentEnabled}`),
-				weight: KeybindingWeight.WorkbenchContrib,
-				primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyI,
-				linux: {
-					primary: KeyMod.CtrlCmd | KeyMod.Alt | KeyMod.Shift | KeyCode.KeyI
-				}
-			},);
+			// Olympia（BYOK）：智能体模式不配打开键绑定 —— Ctrl+Shift+I 一按就把会话
+			// 切进智能体模式，而本产品不带走智能体门面（命令面板入口也一并摘了，
+			// 见 quickaccess/browser/commandsQuickAccess.ts 的 hiddenCommandIds）。
+			super(ChatMode.Agent);
 		}
 	});
 	registerAction2(class extends ModeOpenChatGlobalAction {
