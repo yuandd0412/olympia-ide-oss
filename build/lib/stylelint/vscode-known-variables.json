@@ -1299,6 +1299,7 @@
 		"--vg-inner-fade"
 	],
 	"sizes": [
+		"--olympia-radius",
 		"--segmented-icon-toggle-cell-radius",
 		"--segmented-icon-toggle-cell-width",
 		"--segmented-icon-toggle-height",
@@ -1338,20 +1339,20 @@
 		"--vscode-fontWeight-regular",
 		"--vscode-fontWeight-semiBold",
 		"--vscode-keyboard-height",
-		"--vscode-spacing-sizeNone",
-		"--vscode-spacing-size20",
-		"--vscode-spacing-size40",
-		"--vscode-spacing-size60",
-		"--vscode-spacing-size80",
 		"--vscode-spacing-size100",
 		"--vscode-spacing-size120",
 		"--vscode-spacing-size160",
+		"--vscode-spacing-size20",
 		"--vscode-spacing-size200",
 		"--vscode-spacing-size240",
 		"--vscode-spacing-size280",
 		"--vscode-spacing-size320",
 		"--vscode-spacing-size360",
+		"--vscode-spacing-size40",
 		"--vscode-spacing-size400",
+		"--vscode-spacing-size60",
+		"--vscode-spacing-size80",
+		"--vscode-spacing-sizeNone",
 		"--vscode-strokeThickness"
 	]
 }

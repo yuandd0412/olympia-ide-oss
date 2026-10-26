@@ -1,0 +1,84 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+/*
+ * Olympia chrome 视觉层（T-082）。
+ *
+ * ## 定位
+ *
+ * 用户可见 chrome（编辑器 tab / 列表行 / 通知）的统一观感层。VS Code 值得留下的是
+ * 后端与组件设计方案，这一层只做**加法**：统一圆角、加强调线，不重排任何布局、
+ * 不改任何尺寸语义 —— 上游 merge 时冲突面最小。
+ *
+ * ## 约束（都在本仓的 build/stylelint.ts 里）
+ *
+ * - `var(--…)` 必须在 build/lib/stylelint/vscode-known-variables.json 白名单里；
+ *   本层新增的自有 token 只有 --olympia-radius 一个（已加进 sizes 表）。
+ * - 禁根锚定 `:has()`；禁 `[class*=…]` 属性子串选择器。
+ * - 本文件在 workbench/contrib 下，可以用 .monaco-workbench。
+ *
+ * ## 口径
+ *
+ * 圆角一律用 --olympia-radius（.monaco-workbench 上定义一次），颜色一律取主题变量：
+ * 主题换了这层跟着变，不出现「One Dark Pro 之外的第二套硬编码颜色」。
+ */
+
+.monaco-workbench {
+	--olympia-radius: 6px;
+}
+
+/*
+ * 编辑器 tab：顶部两角圆 + 活动组活动 tab 的顶部强调线。
+ *
+ * 上游（multieditortabscontrol.css）的活动 tab 用 inset shadow 做融合感，
+ * 这里补两件事：tab 自身的顶部圆角（tab 栏贴着窗口上沿时是锐角直角），和一条
+ * 短于 tab 宽度的强调线（通宽的 border-top 是旧式观感；6px 内缩更接近现代浏览器的 tab 形）。
+ * ::after 定位在 tab 的 top:0 —— 上游 .tab 本来就是 position:relative。
+ */
+.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container > .tab {
+	border-radius: var(--olympia-radius) var(--olympia-radius) 0 0;
+}
+
+.monaco-workbench .part.editor > .content .editor-group-container.active > .title .tabs-container > .tab.active::after {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 8px;
+	right: 8px;
+	height: 2px;
+	border-radius: var(--vscode-cornerRadius-xSmall) var(--vscode-cornerRadius-xSmall) 0 0;
+	background: var(--vscode-tab-activeBorderTop, var(--vscode-focusBorder));
+	pointer-events: none;
+}
+
+/*
+ * 列表行（资源管理器 / 搜索 / quick input / 通知列表共用一套 list 控件）：
+ * 行背景（hover / 选中 / 焦点）由行元素自己绘制，加圆角即得到「圆角选中态」，
+ * 不动任何 padding / 高度 / 缩进 —— 文件名对齐、缩进线不受影响。
+ *
+ * 第二条是给上游 modern-ui 作用域的：layout.ts 把 modern-ui 挂在 .monaco-workbench
+ * **同一个节点**上，并给行写了 var(--vscode-cornerRadius-small)（特异性 0,4,0，
+ * 实测压过通配那条 0,2,0）。复合选择器 .monaco-workbench.modern-ui（同节点，
+ * 0,5,0）把它统一到 --olympia-radius —— 按特异性赢，不赌加载顺序。
+ */
+.monaco-workbench .monaco-list-row {
+	border-radius: var(--olympia-radius);
+}
+
+.monaco-workbench.modern-ui .monaco-list .monaco-list-row:not(.separator) {
+	border-radius: var(--olympia-radius);
+}
+
+/*
+ * 通知（toast 与通知中心）：上游已给 4px 圆角，统一到 --olympia-radius，
+ * 与 tab / 列表行是同一个数值来源。选择器逐字对齐上游 notificationsToasts.css，
+ * 同特异性下靠本文件的加载顺序取胜（olympiaChrome.ts 在 contrib 阶段注册，晚于 parts）。
+ */
+.monaco-workbench > .notifications-toasts .notifications-list-container,
+.monaco-workbench > .notifications-toasts .notification-toast-container > .notification-toast,
+.monaco-workbench > .notifications-toasts .notification-toast-container > .notification-toast .monaco-list:not(.element-focused):focus:before,
+.monaco-workbench > .notifications-toasts .notification-toast-container > .notification-toast .monaco-list-row {
+	border-radius: var(--olympia-radius);
+}

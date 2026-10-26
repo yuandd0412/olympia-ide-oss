@@ -9,7 +9,12 @@
  *  活动栏底部还留着几处上游入口：一枚「Copilot 状态」chip、一枚远程图标，和一个「账户」按钮
  *  （点开就是登录托管账号）。这些的门径和 byokOnly 不是同一个判断，所以在这里按产品开关显式
  *  关掉——用户如果自己在别处打开过「账户」入口，我们不再覆盖他的选择。
+ *
+ *  本文件同时是 Olympia chrome 视觉层的挂载点（media/olympiaChrome.css）：
+ *  编辑器 tab / 列表行 / 通知这三块最高可见度的 chrome 用一张 token 表统一圆角与强调线。
+ *  只做加法覆盖（改圆角、加指示线），不重排上游布局。
  *--------------------------------------------------------------------------------------------*/
+import './media/olympiaChrome.css';
 import { IProductService } from '../../../../platform/product/common/productService.js';
 import { IStorageService, StorageScope, StorageTarget } from '../../../../platform/storage/common/storage.js';
 import { IWorkbenchContribution, WorkbenchPhase, registerWorkbenchContribution2 } from '../../../common/contributions.js';
